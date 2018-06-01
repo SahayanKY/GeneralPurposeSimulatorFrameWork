@@ -6,6 +6,10 @@ import java.awt.Insets;
 
 import javax.swing.JComponent;
 
+/*
+ * レイアウトマネージャークラス。
+ * GridBagLayoutとGridBagConstraintsを統合し、Frameクラスの簡素化を図るクラス。
+ * */
 public class ComponentSetter extends GridBagLayout{
 	private GridBagConstraints gbc = new GridBagConstraints();
 
