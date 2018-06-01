@@ -25,7 +25,7 @@ public class InputData {
 				}
 			}
 		},
-		燃焼データ年月("一般","燃焼データ年月XXXX/YY"){
+		燃焼データ年月("一般","使用燃焼データ年月XXXX/YY"){
 			@Override
 			public int checkFormatOf(String input) {
 				//年月の入力フォーマットに即していない場合エラー
@@ -44,6 +44,55 @@ public class InputData {
 					return 2;
 				}else {
 					return 0;
+				}
+			}
+
+			/*
+			 * 入力されたパスが燃焼データなのかをチェックする
+			 * @param filePath 入力されたパス
+			 * @return falseの場合はデータに異常
+			 * */
+			private boolean isThrustDataFile(String filePath) {
+				try (BufferedReader dataFileReader = new BufferedReader(new FileReader(filePath));){
+					String dataLineStr;
+					double time=-1,power=0;
+					while((dataLineStr = dataFileReader.readLine()) != null) {
+						//改行だけの行は跳ばす
+						if(dataLineStr.equals("")) {
+							continue;
+						}
+						//半角スペース、タブ文字、一回の","区切りであるか。また、1行のデータが時間、推力の2つであるか。
+						String[] dataArray = dataLineStr.split(" +|	+|,{1}");
+						if(dataArray.length != 2) {
+							return false;
+						}
+						//double型に変換できるか
+						//時間は単調増加になっているか(time)
+						if(time >= Double.parseDouble(dataArray[0])) {
+							return false;
+						}
+						//timeの初期値は0に合わせる
+						//最初の代入前に確認
+						if(time == -1 & Double.parseDouble(dataArray[0]) != 0) {
+							return false;
+						}
+						time = Double.parseDouble(dataArray[0]);
+						power = Double.parseDouble(dataArray[1]);
+					}
+
+					return true;
+				} catch (FileNotFoundException e) {
+					// TODO 自動生成された catch ブロック
+					e.printStackTrace();
+					//ファイルが存在しない場合false
+					return false;
+				} catch (IOException e) {
+					e.printStackTrace();
+					return false;
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+					//ファイル内の文字列が数値に変換不可能であればfalse
+					return false;
 				}
 			}
 		},
@@ -143,14 +192,12 @@ public class InputData {
 		private double value;
 		private String valueStr;
 
-		private static Reader reader;
-		private static Properties PropertyReader;
+		private static Properties FormatProperty;
 
 		static {
-			try {
-				reader = new FileReader(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties");
-				PropertyReader = new Properties();
-				PropertyReader.load(reader);
+			try (Reader reader = new FileReader(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties")){
+				FormatProperty = new Properties();
+				FormatProperty.load(reader);
 
 			} catch (FileNotFoundException e) {
 				// TODO 自動生成された catch ブロック
@@ -194,7 +241,11 @@ public class InputData {
 			return 0;
 		}
 
-		//検索用
+		/*
+		 * 指定された名前(子ラベル)をもつ列挙子を返す
+		 * @param 子ラベルのString表現
+		 * @return 対応する列挙子。無い場合はnull。
+		 * */
 		public static Parameter valueWhoseChildLabelIs(String childLabel) {
 			for(Parameter parameter:Parameter.values()) {
 				if(parameter.childLabel.equals(childLabel)) {
@@ -203,39 +254,18 @@ public class InputData {
 			}
 			return null;
 		}
-	}
 
-	private LinkedHashMap<String,LinkedHashMap<String,Integer>> parameterMap = new LinkedHashMap<>();
-
-	/*
-	 * 列挙型Parameterで宣言したものを反映するマップをインスタンス変数parameterMapに追加する
-	 */
-	InputData(){
-		for(Parameter parameter:Parameter.values()) {
-			String parentLabel = parameter.getParentLabel();
-			String childLabel = parameter.getChildLabel();
-
-			LinkedHashMap<String,Integer> childMap = parameterMap.getOrDefault(parentLabel, new LinkedHashMap<>());
-			childMap.put(childLabel, null);
-			parameterMap.put(parentLabel, childMap);
-		}
-	}
-
-
-	/*
-	 * パラメータマップを返す
-	 * @return このインスタンスが保持している定数及び名称データマップ
-	 * */
-	public LinkedHashMap<String,LinkedHashMap<String,Integer>> getParameterMap(){
-		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = new LinkedHashMap<>();
-		for(String key : parameterMap.keySet()) {
-			LinkedHashMap<String,Integer> deepMap = new LinkedHashMap<>();
-			for(String deepKey : parameterMap.get(key).keySet()) {
-				deepMap.put(deepKey, parameterMap.get(key).get(deepKey));
+		public static LinkedHashMap<String,LinkedHashMap<String,Integer>> getEnumMap(){
+			LinkedHashMap<String,LinkedHashMap<String,Integer>> parentMap = new LinkedHashMap<>();
+			for(Parameter param : Parameter.values()) {
+				String parentLabel = param.getParentLabel();
+				String childLabel = param.getChildLabel();
+				LinkedHashMap<String,Integer> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<>());
+				childMap.put(childLabel, null);
+				parentMap.put(parentLabel, childMap);
 			}
-			map.put(key, deepMap);
+			return parentMap;
 		}
-		return map;
 	}
 
 	/*
@@ -276,63 +306,14 @@ public class InputData {
 				}
 			}
 			if(ErrorTime>0) {
-				return "エラー : "+ErrorTime +"件 :\n"+ Errors.toString();
+				return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 			}else if(WarnTime>0) {
-				return "要検証 : "+WarnTime +"件 :\n "+ Warnings.toString();
+				return "要検証 : "+WarnTime +"件\n "+ Warnings.toString();
 			}
 		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 		return null;
-	}
-
-	/*
-	 * 入力されたパスが燃焼データなのかをチェックする
-	 * @param filePath 入力されたパス
-	 * @return falseの場合はデータに異常
-	 * */
-	private static boolean isThrustDataFile(String filePath) {
-		try (BufferedReader dataFileReader = new BufferedReader(new FileReader(filePath));){
-			String dataLineStr;
-			double time=-1,power=0;
-			while((dataLineStr = dataFileReader.readLine()) != null) {
-				//改行だけの行は跳ばす
-				if(dataLineStr.equals("")) {
-					continue;
-				}
-				//半角スペース、タブ文字、一回の","区切りであるか。また、1行のデータが時間、推力の2つであるか。
-				String[] dataArray = dataLineStr.split(" +|	+|,{1}");
-				if(dataArray.length != 2) {
-					return false;
-				}
-				//double型に変換できるか
-				//時間は単調増加になっているか(time)
-				if(time >= Double.parseDouble(dataArray[0])) {
-					return false;
-				}
-				//timeの初期値は0に合わせる
-				//最初の代入前に確認
-				if(time == -1 & Double.parseDouble(dataArray[0]) != 0) {
-					return false;
-				}
-				time = Double.parseDouble(dataArray[0]);
-				power = Double.parseDouble(dataArray[1]);
-			}
-
-			return true;
-		} catch (FileNotFoundException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-			//ファイルが存在しない場合false
-			return false;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-			//ファイル内の文字列が数値に変換不可能であればfalse
-			return false;
-		}
 	}
 }
