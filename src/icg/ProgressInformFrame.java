@@ -28,7 +28,7 @@ public class ProgressInformFrame extends JFrame {
 				}else {
 					message = "計算が終了していません。\nこのまま終了しますか?";
 				}
-				int ans = JOptionPane.showConfirmDialog(ProgressInformFrame.this, message, JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				int ans = JOptionPane.showConfirmDialog(ProgressInformFrame.this, message, "計算終了の確認", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 				System.out.println(ans);
 				if(ans == JOptionPane.YES_OPTION) {
 					System.out.println("プログラムによる終了処理の実行");
