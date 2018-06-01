@@ -57,7 +57,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = data.getParameterMap();
+		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = InputData.Parameter.getEnumMap();
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -161,12 +161,12 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					//受け取った文字列に対応してダイアログを表示、処理を終了
 					if(message != null) {
 						if(message.startsWith("エラー")) {
-							JOptionPane.showMessageDialog(this, message, "エラー", JOptionPane.WARNING_MESSAGE);
-							//JOptionPane.showMessageDialog(this,message);
+							JOptionPane.showMessageDialog(this, message, "続行不能なエラーを検出", JOptionPane.WARNING_MESSAGE);
 							break;
 						}else if(message.startsWith("要検証")){
-							int ans = JOptionPane.showConfirmDialog(this, message, "要検証", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-							if(ans != JOptionPane.YES_OPTION) {
+							int ans = JOptionPane.showOptionDialog(this, message, "入力値に不備を検出", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, new String[]{"続行", "取消"}, null);
+							if(ans == 1 | ans == -1) {
+								//計算取消の場合
 								break;
 							}
 						}
