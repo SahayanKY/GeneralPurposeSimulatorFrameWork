@@ -23,7 +23,6 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
 
-	private InputData data = new InputData();
 	private LinkedHashMap<String, LinkedHashMap<String,JTextField>> dataField = new LinkedHashMap<>();
 
 	private static final String ShowCard = "showCard",
@@ -57,7 +56,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = InputData.Parameter.getEnumMap();
+		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = Parameter.getEnumMap();
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -92,7 +91,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
-				if(parameterName.equals(InputData.Parameter.燃焼データファイル.getChildLabel())) {
+				if(parameterName.equals(Parameter.燃焼データファイル.getChildLabel())) {
 					y++;
 					JButton selectFileButton = new JButton("ファイルを選択");
 					selectFileButton.addActionListener(this);
@@ -157,11 +156,11 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						StringDataMap.put(key, deepMap);
 					}
 					//データのチェックを行い、結果文字列を得る
-					String message = data.checkInputDataFormat(StringDataMap);
+					String message = Parameter.checkInputDataFormat(StringDataMap);
 					//受け取った文字列に対応してダイアログを表示、処理を終了
 					if(message != null) {
 						if(message.startsWith("エラー")) {
-							JOptionPane.showMessageDialog(this, message, "続行不能なエラーを検出", JOptionPane.WARNING_MESSAGE);
+							JOptionPane.showMessageDialog(this, message, "続行不能なエラーを検出", JOptionPane.ERROR_MESSAGE);
 							break;
 						}else if(message.startsWith("要検証")){
 							int ans = JOptionPane.showOptionDialog(this, message, "入力値に不備を検出", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, new String[]{"続行", "取消"}, null);
@@ -172,8 +171,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						}
 					}
 					//保存先のディレクトリを選択、nullの場合は処理を終了
-					ChooseFileDialog dialog = new ChooseFileDialog(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, "D:\\ゆうき", "保存先のフォルダを選択");
-					File choosedFile = dialog.choose();
+					File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, "D:\\ゆうき", "保存先のフォルダを選択");
 					if(choosedFile == null) {
 						break;
 					}
@@ -186,20 +184,21 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				break;
 
 			case SelectThrustDataFile:
-				ChooseFileDialog dialog = new ChooseFileDialog(this, ChooseFileDialog.ChooseTarget.TextFileOnly, "D:\\ゆうき", "燃焼データファイルを選択");
-				File choosedFile = dialog.choose();
+				File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.TextFileOnly, "D:\\ゆうき", "燃焼データファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
 				}
-				InputData.Parameter parameter = InputData.Parameter.燃焼データファイル;
-				dataField.get(parameter.getParentLabel()).get(parameter.getChildLabel()).setText(choosedFile.toString());
+				Parameter parameter = Parameter.燃焼データファイル;
+				JTextField tf = dataField.get(parameter.getParentLabel()).get(parameter.getChildLabel());
+				tf.setText(choosedFile.toString());
+				tf.setBackground(Color.WHITE);
 
 				break;
 
 			case SetInputData:
-				dialog = new ChooseFileDialog(this, ChooseFileDialog.ChooseTarget.PropertyFileOnly, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
-				choosedFile = dialog.choose();
+				choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.PropertyFileOnly, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
+				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
 				}
