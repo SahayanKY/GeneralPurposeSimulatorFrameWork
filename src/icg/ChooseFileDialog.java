@@ -18,28 +18,16 @@ public class ChooseFileDialog {
 		DirectoryOnly,TextFileOnly,PropertyFileOnly;
 	}
 
-	private Component c;
-	private JFileChooser chooser = new JFileChooser();
-	private ChooseTarget target;
-	private String currentPath;
-	private String title;
-
-	/*
-	 *
-	 * */
-	ChooseFileDialog(Component c,ChooseTarget target, String currentPath, String title){
-		this.c = c;
-		this.target = target;
-		this.currentPath = currentPath;
-		this.title = title;
-	}
+	private ChooseFileDialog(){	}
 
 
 	/*
 	 * コンストラクタで指定した通りのダイアログを表示し、選択結果をFileインスタンスとして返す。
 	 * @return 選択されたFileインスタンス
 	 * */
-	public File choose() {
+	public static File choose(Component c,ChooseTarget target, String currentPath, String title) {
+		JFileChooser chooser = new JFileChooser();
+
 		File file = new File(currentPath);
 		chooser.setCurrentDirectory(file);
 		chooser.setFileView(new FileView() {
