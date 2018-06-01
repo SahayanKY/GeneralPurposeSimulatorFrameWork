@@ -2,8 +2,10 @@ package icg;
 
 import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Properties;
 
 import org.junit.Test;
 
@@ -11,7 +13,7 @@ public class InputDataTest {
 
 	@Test
 	public void testFinNumber () {
-		String inputString = "a32";
+		String inputString = "3";
 		try {
 			int n;
 			if(!((n = Integer.parseInt(inputString)) == 3 | n==4)) {
@@ -32,42 +34,22 @@ public class InputDataTest {
 	}
 
 	@Test
-	public void testisThrustDataFile() {
-		String path = System.getProperty("user.dir")+"\\bin\\icg\\data";
-		try {
-			InputData inputData = InputData.class.newInstance();
-			Method testMethod = InputData.class.getDeclaredMethod("isThrustDataFile", String.class);
-			testMethod.setAccessible(true);
-
-			boolean f;
-			f = (boolean) testMethod.invoke(inputData, path);
-
-			if(f != true) {
-				fail();
-			}
-
-		} catch (InstantiationException | IllegalAccessException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (InvocationTargetException e) {
+	public void testProperties() {
+		Properties p = new Properties();
+		try(Reader reader = new FileReader(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties")){
+			p.load(reader);
+			System.out.println(p.getProperty("使用燃焼データ年月XXXX/YY"));
+		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
+		System.out.println(p.getProperty("使用燃焼データ年月XXXX/YY"));
 
+	}
 		/*Sample sample = new Sample();
 Method method = Sample.class.getDeclaredMethod("<メソッド名>", 引数の型1, 引数の型2...);
 method.setAccessible(true);
 int actual = (戻り値の型)method.invoke(<インスタンス>,引数1,引数2...);
 */
-	}
 
 }
