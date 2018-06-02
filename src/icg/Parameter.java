@@ -187,8 +187,9 @@ public enum Parameter{
 
 	private final String parentLabel;
 	private final String childLabel;
-	private double value;
+
 	private String valueStr;
+	private double value;
 
 	private static Properties FormatProperty;
 
@@ -210,11 +211,9 @@ public enum Parameter{
 		this.childLabel = childLabel;
 	}
 
-	//パラメータのセッター、ゲッター
-	public void setParameterValue(double value) {this.value = value;}
-	public double getParameterDoubleValue() {return this.value;}
 	public void setParameterValue(String value) {this.valueStr = value;}
 	public String getParameterStringValue() {return this.valueStr;	}
+	public double getParameterDoubleValue() {return this.value;}
 
 	//ラベルのゲッター
 	public String getChildLabel() {	return this.childLabel;}
@@ -222,7 +221,7 @@ public enum Parameter{
 
 
 	/*
-	 * パラメータのチェック
+	 * パラメータのチェック。同時にその値をvalueに格納。
 	 * @param input 入力値のString表現
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
@@ -268,7 +267,8 @@ public enum Parameter{
 
 
 	/*
-	 * データ入力に不具合がないかをチェックし、無い場合parameterMapを更新する
+	 * データ入力に不具合がないかをチェックし、同時にcheckFormatOf()内で各Parameterのvalueを更新する。
+	 * この処理はバッチ処理ではない。
 	 * @param checkMap 入力データのString型のマップ
 	 * @return 不具合を検知した項目の数と一覧文字列を合わせた1つの文字列。
 	 * 計算を続行できない不具合の場合"エラー"から始まる文字列を、
