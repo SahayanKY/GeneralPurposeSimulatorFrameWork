@@ -187,8 +187,8 @@ public enum Parameter{
 	フィン圧力中心位置("フィン", "フィン圧力中心位置/[mm]"),
 	フィン法線力係数("フィン", "フィン法線力係数/[-]");
 
-	private final String parentLabel;
-	private final String childLabel;
+	public final String parentLabel;
+	public final String childLabel;
 
 	private String valueStr;
 	private double value;
@@ -212,12 +212,6 @@ public enum Parameter{
             OutputStream ostream = new FileOutputStream(strpass);
             OutputStreamWriter osw = new OutputStreamWriter(ostream, "UTF-8");
             properties.store(osw, "Comments");
-
-            // 読み込み
-            InputStream istream = new FileInputStream(strpass);
-            InputStreamReader isr = new InputStreamReader(istream, "UTF-8");
-            properties.load(isr);
-
 	 * */
 
 	Parameter(String parentLabel, String childLabel){
@@ -225,13 +219,9 @@ public enum Parameter{
 		this.childLabel = childLabel;
 	}
 
-	public void setParameterValue(String value) {this.valueStr = value;}
+
 	public String getParameterStringValue() {return this.valueStr;	}
 	public double getParameterDoubleValue() {return this.value;}
-
-	//ラベルのゲッター
-	public String getChildLabel() {	return this.childLabel;}
-	public String getParentLabel() {return this.parentLabel;}
 
 
 	/*
@@ -240,20 +230,35 @@ public enum Parameter{
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
 	public int checkFormatOf(String input) {
-		double d;
 		try {
-			if((d = Double.parseDouble(input)) < 1) {
-				throw new NumberFormatException();
+			double inputValue,maxValue,minValue;
+			//inputが数値に変換できなければNumberFormatException
+			//max,min値は存在する場合は既に規定されているものとする
+			//(max,min値が設定されていないことによる処理は想定しない)
+			//そもそも存在しない場合NullPointerException
+			inputValue = Double.parseDouble(input);
+			maxValue = Double.parseDouble(FormatProperty.getProperty("Max"+childLabel));
+			minValue = Double.parseDouble(FormatProperty.getProperty("Min"+childLabel));
+
+			if(minValue < inputValue && inputValue < maxValue) {
+				//最大最小の間であった場合
+				return 0;
+			}else {
+				//要検証
+				return 1;
 			}
 		}catch(NumberFormatException e) {
-			return 1;
+			//数値が入力されていない場合
+			return 2;
+		}catch(NullPointerException e) {
+			//最大最小が設定されていない場合
+			return 0;
 		}
-		return 0;
 	}
 
 
-	/*
-	 * 指定された名前(子ラベル)をもつ列挙子を返す
+	/* 検索用。
+	 * 指定された名前(子ラベル)をもつ列挙子を返す。頭から検索をかけるため、連続して使うのは非推奨。
 	 * @param 子ラベルのString表現
 	 * @return 対応する列挙子。無い場合はnull。
 	 * */
@@ -266,15 +271,15 @@ public enum Parameter{
 		return null;
 	}
 
-	/*
+	/* マップ形式の自身の出力。
 	 * この列挙型がもつ列挙子のマップを、列挙子の持つ値とともに返す。
 	 * @return LinkedHashMap<"列挙子の親ラベル",LinkedHashMap<"列挙子の子ラベル","列挙子の持つ値のString表現">>
 	 * */
-	public static LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
+	public static LinkedHashMap<String,LinkedHashMap<String,String>> getEnumValueMap(){
 		LinkedHashMap<String,LinkedHashMap<String,String>> parentMap = new LinkedHashMap<>();
 		for(Parameter param : Parameter.values()) {
-			String parentLabel = param.getParentLabel();
-			String childLabel = param.getChildLabel();
+			String parentLabel = param.parentLabel;
+			String childLabel = param.childLabel;
 			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<>());
 			childMap.put(childLabel, param.valueStr);
 			parentMap.put(parentLabel, childMap);
@@ -282,8 +287,7 @@ public enum Parameter{
 		return parentMap;
 	}
 
-
-	/*
+	/* 外部から入力値をセットする時の呼び出し用
 	 * データ入力に不具合がないかをチェックし、同時にcheckFormatOf()内で各Parameterのvalueを更新する。
 	 * この処理はバッチ処理ではない。
 	 * @param checkMap 入力データのString型のマップ
@@ -321,7 +325,7 @@ public enum Parameter{
 		}
 	}
 
-	/*
+	/* 外部から既存プロパティファイルをセットする時の呼び出し用
 	 * 指定されたプロパティファイルを読み込み、その値を各列挙子にセットする。
 	 * このファイルがプロパティファイルでなかった場合、処理はされない。
 	 * また、対応しないプロパティに関しては変化しない。
@@ -334,6 +338,7 @@ public enum Parameter{
 
 			for(Parameter param : Parameter.values()) {
 				param.valueStr = ExistingProperty.getProperty(param.childLabel);
+				//バックスラッシュを二重に変えるフィルターを実装させ、それを用いる
 			}
 		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
