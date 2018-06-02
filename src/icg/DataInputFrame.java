@@ -29,7 +29,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			StartCalculation = "StartCalculation",
 			ChangeTextFieldColor = "ChangeTextFieldColor",
 			SelectThrustDataFile = "SelectFile",
-			SetInputData = "SetInputData";
+			SetExistingInputData = "SetInputData";
 
 	DataInputFrame(){
 		//フレームの設定
@@ -56,7 +56,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,Integer>> map = Parameter.getEnumMap();
+		LinkedHashMap<String,LinkedHashMap<String,String>> map = Parameter.getEnumMap();
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -110,7 +110,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 		//入力値を既存のファイルから取得し、セットする
 		JButton setInputDataButton = new JButton("既存のデータファイルからパラメータをセットする");
 		setInputDataButton.addActionListener(this);
-		setInputDataButton.setActionCommand(SetInputData);
+		setInputDataButton.setActionCommand(SetExistingInputData);
 		LayoutOfFrame.setFill(GridBagConstraints.HORIZONTAL);
 		LayoutOfFrame.setComponent(setInputDataButton, 0, 0, cardNum, 1 , 0, 0, GridBagConstraints.CENTER);
 		add(setInputDataButton);
@@ -146,7 +146,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 		switch(cmd) {
 			case StartCalculation:
 				try {
-					//TextFieldにセットされている文字列をInputDataに渡す
+					//TextFieldにセットされている文字列をParameterに渡す
 					LinkedHashMap<String,LinkedHashMap<String,String>> StringDataMap = new LinkedHashMap<>();
 					for(String key:dataField.keySet()) {
 						LinkedHashMap<String,String> deepMap = new LinkedHashMap<>();
@@ -156,7 +156,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						StringDataMap.put(key, deepMap);
 					}
 					//データのチェックを行い、結果文字列を得る
-					String message = Parameter.checkInputDataFormat(StringDataMap);
+					String message = Parameter.checkAllInputDataFormat(StringDataMap);
 					//受け取った文字列に対応してダイアログを表示、処理を終了
 					if(message != null) {
 						if(message.startsWith("エラー")) {
@@ -190,20 +190,30 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					break;
 				}
 				Parameter parameter = Parameter.燃焼データファイル;
-				JTextField tf = dataField.get(parameter.getParentLabel()).get(parameter.getChildLabel());
-				tf.setText(choosedFile.toString());
-				tf.setBackground(Color.WHITE);
+				JTextField thrustTF = dataField.get(parameter.getParentLabel()).get(parameter.getChildLabel());
+				thrustTF.setText(choosedFile.toString());
+				thrustTF.setBackground(Color.WHITE);
 
 				break;
 
-			case SetInputData:
-				choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.PropertyFileOnly, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
+			case SetExistingInputData:
+				choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.PropertiesFileOnly, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
 				}
-				System.out.println("プロパティファイルを選択");
-				System.out.println(choosedFile.toString());
+				//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
+				Parameter.setData_by(choosedFile);
+				LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumMap();
+				for(String key:dataField.keySet()) {
+					LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
+					for(String deepKey:deepMap.keySet()) {
+						String data = paramMap.get(key).get(deepKey);
+						JTextField targetTF = deepMap.get(deepKey);
+						targetTF.setText(data);
+						changeTextFieldColor(targetTF);
+					}
+				}
 
 				break;
 
@@ -212,13 +222,15 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 	public void focusGained(FocusEvent e) {
 	}
+	public void focusLost(FocusEvent e){
+		changeTextFieldColor((JTextField) e.getSource());
+	}
 
 	/*
-	 * このフレームに貼り付けたJTextFieldインスタンスのフォーカスが失われたときに実行される。
-	 * 入力値を取得し、nullまたは空文字なら赤に、そうでなければ白にJTextFieldの色を変える
+	 * 指定されたTextFieldの入力値を取得し、nullまたは空文字なら赤に、
+	 * そうでなければ白にJTextFieldの色を変える
 	 * */
-	public void focusLost(FocusEvent e){
-		JTextField tf = (JTextField) e.getSource();
+	private void changeTextFieldColor(JTextField tf) {
 		String inputStr = tf.getText();
 		if(inputStr == null | inputStr.equals("") | inputStr.matches("[ 　]+")) {
 			tf.setBackground(Color.RED);
