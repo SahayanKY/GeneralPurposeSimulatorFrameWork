@@ -4,9 +4,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -22,6 +28,7 @@ public enum Parameter{
 			if(input.matches("[ 　]+") | input.equals("")) {
 				return 2;
 			}else {
+				super.valueStr = input;
 				return 0;
 			}
 		}
@@ -33,6 +40,7 @@ public enum Parameter{
 			if(!input.matches("(19|20)[0-9]{2}/(0[1-9]|1[012])")) {
 				return 2;
 			}else {
+				super.valueStr = input;
 				return 0;
 			}
 		}
@@ -41,10 +49,11 @@ public enum Parameter{
 		@Override
 		public int checkFormatOf(String input) {
 			//データファイルを読み込み、それが燃焼データのフォーマットに即していない場合はエラー
-			if(!isThrustDataFile(input)) {
-				return 2;
-			}else {
+			if(isThrustDataFile(input)) {
+				super.valueStr = input;
 				return 0;
+			}else {
+				return 2;
 			}
 		}
 
@@ -56,7 +65,7 @@ public enum Parameter{
 		private boolean isThrustDataFile(String filePath) {
 			try (BufferedReader dataFileReader = new BufferedReader(new FileReader(filePath));){
 				String dataLineStr;
-				double time=-1,power=0;
+				double time=-1;
 				while((dataLineStr = dataFileReader.readLine()) != null) {
 					//改行だけの行は跳ばす
 					if(dataLineStr.equals("")) {
@@ -78,11 +87,9 @@ public enum Parameter{
 						return false;
 					}
 					time = Double.parseDouble(dataArray[0]);
-					power = Double.parseDouble(dataArray[1]);
 				}
 					return true;
 			} catch (FileNotFoundException e) {
-				// TODO 自動生成された catch ブロック
 				e.printStackTrace();
 				//ファイルが存在しない場合false
 				return false;
@@ -106,9 +113,39 @@ public enum Parameter{
 	ロケット外径("ロケット全体","ロケット外径/[mm]"),
 	ロケット内径("ロケット全体","ロケット内径/[mm]"),
 	全体圧力中心位置("ロケット全体","全体圧力中心位置/[mm]"),
-	全体重心位置("ロケット全体","全体重心位置/[mm]"),
+	全体重心位置("ロケット全体","全体重心位置/[mm]"){
+		@Override
+		public int checkFormatOf(String input) {
+			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
+			if(!(input.endsWith("a") || input.endsWith("b"))) {
+				return 2;
+			}
+			String subInput = input.substring(0, input.length()-1);
+			int messageNum = super.checkFormatOf(subInput);
+			super.valueStr = input;
+			return messageNum;
+
+			//input = "4564a"
+			//→value = 4564, valueStr = "4564a"
+		}
+	},
 	ロケット全長("ロケット全体","ロケット全長/[mm]"),
-	燃焼後ロケット質量("ロケット全体","燃焼後ロケット質量/[g]"),
+	ロケット質量("ロケット全体","ロケット質量/[g]"){
+		@Override
+		public int checkFormatOf(String input) {
+			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
+			if(!(input.endsWith("a") || input.endsWith("b"))) {
+				return 2;
+			}
+			String subInput = input.substring(0, input.length()-1);
+			int messageNum = super.checkFormatOf(subInput);
+			super.valueStr = input;
+			return messageNum;
+
+			//input = "4564a"
+			//→value = 4564, valueStr = "4564a"
+		}
+	},
 	抗力係数("ロケット全体","抗力係数/[-]"),
 
 
@@ -171,6 +208,8 @@ public enum Parameter{
 				if(!((n = Integer.parseInt(input)) == 3 | n==4)) {
 					throw new NumberFormatException();
 				}
+				value = (double) n;
+				valueStr = input;
 				return 0;
 			}catch(NumberFormatException e) {
 				return 2;
@@ -190,29 +229,20 @@ public enum Parameter{
 	public final String parentLabel;
 	public final String childLabel;
 
-	private String valueStr;
-	private double value;
+	protected String valueStr;
+	protected double value;
 
-	private static Properties FormatProperty;
+	private final static Properties FormatProperty = new Properties();
+	private final static String FormatPropertyPath = System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties";
 
 	static {
-		try (InputStreamReader reader = new InputStreamReader(new FileInputStream(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties"), "UTF-8")){
-			FormatProperty = new Properties();
+		try (InputStreamReader reader = new InputStreamReader(new FileInputStream(FormatPropertyPath), "UTF-8")){
 			FormatProperty.load(reader);
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 	}
 
-	/*
-	 * // 書き込み
-            properties.setProperty("id", "侍");
-            properties.setProperty("pass", "エンジニア");
-            OutputStream ostream = new FileOutputStream(strpass);
-            OutputStreamWriter osw = new OutputStreamWriter(ostream, "UTF-8");
-            properties.store(osw, "Comments");
-	 * */
 
 	Parameter(String parentLabel, String childLabel){
 		this.parentLabel = parentLabel;
@@ -231,16 +261,17 @@ public enum Parameter{
 	 */
 	public int checkFormatOf(String input) {
 		try {
-			double inputValue,maxValue,minValue;
+			double maxValue,minValue;
 			//inputが数値に変換できなければNumberFormatException
 			//max,min値は存在する場合は既に規定されているものとする
 			//(max,min値が設定されていないことによる処理は想定しない)
 			//そもそも存在しない場合NullPointerException
-			inputValue = Double.parseDouble(input);
+			value = Double.parseDouble(input);
+			valueStr = input;
 			maxValue = Double.parseDouble(FormatProperty.getProperty("Max"+childLabel));
 			minValue = Double.parseDouble(FormatProperty.getProperty("Min"+childLabel));
 
-			if(minValue < inputValue && inputValue < maxValue) {
+			if(minValue < value && value < maxValue) {
 				//最大最小の間であった場合
 				return 0;
 			}else {
@@ -287,7 +318,7 @@ public enum Parameter{
 		return parentMap;
 	}
 
-	/* 外部から入力値をセットする時の呼び出し用
+	/* 外部(Frame)から入力値をセットする時の呼び出し用
 	 * データ入力に不具合がないかをチェックし、同時にcheckFormatOf()内で各Parameterのvalueを更新する。
 	 * この処理はバッチ処理ではない。
 	 * @param checkMap 入力データのString型のマップ
@@ -332,17 +363,49 @@ public enum Parameter{
 	 * @param choosedFile 指定するプロパティファイル
 	 * */
 	public static void setData_by(File choosedFile) {
-		try (InputStreamReader reader = new InputStreamReader(new FileInputStream(choosedFile), "UTF-8")){
+		try (DoubleBackSlashReader reader = new DoubleBackSlashReader(new InputStreamReader(new FileInputStream(choosedFile), "UTF-8"))){
 			Properties ExistingProperty = new Properties();
 			ExistingProperty.load(reader);
 
 			for(Parameter param : Parameter.values()) {
 				param.valueStr = ExistingProperty.getProperty(param.childLabel);
-				//バックスラッシュを二重に変えるフィルターを実装させ、それを用いる
 			}
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
+		}
+	}
+
+
+	/*
+	 * 各列挙子がもつvalueStrを指定されたプロパティファイルに書き込む
+	 * @param choosedDirectory 保存先ディレクトリ
+	 * @return エラーが起きた場合、その理由を示すStringを返す。
+	 * エラーが起きなかった場合、nullを返す。
+	 * */
+	public static String writeProperty_on(File choosedDirectory) {
+		//保存先のFileインスタンスを取得
+		File storeFile = new File(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
+
+		try {
+			//フォーマットプロパティファイルを保存先にコピーする
+			Files.copy(Paths.get(FormatPropertyPath), storeFile.toPath());
+		}catch(IOException e) {
+			System.out.println(e);
+			return null;
+		}
+
+		try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8")) {
+			//Propertiesにキーと値をセットしていく
+			Properties pro = new Properties();
+			for(Parameter param : Parameter.values()) {
+				pro.setProperty(param.childLabel, param.valueStr);
+			}
+			pro.store(osw, "Comments");
+
+			return null;
+		} catch (IOException e) {
+			System.out.println(e);
+			return null;
 		}
 	}
 }
