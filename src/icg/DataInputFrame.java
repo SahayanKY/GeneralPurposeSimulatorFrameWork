@@ -56,7 +56,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,String>> map = Parameter.getEnumMap();
+		LinkedHashMap<String,LinkedHashMap<String,String>> map = Parameter.getEnumValueMap();
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -91,7 +91,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
-				if(parameterName.equals(Parameter.燃焼データファイル.getChildLabel())) {
+				if(parameterName.equals(Parameter.燃焼データファイル.childLabel)) {
 					y++;
 					JButton selectFileButton = new JButton("ファイルを選択");
 					selectFileButton.addActionListener(this);
@@ -184,13 +184,13 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				break;
 
 			case SelectThrustDataFile:
-				File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.TextFileOnly, "D:\\ゆうき", "燃焼データファイルを選択");
+				File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.ThrustFileOnly, "D:\\ゆうき", "燃焼データファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
 				}
 				Parameter parameter = Parameter.燃焼データファイル;
-				JTextField thrustTF = dataField.get(parameter.getParentLabel()).get(parameter.getChildLabel());
+				JTextField thrustTF = dataField.get(parameter.parentLabel).get(parameter.childLabel);
 				thrustTF.setText(choosedFile.toString());
 				thrustTF.setBackground(Color.WHITE);
 
@@ -204,7 +204,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				}
 				//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
 				Parameter.setData_by(choosedFile);
-				LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumMap();
+				LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumValueMap();
 				for(String key:dataField.keySet()) {
 					LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
 					for(String deepKey:deepMap.keySet()) {
