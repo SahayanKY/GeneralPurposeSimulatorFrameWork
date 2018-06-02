@@ -15,7 +15,7 @@ import javax.swing.filechooser.FileView;
  * */
 public class ChooseFileDialog {
 	enum ChooseTarget{
-		DirectoryOnly,TextFileOnly,PropertiesFileOnly;
+		DirectoryOnly,ThrustFileOnly,PropertiesFileOnly;
 	}
 
 	private ChooseFileDialog(){	}
@@ -43,13 +43,13 @@ public class ChooseFileDialog {
 		}else {
 			String label=null,extension=null;
 			switch(target) {
-				case TextFileOnly:
-					label = "テキストファイル";
-					extension = "txt";
+				case ThrustFileOnly:
+					label = "THRUSTファイル";
+					extension = "thrust";
 					break;
 
 				case PropertiesFileOnly:
-					label = "プロパティファイル";
+					label = "PROPERTIESファイル";
 					extension = "properties";
 					break;
 				default:
