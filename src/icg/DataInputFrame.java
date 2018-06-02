@@ -171,10 +171,12 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						}
 					}
 					//保存先のディレクトリを選択、nullの場合は処理を終了
-					File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, "D:\\ゆうき", "保存先のフォルダを選択");
-					if(choosedFile == null) {
+					File choosedDirectory = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, "D:\\ゆうき", "保存先のフォルダを選択");
+					if(choosedDirectory == null) {
 						break;
 					}
+					Parameter.writeProperty_on(choosedDirectory);
+
 					this.setEnabled(false);
 					new ProgressInformFrame();
 
