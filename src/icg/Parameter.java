@@ -1,10 +1,12 @@
 package icg;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStreamReader;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -194,17 +196,29 @@ public enum Parameter{
 	private static Properties FormatProperty;
 
 	static {
-		try (Reader reader = new FileReader(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties")){
+		try (InputStreamReader reader = new InputStreamReader(new FileInputStream(System.getProperty("user.dir")+"\\bin\\icg\\入力データフォーマット.properties"), "UTF-8")){
 			FormatProperty = new Properties();
 			FormatProperty.load(reader);
-		} catch (FileNotFoundException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 	}
+
+	/*
+	 * // 書き込み
+            properties.setProperty("id", "侍");
+            properties.setProperty("pass", "エンジニア");
+            OutputStream ostream = new FileOutputStream(strpass);
+            OutputStreamWriter osw = new OutputStreamWriter(ostream, "UTF-8");
+            properties.store(osw, "Comments");
+
+            // 読み込み
+            InputStream istream = new FileInputStream(strpass);
+            InputStreamReader isr = new InputStreamReader(istream, "UTF-8");
+            properties.load(isr);
+
+	 * */
 
 	Parameter(String parentLabel, String childLabel){
 		this.parentLabel = parentLabel;
@@ -252,14 +266,17 @@ public enum Parameter{
 		return null;
 	}
 
-
-	public static LinkedHashMap<String,LinkedHashMap<String,Integer>> getEnumMap(){
-		LinkedHashMap<String,LinkedHashMap<String,Integer>> parentMap = new LinkedHashMap<>();
+	/*
+	 * この列挙型がもつ列挙子のマップを、列挙子の持つ値とともに返す。
+	 * @return LinkedHashMap<"列挙子の親ラベル",LinkedHashMap<"列挙子の子ラベル","列挙子の持つ値のString表現">>
+	 * */
+	public static LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
+		LinkedHashMap<String,LinkedHashMap<String,String>> parentMap = new LinkedHashMap<>();
 		for(Parameter param : Parameter.values()) {
 			String parentLabel = param.getParentLabel();
 			String childLabel = param.getChildLabel();
-			LinkedHashMap<String,Integer> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<>());
-			childMap.put(childLabel, null);
+			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<>());
+			childMap.put(childLabel, param.valueStr);
 			parentMap.put(parentLabel, childMap);
 		}
 		return parentMap;
@@ -276,7 +293,7 @@ public enum Parameter{
 	 * 特に何も無かった場合nullを返す。
 	 * @exception 引数より受けたデータに直ちに停止すべき不具合がある場合(入力値が空文字や数値でない、またはnull)
 	 * */
-	public static String checkInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
+	public static String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
 		//入力値のチェック
 		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n");
 		int ErrorTime=0,WarnTime=0;
@@ -301,6 +318,26 @@ public enum Parameter{
 			return "要検証 : "+WarnTime +"件\n "+ Warnings.toString();
 		}else {
 			return null;
+		}
+	}
+
+	/*
+	 * 指定されたプロパティファイルを読み込み、その値を各列挙子にセットする。
+	 * このファイルがプロパティファイルでなかった場合、処理はされない。
+	 * また、対応しないプロパティに関しては変化しない。
+	 * @param choosedFile 指定するプロパティファイル
+	 * */
+	public static void setData_by(File choosedFile) {
+		try (InputStreamReader reader = new InputStreamReader(new FileInputStream(choosedFile), "UTF-8")){
+			Properties ExistingProperty = new Properties();
+			ExistingProperty.load(reader);
+
+			for(Parameter param : Parameter.values()) {
+				param.valueStr = ExistingProperty.getProperty(param.childLabel);
+			}
+		} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
 		}
 	}
 }
