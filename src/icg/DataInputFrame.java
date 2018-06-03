@@ -10,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 
 import javax.swing.JButton;
@@ -175,13 +176,13 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					if(choosedDirectory == null) {
 						break;
 					}
+					//指定したディレクトリにパラメータを保存させる
 					Parameter.writeProperty_on(choosedDirectory);
-
+					//このフレームの操作を不能にし、次のステージに進める
 					this.setEnabled(false);
 					new ProgressInformFrame();
-
-				}catch(NullPointerException | IllegalArgumentException exc) {
-					System.out.println("異常検知"+exc);
+				}catch(NullPointerException | IllegalArgumentException | IOException exc) {
+					JOptionPane.showMessageDialog(this, exc, "エラー", JOptionPane.ERROR_MESSAGE);
 				}
 				break;
 
@@ -204,17 +205,21 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				if(choosedFile == null) {
 					break;
 				}
-				//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
-				Parameter.setData_by(choosedFile);
-				LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumValueMap();
-				for(String key:dataField.keySet()) {
-					LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
-					for(String deepKey:deepMap.keySet()) {
-						String data = paramMap.get(key).get(deepKey);
-						JTextField targetTF = deepMap.get(deepKey);
-						targetTF.setText(data);
-						changeTextFieldColor(targetTF);
+				try {
+					//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
+					Parameter.setData_by(choosedFile);
+					LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumValueMap();
+					for(String key:dataField.keySet()) {
+						LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
+						for(String deepKey:deepMap.keySet()) {
+							String data = paramMap.get(key).get(deepKey);
+							JTextField targetTF = deepMap.get(deepKey);
+							targetTF.setText(data);
+							changeTextFieldColor(targetTF);
+						}
 					}
+				}catch (IOException exc) {
+					JOptionPane.showMessageDialog(this, exc, "ファイル操作のエラー", JOptionPane.ERROR_MESSAGE);
 				}
 
 				break;
