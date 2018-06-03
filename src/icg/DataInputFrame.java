@@ -193,7 +193,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				}
 				Parameter parameter = Parameter.燃焼データファイル;
 				JTextField thrustTF = dataField.get(parameter.parentLabel).get(parameter.childLabel);
-				thrustTF.setText(choosedFile.toString());
+				thrustTF.setText(choosedFile.toString().replace("\\", "/"));
 				thrustTF.setBackground(Color.WHITE);
 
 				break;
