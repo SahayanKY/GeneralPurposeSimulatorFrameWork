@@ -5,7 +5,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
@@ -18,16 +17,6 @@ import java.util.Properties;
  * */
 public class ExProperties extends Properties{
 	private File file;
-
-	public static void main(String args[] ) {
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter("D:\\ゆうき\\test.txt"));
-			bw.write("aaaaa\naaaaaaaa");
-			bw.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 
 	ExProperties(File file){
 		this.file = file;
@@ -78,7 +67,7 @@ public class ExProperties extends Properties{
 			}
 			writer.flush();
 		}catch(IOException e) {
-			System.out.println(e);
+			throw e;
 		}
 		copyFile.delete();
 	}
