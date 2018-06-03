@@ -4,12 +4,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -383,29 +382,18 @@ public enum Parameter{
 	 * エラーが起きなかった場合、nullを返す。
 	 * */
 	public static String writeProperty_on(File choosedDirectory) {
-		//保存先のFileインスタンスを取得
-		File storeFile = new File(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
-
 		try {
-			//フォーマットプロパティファイルを保存先にコピーする
-			Files.copy(Paths.get(FormatPropertyPath), storeFile.toPath());
-		}catch(IOException e) {
-			System.out.println(e);
-			return null;
-		}
-
-		try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8")) {
-			//Propertiesにキーと値をセットしていく
-			Properties pro = new Properties();
+			Path storeFilePath = Paths.get(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
+			Files.copy(Paths.get(FormatPropertyPath), storeFilePath);
+			ExProperties exP = new ExProperties(storeFilePath.toFile());
 			for(Parameter param : Parameter.values()) {
-				pro.setProperty(param.childLabel, param.valueStr);
+				exP.setProperty(param.childLabel, param.valueStr);
 			}
-			pro.store(osw, "Comments");
+			exP.postscript();
 
-			return null;
 		} catch (IOException e) {
 			System.out.println(e);
-			return null;
 		}
+		return null;
 	}
 }
