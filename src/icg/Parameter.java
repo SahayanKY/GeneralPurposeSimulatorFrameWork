@@ -3,7 +3,6 @@ package icg;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -64,7 +63,7 @@ public enum Parameter{
 		private boolean isThrustDataFile(String filePath) {
 			try (BufferedReader dataFileReader = new BufferedReader(new FileReader(filePath));){
 				String dataLineStr;
-				double time=-1;
+				double pastTime=-1;
 				while((dataLineStr = dataFileReader.readLine()) != null) {
 					//改行だけの行は跳ばす
 					if(dataLineStr.equals("")) {
@@ -77,27 +76,22 @@ public enum Parameter{
 					}
 					//double型に変換できるか
 					//時間は単調増加になっているか(time)
-					if(time >= Double.parseDouble(dataArray[0])) {
+					if(pastTime >= Double.parseDouble(dataArray[0])) {
 						return false;
 					}
 					//timeの初期値は0に合わせる
 					//最初の代入前に確認
-					if(time == -1 & Double.parseDouble(dataArray[0]) != 0) {
+					if(pastTime == -1 & Double.parseDouble(dataArray[0]) != 0) {
 						return false;
 					}
-					time = Double.parseDouble(dataArray[0]);
+					//2つ目のデータも数値に変換できるか
+					Double.parseDouble(dataArray[1]);
+					pastTime = Double.parseDouble(dataArray[0]);
 				}
-					return true;
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-				//ファイルが存在しない場合false
-				return false;
-			} catch (IOException e) {
-				e.printStackTrace();
-				return false;
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
-				//ファイル内の文字列が数値に変換不可能であればfalse
+				return true;
+			} catch (IOException | NumberFormatException e) {
+				//IOException ファイルが存在しない場合false
+				//NumberFormatException ファイル内の文字列が数値に変換不可能であればfalse
 				return false;
 			}
 		}
@@ -360,8 +354,9 @@ public enum Parameter{
 	 * このファイルがプロパティファイルでなかった場合、処理はされない。
 	 * また、対応しないプロパティに関しては変化しない。
 	 * @param choosedFile 指定するプロパティファイル
+	 * @throws IOException 指定されたファイルの操作の際に発生した何らかの不具合
 	 * */
-	public static void setData_by(File choosedFile) {
+	public static void setData_by(File choosedFile) throws IOException{
 		try (DoubleBackSlashReader reader = new DoubleBackSlashReader(new InputStreamReader(new FileInputStream(choosedFile), "UTF-8"))){
 			Properties ExistingProperty = new Properties();
 			ExistingProperty.load(reader);
@@ -370,7 +365,7 @@ public enum Parameter{
 				param.valueStr = ExistingProperty.getProperty(param.childLabel);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw e;
 		}
 	}
 
@@ -379,21 +374,20 @@ public enum Parameter{
 	 * 各列挙子がもつvalueStrを指定されたプロパティファイルに書き込む
 	 * @param choosedDirectory 保存先ディレクトリ
 	 * @return エラーが起きた場合、その理由を示すStringを返す。
-	 * エラーが起きなかった場合、nullを返す。
+	 * @throws IOException ファイル保存の際に発生した何らかの不具合
 	 * */
-	public static String writeProperty_on(File choosedDirectory) {
-		try {
-			Path storeFilePath = Paths.get(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
-			Files.copy(Paths.get(FormatPropertyPath), storeFilePath);
-			ExProperties exP = new ExProperties(storeFilePath.toFile());
-			for(Parameter param : Parameter.values()) {
-				exP.setProperty(param.childLabel, param.valueStr);
-			}
-			exP.postscript();
-
-		} catch (IOException e) {
-			System.out.println(e);
+	public static void writeProperty_on(File choosedDirectory) throws IOException{
+		Path storeFilePath = Paths.get(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
+		File storeFile = storeFilePath.toFile();
+		if(storeFile.exists()) {
+			//既に同名のファイルが存在する場合処理を停止
+			throw new IOException("同名のファイルが存在");
 		}
-		return null;
+		Files.copy(Paths.get(FormatPropertyPath), storeFilePath);
+		ExProperties exP = new ExProperties(storeFile);
+		for(Parameter param : Parameter.values()) {
+			exP.setProperty(param.childLabel, param.valueStr);
+		}
+		exP.postscript();
 	}
 }
