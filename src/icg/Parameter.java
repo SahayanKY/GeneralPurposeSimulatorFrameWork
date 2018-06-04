@@ -304,7 +304,7 @@ public enum Parameter{
 		for(Parameter param : Parameter.values()) {
 			String parentLabel = param.parentLabel;
 			String childLabel = param.childLabel;
-			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<>());
+			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<String,String>());
 			childMap.put(childLabel, param.valueStr);
 			parentMap.put(parentLabel, childMap);
 		}
