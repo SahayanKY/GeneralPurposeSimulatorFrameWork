@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 public class UnitEditor {
 	public static void main(String args[]) {
-		HashMap<String,Integer> map = new UnitEditor().editUnit("   kg mm cm");
+		HashMap<String,Integer> map = new UnitEditor().editUnit("dg km mA cs/ ms  kg dm cA");
 		if(map == null) {
 			System.out.println("不正な入力値");
 		}else {
@@ -89,16 +89,12 @@ public class UnitEditor {
 		}
 
 		//gをkgに直す
-		if(unitMap.getOrDefault("g",0) != 0) {
-			int g_degree = unitMap.remove("g");
-			unitMap.put("kg", g_degree);
-			unitMap.put("none", unitMap.getOrDefault("none", 0) - 3*g_degree);
-		}
-		for(String key:unitMap.keySet()) {
-			if(key.equals("none")) {
-				//"none"は消さずに残しておく
-				continue;
-			}
+		int g_degree = unitMap.remove("g");
+		unitMap.put("kg", g_degree);
+		unitMap.put("none", unitMap.getOrDefault("none", 0) - 3*g_degree);
+
+		for(String key:new String[]{"m","kg","s","A"}) {
+			//mapのkeySet()を使うとremoveしたときに例外が発生してしまうので
 			//次数が0のものは消しておく
 			if(unitMap.getOrDefault(key,0) == 0) {
 				unitMap.remove(key);
