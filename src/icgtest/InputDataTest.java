@@ -1,4 +1,4 @@
-package icg;
+package icgtest;
 
 import static org.junit.Assert.*;
 

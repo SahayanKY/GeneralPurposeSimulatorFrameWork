@@ -1,4 +1,4 @@
-package icg;
+package icg.frame;
 
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -20,6 +20,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import icg.ChooseFileDialog;
+import icg.ComponentSetter;
+import icg.Parameter;
+
 public class DataInputFrame extends JFrame implements ActionListener,FocusListener{
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
@@ -32,7 +36,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			SelectThrustDataFile = "SelectFile",
 			SetExistingInputData = "SetInputData";
 
-	DataInputFrame(){
+	public DataInputFrame(){
 		//フレームの設定
 		setTitle("ICGシミュレーション");
 		setBounds(250,150,800,500);

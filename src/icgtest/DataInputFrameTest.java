@@ -1,4 +1,6 @@
-package icg;
+package icgtest;
+
+import icg.frame.DataInputFrame;
 
 public class DataInputFrameTest {
 	public static void main(String args[]) {

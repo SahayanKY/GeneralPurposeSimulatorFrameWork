@@ -1,4 +1,4 @@
-package icg;
+package icg.frame;
 
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -13,11 +13,13 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
+import icg.ComponentSetter;
+
 public class ProgressInformFrame extends JFrame {
 	private boolean CalcurationHadFinished = false;
 	private JLabel progressRateLabel=new JLabel("100%");
 
-	ProgressInformFrame(){
+	public ProgressInformFrame(){
 		//フレームの設定
 		setTitle("計算進行状況");
 		addWindowListener(new WindowAdapter() {

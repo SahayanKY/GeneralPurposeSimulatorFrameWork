@@ -14,7 +14,7 @@ import javax.swing.filechooser.FileView;
  * ファイル、またはディレクトリを選択させるダイアログクラス
  * */
 public class ChooseFileDialog {
-	enum ChooseTarget{
+	public enum ChooseTarget{
 		DirectoryOnly,ThrustFileOnly,PropertiesFileOnly;
 	}
 
