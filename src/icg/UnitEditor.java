@@ -47,20 +47,46 @@ public class UnitEditor {
 	/*
 	 * 指定された文字列が物理量であるかどうかを調べる。物理量であれば1を、無次元量であれば0を、
 	 * どちらでもないものであれば-1を返す。なお、先頭と後端の余分な半角スペースがあってもよい。
-	 * @param value 調べる文字列
+	 * @param target 調べる文字列
 	 * @int 1:物理量,0：無次元量,-1：どちらでもない文字列
 	 * */
-	private static int isPhysicalQuantity(String value){
-		if(value.matches(" *[0-9]*\\.?[0-9]+ *")){
+	private static int isPhysicalQuantity(String target){
+		if(target.matches(" *[0-9]*\\.?[0-9]+ *")){
 			//無次元量の場合
 			return 0;
-		}else if(value.matches(" *[0-9]*\\.?[0-9]+ / *")){
-			//後の正規表現を簡略化するための分岐
-			//物理量でも無次元量でもない
-			return -1;
-		}else if(value.matches(" *[0-9]*\\.?[0-9]+ [mgsAμcdahkM\\-1-9]*/?[mgsAμcdahkM1-9]* *")){
-			//物理量
-			return 1;
+		}else{
+			String unitStr = target.split(" *[0-9]*\\.?[0-9]+")[1];
+			if(unitStr.split("/").length > 2){
+				//"/"を使いすぎている
+				return -1;
+			}
+			//単体単位(km,ms2,kA-2など)の配列に変換する
+			String[] units = unitStr.split(" |/");
+			for(String unit:units){
+				if(unit.equals("")){
+					continue;
+				}
+				if(!isOneUnit(unit)){
+					return -1;
+				}
+			}
+		}
+			
+		return 1;
+	}
+	
+	/*
+	 * 指定された文字列が1つのトークンからなる単位(単体単位)かどうかを判定する。
+	 * 例えば、"mm2"や"  ks-2  "は単位と判定し、1を返す。
+	 * "cm A"などの入力は-1となって、単位と判定されないため注意。
+	 * @param target 調べる文字列
+	 * @return true:単位と判定,　false：単位ではないと判定
+	 * */
+	private static boolean isOneUnit(String target){
+		if(target.matches(" *([μmcdhkM]{0,1}|da)[mgsA]-?[0-9]* *")){
+			return true;
+		}else{
+			return false;
 		}
 	}
 
@@ -68,10 +94,10 @@ public class UnitEditor {
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
 	 * */
-	public static HashMap<String,Integer> moldUnit(String unit){
+	private static HashMap<String,Integer> moldUnit(String originUnit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
-		String[] positiveUnits = unit.split("/");
+		String[] positiveUnits = originUnit.split("/");
 		if(positiveUnits.length > 2 || positiveUnits.length == 0) {
 			//"/"は一度だけなので
 			return null;
