@@ -3,46 +3,47 @@ package icg;
 import java.util.HashMap;
 
 public class UnitEditor {
-	public static void main(String args[]) {
-		HashMap<String,Integer> map = new UnitEditor().editUnit("dg km mA cs/ ms  kg dm cA");
-		if(map == null) {
-			System.out.println("不正な入力値");
-		}else {
-			for(String key : map.keySet()) {
-				System.out.println(key +":"+ map.get(key));
-			}
-		}
-	}
 
-	public void method() {
-		String value = "120 cm";
-		String convertedValue = convert_from_to(value, "km");
-	}
-
-	public String convert_from_to(String OriginValue,String afterUnit) {
+	/*
+	 * 1番目の引数に指定された物理量を2番目の引数に指定された単位に変換し、そのString
+	 * 表現を返す。このメソッドの戻り値は単位つきのStringであることに注意する。
+	 * 変換の前後で次元が違う場合や物理量としてのフォーマットを満たない場合はnull値を、
+	 * 無次元量の場合はafterUnitに何を指定してもOriginValueが返る。
+	 * @param OriginValue 変換したい物理量を単位付きで指定
+	 * @param afterUnit 変換後の単位を指定
+	 * */
+	public String convert_from_toWithUnits(String OriginValue,String afterUnit) {
 		Double Number;
 		String[] sts = OriginValue.split(" ",2);
 		if(sts.length != 2 || sts[1].equals("")) {
 			//無次元量の場合
-			//変換は不可能なのでnull
-			return null;
+			//変換は不可能なのでそのまま
+			return OriginValue;
 		}
 		try {
 			Number = Double.parseDouble(sts[0]);
 		}catch(NumberFormatException e) {
+			//数値に変換できないものは論外
 			return null;
 		}
-		editUnit(sts[1]);
+		HashMap<String,Integer> beforeUnitMap = moldUnit(sts[1]);
+		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
+		for(String unit:new String[] {"m","kg","s","A"}) {
+			if(!beforeUnitMap.get(unit).equals(afterUnitMap.get(unit))) {
+				//次元が違う場合変換不可能なのでnull
+				return null;
+			}
+		}
+		Number *= Math.pow(10, beforeUnitMap.get("none")-afterUnitMap.get("none"));
 
-
-		return OriginValue;
+		return Number +" "+ afterUnit;
 	}
 
 	/*
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
 	 * */
-	private HashMap<String,Integer> editUnit(String unit){
+	public HashMap<String,Integer> moldUnit(String unit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
 		String[] positiveUnits = unit.split("/");

@@ -17,7 +17,7 @@ public class UnitEditorTest {
 	}
 
 	@Test
-	public void testConvert_from_to() {
+	public void testConvert_from_toWithUnits() {
 		fail("Not yet implemented");
 	}
 
