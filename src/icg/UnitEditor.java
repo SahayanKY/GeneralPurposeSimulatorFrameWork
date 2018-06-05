@@ -16,16 +16,20 @@ public class UnitEditor {
 	 * */
 	public static String convert_from_toWithUnits(String OriginValue,String afterUnit) {
 		Double Number;
+		if(OriginValue == null || afterUnit == null) {
+			return null;
+		}
 		switch(isPhysicalQuantity(OriginValue)) {
 			case -1:
 				//物理量でも無次元量でもない
 				return null;
 			case 0:
-				//無次元量
+				//計算するまでもなく無次元量
 				return OriginValue;
 			case 1:
-				//処理を続行
+				//物理量（もしかしたら無次元量）
 		}
+
 		String UnisStr = OriginValue.split(" *"+doubleRegex+" +",2)[1];
 		String NumStr = OriginValue.split(UnisStr)[0];
 		Number = Double.parseDouble(NumStr);
@@ -37,7 +41,13 @@ public class UnitEditor {
 		if(beforeUnitMap.get("m") == null && beforeUnitMap.get("kg") == null
 				&& beforeUnitMap.get("s") == null && beforeUnitMap.get("A") == null) {
 			//単位の計算の結果、無次元量となっていた場合
-			return (Number * Math.pow(10, beforeUnitMap.getOrDefault("none",0))) +"";
+			return Double.toString(Number * Math.pow(10, beforeUnitMap.getOrDefault("none",0)));
+		}
+
+		//こっから先は物理量
+		if(!isUnit(afterUnit)) {
+			//変換先の指定が適切な単位で無かった場合
+			return null;
 		}
 
 		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
@@ -52,6 +62,7 @@ public class UnitEditor {
 			}
 		}
 		Number *= Math.pow(10, beforeUnitMap.getOrDefault("none",0)-afterUnitMap.getOrDefault("none",0));
+
 
 		return Number +" "+ afterUnit;
 	}
@@ -76,52 +87,50 @@ public class UnitEditor {
 				return -1;
 			}
 			String unitStr = target.split(" *"+doubleRegex+" +")[1];
-			if(unitStr.split("/").length > 2){
-				//"/"を使いすぎている
+
+			if(isUnit(unitStr)) {
+				return 1;
+			}else {
 				return -1;
 			}
-			//単体単位(km,ms2,kA-2など)の配列に変換する
-			String[] units = unitStr.split(" |/");
-			for(String unit:units){
-				if(unit.equals("")){
-					continue;
-				}
-				if(!isOneUnit(unit)){
-					return -1;
-				}
-			}
 		}
-
-		return 1;
 	}
 
 	/*
-	 * 指定された文字列が1つのトークンからなる単位(単体単位)かどうかを判定する。
-	 * 例えば、"mm2"や"  ks-2  "は単位と判定し、1を返す。
-	 * "cm A"などの入力は-1となって、単位と判定されないため注意。
+	 * 指定された文字列が適切な組立単位かどうかを判定する。
 	 * @param target 調べる文字列
 	 * @return true:単位と判定,　false：単位ではないと判定
 	 * */
-	private static boolean isOneUnit(String target){
-		if(target.matches(" *([μmcdhkM]{0,1}|da)[mgsA]-?[0-9]* *")){
-			return true;
-		}else{
+	private static boolean isUnit(String target){
+		if(target.split("/").length > 2) {
+			//"/"を使いすぎている
 			return false;
 		}
+		//単体単位(km,ms2,kA-2など)の配列に変換し、単体単位かどうかを調べる
+		String[] units = target.split(" |/");
+		for(String unit:units){
+			if(unit.equals("")){
+				continue;
+			}
+			if(unit.matches(" *([μmcdhkM]|da)?[mgsA](-?[0-9]+)? *")){
+				continue;
+			}else{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/*
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
+	 * 指定する単位は適切な組立単位であることが前提である。
 	 * */
-	private static HashMap<String,Integer> moldUnit(String originUnit){
+	private static HashMap<String,Integer> moldUnit(String targetUnit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
-		String[] positiveUnits = originUnit.split("/");
-		if(positiveUnits.length > 2 || positiveUnits.length == 0) {
-			//"/"は一度だけなので
-			return null;
-		}else if(positiveUnits.length == 2) {
+		String[] positiveUnits = targetUnit.split("/");
+		if(positiveUnits.length == 2) {
 			String[] negativeUnits = positiveUnits[1].split(" ");
 			positiveUnits = positiveUnits[0].split(" ");
 			units = new String[][]{positiveUnits , negativeUnits};
@@ -140,21 +149,20 @@ public class UnitEditor {
 				posinega = 1-2*i; //初期化
 				int prefix=0,degree=0;
 				String standardUnit=null;
-				if(u.matches("([μmcdhkM]{0,1}|da)[mgsA]")) {
+				String degreeStr[] = u.split("([μmcdhkM]|da)?[mgsA]");
+				if(degreeStr.length == 0) {
 					//次数が1で省略されている場合
 					degree = 1;
-					prefix = convertPrefix(u.substring(0,u.length()-1));
-					standardUnit = u.substring(u.length()-1,u.length());
-				}else if(u.matches("([μmcdhkM]{0,1}|da)[mgsA]-{0,1}[0-9]+")){
-					//次数が1でない場合
-					degree = Integer.parseInt(u.split("([μmcdhkM]{0,1}|da)[mgsA]")[1]);
-					u = u.split("-{0,1}[0-9]+")[0];
-					//ここから先は次数が1の場合と同じ
-					prefix = convertPrefix(u.substring(0,u.length()-1));
-					standardUnit = u.substring(u.length()-1,u.length());
 				}else {
-					return null;
+					//次数が1でない場合
+					//数字のところを正規表現で切り離す
+					degree = Integer.parseInt(degreeStr[1]);
+					u = u.split("-?[0-9]+")[0];
 				}
+				prefix = convertPrefix(u.substring(0,u.length()-1));
+				standardUnit = u.substring(u.length()-1,u.length());
+
+
 				unitMap.put("none", unitMap.getOrDefault("none", 0)+prefix*degree*posinega);
 				unitMap.put(standardUnit, unitMap.getOrDefault(standardUnit,0)+degree*posinega);
 			}
