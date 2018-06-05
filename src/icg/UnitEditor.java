@@ -12,14 +12,19 @@ public class UnitEditor {
 	 * @param OriginValue 変換したい物理量を単位付きで指定
 	 * @param afterUnit 変換後の単位を指定
 	 * */
-	public String convert_from_toWithUnits(String OriginValue,String afterUnit) {
+	public static String convert_from_toWithUnits(String OriginValue,String afterUnit) {
 		Double Number;
-		String[] sts = OriginValue.split(" ",2);
-		if(sts.length != 2 || sts[1].equals("")) {
+		if(OriginValue.matches(" *[0-9]*\\.?[0-9]+ *")){
 			//無次元量の場合
-			//変換は不可能なのでそのまま
+			//変換はできないのでそのまま返す
 			return OriginValue;
+		}else if(!OriginValue.matches(" *[0-9]*\\.?[0-9]+ [mgsAμcdahkM/]* *")){
+			//物理量でない場合
+			//問答無用
+			return null;
 		}
+		
+		String[] sts = OriginValue.split(" ",2);
 		try {
 			Number = Double.parseDouble(sts[0]);
 		}catch(NumberFormatException e) {
@@ -29,7 +34,7 @@ public class UnitEditor {
 		HashMap<String,Integer> beforeUnitMap = moldUnit(sts[1]);
 		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
 		for(String unit:new String[] {"m","kg","s","A"}) {
-			if(!beforeUnitMap.get(unit).equals(afterUnitMap.get(unit))) {
+			if(!beforeUnitMap.getOrDefault(unit,0).equals(afterUnitMap.getOrDefault(unit,0))) {
 				//次元が違う場合変換不可能なのでnull
 				return null;
 			}
@@ -38,12 +43,32 @@ public class UnitEditor {
 
 		return Number +" "+ afterUnit;
 	}
+	
+	/*
+	 * 指定された文字列が物理量であるかどうかを調べる。物理量であれば1を、無次元量であれば0を、
+	 * どちらでもないものであれば-1を返す。なお、先頭と後端の余分な半角スペースがあってもよい。
+	 * @param value 調べる文字列
+	 * @int 1:物理量,0：無次元量,-1：どちらでもない文字列
+	 * */
+	private static int isPhysicalQuantity(String value){
+		if(value.matches(" *[0-9]*\\.?[0-9]+ *")){
+			//無次元量の場合
+			return 0;
+		}else if(value.matches(" *[0-9]*\\.?[0-9]+ / *")){
+			//後の正規表現を簡略化するための分岐
+			//物理量でも無次元量でもない
+			return -1;
+		}else if(value.matches(" *[0-9]*\\.?[0-9]+ [mgsAμcdahkM\\-1-9]*/?[mgsAμcdahkM1-9]* *")){
+			//物理量
+			return 1;
+		}
+	}
 
 	/*
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
 	 * */
-	public HashMap<String,Integer> moldUnit(String unit){
+	public static HashMap<String,Integer> moldUnit(String unit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
 		String[] positiveUnits = unit.split("/");
@@ -90,9 +115,11 @@ public class UnitEditor {
 		}
 
 		//gをkgに直す
-		int g_degree = unitMap.remove("g");
-		unitMap.put("kg", g_degree);
-		unitMap.put("none", unitMap.getOrDefault("none", 0) - 3*g_degree);
+		if(unitMap.containsKey("g")){
+			int g_degree = unitMap.remove("g");
+			unitMap.put("kg", g_degree);
+			unitMap.put("none", unitMap.getOrDefault("none", 0) - 3*g_degree);
+		}
 
 		for(String key:new String[]{"m","kg","s","A"}) {
 			//mapのkeySet()を使うとremoveしたときに例外が発生してしまうので
@@ -106,7 +133,7 @@ public class UnitEditor {
 	}
 
 
-	private int convertPrefix(String prefix) {
+	private static int convertPrefix(String prefix) {
 		switch(prefix) {
 			case "μ":	return -6;
 			case "m":	return -3;
