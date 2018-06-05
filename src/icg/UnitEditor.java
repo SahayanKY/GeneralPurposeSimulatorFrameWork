@@ -14,25 +14,25 @@ public class UnitEditor {
 	 * */
 	public static String convert_from_toWithUnits(String OriginValue,String afterUnit) {
 		Double Number;
-		if(OriginValue.matches(" *[0-9]*\\.?[0-9]+ *")){
-			//無次元量の場合
-			//変換はできないのでそのまま返す
-			return OriginValue;
-		}else if(!OriginValue.matches(" *[0-9]*\\.?[0-9]+ [mgsAμcdahkM/]* *")){
-			//物理量でない場合
-			//問答無用
-			return null;
+		switch(isPhysicalQuantity(OriginValue)) {
+			case -1:
+				//物理量でも無次元量でもない
+				return null;
+			case 0:
+				//無次元量
+				return OriginValue;
+			case 1:
+				//処理を続行
 		}
-		
-		String[] sts = OriginValue.split(" ",2);
-		try {
-			Number = Double.parseDouble(sts[0]);
-		}catch(NumberFormatException e) {
-			//数値に変換できないものは論外
-			return null;
-		}
-		HashMap<String,Integer> beforeUnitMap = moldUnit(sts[1]);
+		String UnisStr = OriginValue.split(" *[0-9\\.\\-]+ ")[1];
+		String NumStr = OriginValue.split(UnisStr)[0];
+		Number = Double.parseDouble(NumStr);
+
+		HashMap<String,Integer> beforeUnitMap = moldUnit(UnisStr);
 		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
+		if(beforeUnitMap == null || afterUnitMap == null) {
+			return null;
+		}
 		for(String unit:new String[] {"m","kg","s","A"}) {
 			if(!beforeUnitMap.getOrDefault(unit,0).equals(afterUnitMap.getOrDefault(unit,0))) {
 				//次元が違う場合変換不可能なのでnull
@@ -43,19 +43,25 @@ public class UnitEditor {
 
 		return Number +" "+ afterUnit;
 	}
-	
+
 	/*
 	 * 指定された文字列が物理量であるかどうかを調べる。物理量であれば1を、無次元量であれば0を、
 	 * どちらでもないものであれば-1を返す。なお、先頭と後端の余分な半角スペースがあってもよい。
 	 * @param target 調べる文字列
-	 * @int 1:物理量,0：無次元量,-1：どちらでもない文字列
+	 * @int 1:物理量, 0：無次元量, -1：どちらでもない文字列
 	 * */
 	private static int isPhysicalQuantity(String target){
-		if(target.matches(" *[0-9]*\\.?[0-9]+ *")){
+		if(target.matches(" *-?[0-9]*\\.?[0-9]+ *")){
 			//無次元量の場合
 			return 0;
 		}else{
-			String unitStr = target.split(" *[0-9]*\\.?[0-9]+")[1];
+			if(!target.matches(" *-?[0-9]*\\.?[0-9]+ [μmcdhkMdagsA/\\-0-9 ]*")) {
+				//"468.46 cm 4684.453 ks"等の数字の2回以上の入力を無効にする
+				//"fs468.38 cm"等の数字の前に文字が来るのを無効にする
+				//単位の部分の不確かさは後で各単体単位毎に判定を行う
+				return -1;
+			}
+			String unitStr = target.split(" *-?[0-9]*\\.?[0-9]+")[1];
 			if(unitStr.split("/").length > 2){
 				//"/"を使いすぎている
 				return -1;
@@ -71,10 +77,10 @@ public class UnitEditor {
 				}
 			}
 		}
-			
+
 		return 1;
 	}
-	
+
 	/*
 	 * 指定された文字列が1つのトークンからなる単位(単体単位)かどうかを判定する。
 	 * 例えば、"mm2"や"  ks-2  "は単位と判定し、1を返す。
