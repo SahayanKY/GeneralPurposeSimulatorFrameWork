@@ -3,12 +3,14 @@ package icg;
 import java.util.HashMap;
 
 public class UnitEditor {
+	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
 
 	/*
 	 * 1番目の引数に指定された物理量を2番目の引数に指定された単位に変換し、そのString
 	 * 表現を返す。このメソッドの戻り値は単位つきのStringであることに注意する。
 	 * 変換の前後で次元が違う場合や物理量としてのフォーマットを満たない場合はnull値を、
-	 * 無次元量の場合はafterUnitに何を指定してもOriginValueが返る。
+	 * 無次元量の場合はafterUnitに何を指定してもOriginValueに接頭辞を加味したものが返る。
+	 * 例えば、10 km/m -> 10000
 	 * @param OriginValue 変換したい物理量を単位付きで指定
 	 * @param afterUnit 変換後の単位を指定
 	 * */
@@ -24,22 +26,32 @@ public class UnitEditor {
 			case 1:
 				//処理を続行
 		}
-		String UnisStr = OriginValue.split(" *[0-9\\.\\-]+ ")[1];
+		String UnisStr = OriginValue.split(" *"+doubleRegex+" +",2)[1];
 		String NumStr = OriginValue.split(UnisStr)[0];
 		Number = Double.parseDouble(NumStr);
 
 		HashMap<String,Integer> beforeUnitMap = moldUnit(UnisStr);
-		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
-		if(beforeUnitMap == null || afterUnitMap == null) {
+		if(beforeUnitMap == null) {
 			return null;
 		}
+		if(beforeUnitMap.get("m") == null && beforeUnitMap.get("kg") == null
+				&& beforeUnitMap.get("s") == null && beforeUnitMap.get("A") == null) {
+			//単位の計算の結果、無次元量となっていた場合
+			return (Number * Math.pow(10, beforeUnitMap.getOrDefault("none",0))) +"";
+		}
+
+		HashMap<String,Integer> afterUnitMap = moldUnit(afterUnit);
+		if(afterUnitMap == null) {
+			return null;
+		}
+
 		for(String unit:new String[] {"m","kg","s","A"}) {
 			if(!beforeUnitMap.getOrDefault(unit,0).equals(afterUnitMap.getOrDefault(unit,0))) {
 				//次元が違う場合変換不可能なのでnull
 				return null;
 			}
 		}
-		Number *= Math.pow(10, beforeUnitMap.get("none")-afterUnitMap.get("none"));
+		Number *= Math.pow(10, beforeUnitMap.getOrDefault("none",0)-afterUnitMap.getOrDefault("none",0));
 
 		return Number +" "+ afterUnit;
 	}
@@ -48,20 +60,22 @@ public class UnitEditor {
 	 * 指定された文字列が物理量であるかどうかを調べる。物理量であれば1を、無次元量であれば0を、
 	 * どちらでもないものであれば-1を返す。なお、先頭と後端の余分な半角スペースがあってもよい。
 	 * @param target 調べる文字列
-	 * @int 1:物理量, 0：無次元量, -1：どちらでもない文字列
+	 * @int 1:物理量(単位の計算はしないため無次元量である可能性もある),
+	 * 		 0：無次元量,
+	 * 		-1：どちらでもない文字列
 	 * */
 	private static int isPhysicalQuantity(String target){
-		if(target.matches(" *-?[0-9]*\\.?[0-9]+ *")){
+		if(target.matches(" *"+doubleRegex+" *")){
 			//無次元量の場合
 			return 0;
 		}else{
-			if(!target.matches(" *-?[0-9]*\\.?[0-9]+ [μmcdhkMdagsA/\\-0-9 ]*")) {
+			if(!target.matches(" *"+doubleRegex+" +"+"[μmcdhkMdagsA/\\-0-9 ]*")) {
 				//"468.46 cm 4684.453 ks"等の数字の2回以上の入力を無効にする
 				//"fs468.38 cm"等の数字の前に文字が来るのを無効にする
 				//単位の部分の不確かさは後で各単体単位毎に判定を行う
 				return -1;
 			}
-			String unitStr = target.split(" *-?[0-9]*\\.?[0-9]+")[1];
+			String unitStr = target.split(" *"+doubleRegex+" +")[1];
 			if(unitStr.split("/").length > 2){
 				//"/"を使いすぎている
 				return -1;
