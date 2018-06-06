@@ -14,6 +14,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * 入力データの保持及び保存を担うクラス
@@ -81,7 +83,7 @@ public enum Parameter{
 					}
 					//timeの初期値は0に合わせる
 					//最初の代入前に確認
-					if(pastTime == -1 & Double.parseDouble(dataArray[0]) != 0) {
+					if(pastTime == -1 && Double.parseDouble(dataArray[0]) != 0) {
 						return false;
 					}
 					//2つ目のデータも数値に変換できるか
@@ -195,18 +197,27 @@ public enum Parameter{
 		@Override
 		public int checkFormatOf(String input) {
 			//整数値でない場合や想定の整数値でない場合はエラー
-			try {
-				int n;
-				//3,4枚を想定
-				if(!((n = Integer.parseInt(input)) == 3 | n==4)) {
-					throw new NumberFormatException();
+			int n,message;
+
+			Pattern p = Pattern.compile("^ *([1-9]+[0-9]?) *$");
+			Matcher m = p.matcher(input);
+
+			if(m.find()) {
+				n = Integer.parseInt(m.group(1));
+				if(n == 3 || n == 4) {
+					message = 0;
+				}else {
+					message = 2;
 				}
-				value = (double) n;
-				valueStr = input;
-				return 0;
-			}catch(NumberFormatException e) {
-				return 2;
+			}else {
+				message = 2;
 			}
+
+			if(message == 0) {
+				valueStr = m.group(1);
+			}
+
+			return message;
 		}
 	},
 	フィン高さ("フィン", "フィン高さ/[mm]"),
