@@ -6,12 +6,13 @@ import java.util.regex.Pattern;
 
 public class UnitEditor {
 	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
-	
+
 	/*
 	 * 一番目の引数に指定された物理量が二番目の引数に指定された物理量よりも大きい場合true、
 	 * 小さい場合falseを返す。引数が物理量でなかった場合や、比較のできない物理量のペアであった場合、
 	 * IllegalArgumentExceptionがスローされる。
 	 * @param value1,value2　比較する物理量
+	 * @return boolean trueの時、1番目の引数の方が大きい
 	 * */
 	public static boolean isLargerA_thanB(String value1, String value2) throws IllegalArgumentException{
 		if(value1 == null || value2 == null || isPhysicalQuantity(value1) == -1 || isPhysicalQuantity(value2) == -1){
@@ -23,26 +24,26 @@ public class UnitEditor {
 		Matcher mValue2 = p.matcher(value2);
 
 		mValue1.find();mValue2.find();
-		
+
 		Double value1Num = Double.parseDouble(mValue1.group(1));
 		Double value2Num = Double.parseDouble(mValue2.group(1));
-		
+
 		String value1Unit = mValue1.group(3);
 		String value2Unit = mValue2.group(3);
-		
+
 		//単位をMKSAのマップに変換する
 		HashMap<String,Integer> value1UnitMap = moldUnit(value1Unit);
 		HashMap<String,Integer> value2UnitMap = moldUnit(value2Unit);
 		if(value1UnitMap == null || value2UnitMap == null) {
 			throw new IllegalArgumentException();
 		}
-		
+
 		for(String unit:new String[]{"m","kg","s","A"}){
 			if(!value1UnitMap.getOrDefault(unit,0).equals(value2UnitMap.getOrDefault(unit,0))){
 				throw new IllegalArgumentException();
 			}
 		}
-		
+
 		if(value1Num*Math.pow(10,value1UnitMap.getOrDefault("none",0))
 				> value2Num*Math.pow(10, value2UnitMap.getOrDefault("none",0))){
 			return true;
@@ -90,7 +91,7 @@ public class UnitEditor {
 			return Double.toString(Number * Math.pow(10, beforeUnitMap.getOrDefault("none",0)));
 		}
 
-		//こっから先は物理量
+		//こっから先はOriginValueは物理量
 		if(!isUnit(afterUnit)) {
 			//変換先の指定が適切な単位で無かった場合
 			return null;
