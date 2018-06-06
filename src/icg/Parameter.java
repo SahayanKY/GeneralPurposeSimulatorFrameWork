@@ -254,29 +254,24 @@ public enum Parameter{
 	 */
 	public int checkFormatOf(String input) {
 		try {
-			double maxValue,minValue;
-			//inputが数値に変換できなければNumberFormatException
-			//max,min値は存在する場合は既に規定されているものとする
-			//(max,min値が設定されていないことによる処理は想定しない)
-			//そもそも存在しない場合NullPointerException
-			value = Double.parseDouble(input);
-			valueStr = input;
-			maxValue = Double.parseDouble(FormatProperty.getProperty("Max"+childLabel));
-			minValue = Double.parseDouble(FormatProperty.getProperty("Min"+childLabel));
+			String maxValueStr = FormatProperty.getProperty("Max"+childLabel);
+			String minValueStr = FormatProperty.getProperty("Min"+childLabel);
 
-			if(minValue < value && value < maxValue) {
-				//最大最小の間であった場合
-				return 0;
-			}else {
-				//要検証
-				return 1;
+			int message=0;
+
+			if(maxValueStr != null && UnitEditor.isLargerA_thanB(input,maxValueStr)) {
+				//最大値の設定があるが、それを上回っていた場合
+				message = 1;
 			}
-		}catch(NumberFormatException e) {
-			//数値が入力されていない場合
+			if(minValueStr != null && UnitEditor.isLargerA_thanB(minValueStr,input)) {
+				message = 1;
+			}
+
+			valueStr = input;
+			return message;
+		}catch(IllegalArgumentException e) {
+			//物理量入力のフォーマットに従っていない
 			return 2;
-		}catch(NullPointerException e) {
-			//最大最小が設定されていない場合
-			return 0;
 		}
 	}
 
