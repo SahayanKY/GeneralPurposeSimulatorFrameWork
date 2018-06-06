@@ -1,9 +1,55 @@
 package icg;
 
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class UnitEditor {
 	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
+	
+	/*
+	 * 一番目の引数に指定された物理量が二番目の引数に指定された物理量よりも大きい場合true、
+	 * 小さい場合falseを返す。引数が物理量でなかった場合や、比較のできない物理量のペアであった場合、
+	 * IllegalArgumentExceptionがスローされる。
+	 * @param value1,value2　比較する物理量
+	 * */
+	public static boolean isLargerA_thanB(String value1, String value2) throws IllegalArgumentException{
+		if(value1 == null || value2 == null || isPhysicalQuantity(value1) == -1 || isPhysicalQuantity(value2) == -1){
+			//指定が物理量でも無次元量でもない場合
+			throw new IllegalArgumentException();
+		}
+		Pattern p = Pattern.compile("(-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?)([μmcdhkMdagsA/\\-0-9 ]*)");
+		Matcher mValue1 = p.matcher(value1);
+		Matcher mValue2 = p.matcher(value2);
+
+		mValue1.find();mValue2.find();
+		
+		Double value1Num = Double.parseDouble(mValue1.group(1));
+		Double value2Num = Double.parseDouble(mValue2.group(1));
+		
+		String value1Unit = mValue1.group(3);
+		String value2Unit = mValue2.group(3);
+		
+		//単位をMKSAのマップに変換する
+		HashMap<String,Integer> value1UnitMap = moldUnit(value1Unit);
+		HashMap<String,Integer> value2UnitMap = moldUnit(value2Unit);
+		if(value1UnitMap == null || value2UnitMap == null) {
+			throw new IllegalArgumentException();
+		}
+		
+		for(String unit:new String[]{"m","kg","s","A"}){
+			if(!value1UnitMap.getOrDefault(unit,0).equals(value2UnitMap.getOrDefault(unit,0))){
+				throw new IllegalArgumentException();
+			}
+		}
+		
+		if(value1Num*Math.pow(10,value1UnitMap.getOrDefault("none",0))
+				> value2Num*Math.pow(10, value2UnitMap.getOrDefault("none",0))){
+			return true;
+		}else{
+			return false;
+		}
+	}
 
 	/*
 	 * 1番目の引数に指定された物理量を2番目の引数に指定された単位に変換し、そのString
@@ -124,7 +170,7 @@ public class UnitEditor {
 	/*
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
-	 * 指定する単位は適切な組立単位であることが前提である。
+	 * 指定する単位は適切な組立単位であることが前提である。(isUnit()かisPhysicalQuantity()を通しておく)
 	 * */
 	private static HashMap<String,Integer> moldUnit(String targetUnit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
@@ -154,7 +200,7 @@ public class UnitEditor {
 					//次数が1で省略されている場合
 					degree = 1;
 				}else {
-					//次数が1でない場合
+					//次数が省略されていない場合
 					//数字のところを正規表現で切り離す
 					degree = Integer.parseInt(degreeStr[1]);
 					u = u.split("-?[0-9]+")[0];
