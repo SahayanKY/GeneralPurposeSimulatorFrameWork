@@ -76,23 +76,27 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			int y=0;
 			JLabel label = new JLabel(Name);
 			label.setFont(f);
+			label.setHorizontalAlignment(JLabel.CENTER);
+			LayoutOfCards.setFill(GridBagConstraints.HORIZONTAL);
 			LayoutOfCards.setComponent(label, row%splitNum*2, y, 2, 1, 0.2d, 0.8d, GridBagConstraints.CENTER);
 			card.add(label);
 
 			LinkedHashMap<String,JTextField> TextFieldMap = new LinkedHashMap<>();
 			//各パラメータをその下に貼り付けていく
 			for(String parameterName:map.get(Name).keySet()) {
+				Dimension d = new Dimension(100,30);
 				y++;
-				JLabel paramLabel = new JLabel(parameterName);
-				LayoutOfCards.setComponent(paramLabel, row%splitNum*2, y, 1, 1, 0, 0.1,GridBagConstraints.EAST);
+				JLabel paramLabel = new JLabel(parameterName.replace(Name,""));
+				LayoutOfCards.setFill(GridBagConstraints.HORIZONTAL);
+				LayoutOfCards.setComponent(paramLabel, row%splitNum*2, y, 1, 1, 0.5, 0.1,GridBagConstraints.EAST);
 				card.add(paramLabel);
 
 				JTextField text = new JTextField();
-				text.setPreferredSize(new Dimension(150,30));
+				text.setPreferredSize(d);
 				text.setBackground(Color.RED);
 				text.addFocusListener(this);
 				text.setActionCommand(ChangeTextFieldColor);
-				LayoutOfCards.setComponent(text, row%splitNum*2+1, y, 1, 1, 0, 0.2, GridBagConstraints.WEST);
+				LayoutOfCards.setComponent(text, row%splitNum*2+1, y, 1, 1, 0.5, 0.2, GridBagConstraints.WEST);
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
