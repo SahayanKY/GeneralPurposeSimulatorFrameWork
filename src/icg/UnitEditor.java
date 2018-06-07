@@ -122,7 +122,7 @@ public class UnitEditor {
 	 * 		 0：無次元量,
 	 * 		-1：どちらでもない文字列
 	 * */
-	private static int isPhysicalQuantity(String target){
+	public static int isPhysicalQuantity(String target){
 		if(target.matches(" *"+doubleRegex+" *")){
 			//無次元量の場合
 			return 0;
@@ -173,7 +173,7 @@ public class UnitEditor {
 	 * もったマップを返す。接頭辞による係数のキーは"none"
 	 * 指定する単位は適切な組立単位であることが前提である。(isUnit()かisPhysicalQuantity()を通しておく)
 	 * */
-	private static HashMap<String,Integer> moldUnit(String targetUnit){
+	public static HashMap<String,Integer> moldUnit(String targetUnit){
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
 		String[] positiveUnits = targetUnit.split("/");

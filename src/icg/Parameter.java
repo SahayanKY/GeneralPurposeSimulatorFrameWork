@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -282,6 +283,22 @@ public enum Parameter{
 			}
 			if(minValueStr != null && UnitEditor.isLargerA_thanB(minValueStr,input)) {
 				message = 1;
+			}
+			if(maxValueStr == null && minValueStr == null) {
+				if(UnitEditor.isPhysicalQuantity(input) == -1) {
+					//物理量でも無次元量でもなかった場合
+					message = 2;
+				}else {
+					HashMap<String,Integer> map = UnitEditor.moldUnit(input);
+					if(map.get("m") == null && map.get("kg") == null
+							&& map.get("s") == null && map.get("A") == null) {
+						//単位計算の結果無次元量
+						message = 0;
+					}else {
+						//最大最小の指定が無い物理量の場合
+						message = 1;
+					}
+				}
 			}
 
 			valueStr = input;
