@@ -3,9 +3,10 @@ package icg;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,8 +31,8 @@ public class ExProperties extends Properties{
 		File copyFile = new File(file.toString() +"copy");
 		Files.copy(Paths.get(file.toString()), Paths.get(copyFile.toString()));
 		try(
-			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
-			BufferedReader reader = new BufferedReader(new FileReader(copyFile));
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF-8"));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(copyFile),"UTF-8"));
 		){
 			String lineStr;
 			Hashtable<Object,Object> tab = (Hashtable<Object,Object>)clone();
