@@ -1,9 +1,7 @@
 package icg;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,13 +10,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.StringJoiner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import simulation.param.checker.BeforeAfterParamChecker;
 import simulation.param.checker.DateFormatChecker;
@@ -32,85 +26,9 @@ import simulation.param.checker.WhiteSpaceChecker;
  * 入力データの保持及び保存を担うクラス
  * */
 public enum Parameter{
-	機体バージョン("一般","機体バージョン",new WhiteSpaceChecker()){
-		@Override
-		public int checkFormatOf(String input) {
-			//未入力、または空白文字のみの場合エラー
-			if(input.matches("[ 　]+") | input.equals("")) {
-				return 2;
-			}else {
-				super.valueStr = input;
-				return 0;
-			}
-		}
-	},
-	燃焼データ年月("一般","使用燃焼データ年月20XX/YY",new DateFormatChecker()){
-		@Override
-		public int checkFormatOf(String input) {
-			//年月の入力フォーマットに即していない場合エラー
-			if(!input.matches("(19|20)[0-9]{2}/(0[1-9]|1[012])")) {
-				return 2;
-			}else {
-				super.valueStr = input;
-				return 0;
-			}
-		}
-	},
-	燃焼データファイル("一般","燃焼データファイル",new ThrustDataChecker()){
-		@Override
-		public int checkFormatOf(String input) {
-			//データファイルを読み込み、それが燃焼データのフォーマットに即していない場合はエラー
-			if(isThrustDataFile(input)) {
-				super.valueStr = input;
-				return 0;
-			}else {
-				return 2;
-			}
-		}
-
-		/*
-		 * 入力されたパスが燃焼データなのかをチェックする
-		 * @param filePath 入力されたパス
-		 * @return falseの場合はデータに異常
-		 * */
-		private boolean isThrustDataFile(String filePath) {
-			try (BufferedReader dataFileReader = new BufferedReader(new FileReader(filePath));){
-				String dataLineStr;
-				double pastTime=-1;
-				while((dataLineStr = dataFileReader.readLine()) != null) {
-					//改行だけの行は跳ばす
-					if(dataLineStr.equals("")) {
-						continue;
-					}
-					//半角スペース、タブ文字、一回の","区切りであるか。また、1行のデータが時間、推力の2つであるか。
-					String[] dataArray = dataLineStr.split(" +|	+|,{1}");
-					if(dataArray.length != 2) {
-						return false;
-					}
-					//double型に変換できるか
-					//時間は単調増加になっているか(time)
-					if(pastTime >= Double.parseDouble(dataArray[0])) {
-						return false;
-					}
-					//timeの初期値は0に合わせる
-					//最初の代入前に確認
-					if(pastTime == -1 && Double.parseDouble(dataArray[0]) != 0) {
-						return false;
-					}
-					//2つ目のデータも数値に変換できるか
-					Double.parseDouble(dataArray[1]);
-					pastTime = Double.parseDouble(dataArray[0]);
-				}
-				return true;
-			} catch (IOException | NumberFormatException e) {
-				e.printStackTrace();
-				//System.out.println(e);
-				//IOException ファイルが存在しない場合false
-				//NumberFormatException ファイル内の文字列が数値に変換不可能であればfalse
-				return false;
-			}
-		}
-	},
+	機体バージョン("一般","機体バージョン",new WhiteSpaceChecker()),
+	燃焼データ年月("一般","使用燃焼データ年月20XX/YY",new DateFormatChecker()),
+	燃焼データファイル("一般","燃焼データファイル",new ThrustDataChecker()),
 	空気密度("一般","空気密度"),
 	最大飛行速度("一般","最大飛行速度"),
 	比推力("一般","比推力"),
@@ -121,36 +39,9 @@ public enum Parameter{
 	ロケット外径("ロケット全体","ロケット外径"),
 	ロケット内径("ロケット全体","ロケット内径"),
 	全体圧力中心位置("ロケット全体","全体圧力中心位置"),
-	全体重心位置("ロケット全体","全体重心位置",new BeforeAfterParamChecker()){
-		@Override
-		public int checkFormatOf(String input) {
-			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
-			if(!(input.endsWith("a") || input.endsWith("b"))) {
-				return 2;
-			}
-			String subInput = input.substring(0, input.length()-1);
-			int messageNum = super.checkFormatOf(subInput);
-			super.valueStr = input;
-			return messageNum;
-
-			//input = "4564a"
-			//→value = 4564, valueStr = "4564a"
-		}
-	},
+	全体重心位置("ロケット全体","全体重心位置",new BeforeAfterParamChecker()),
 	ロケット全長("ロケット全体","ロケット全長"),
-	ロケット質量("ロケット全体","ロケット質量",new BeforeAfterParamChecker()){
-		@Override
-		public int checkFormatOf(String input) {
-			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
-			if(!(input.endsWith("a") || input.endsWith("b"))) {
-				return 2;
-			}
-			String subInput = input.substring(0, input.length()-1);
-			int messageNum = super.checkFormatOf(subInput);
-			super.valueStr = input;
-			return messageNum;
-		}
-	},
+	ロケット質量("ロケット全体","ロケット質量",new BeforeAfterParamChecker()),
 	抗力係数("ロケット全体","抗力係数"),
 
 
@@ -203,33 +94,7 @@ public enum Parameter{
 	酸化剤タンク外径("酸化剤タンク", "酸化剤タンク外径"),
 
 
-	フィン枚数("フィン", "フィン枚数",new IntegerChecker(3,4)){
-		@Override
-		public int checkFormatOf(String input) {
-			//整数値でない場合や想定の整数値でない場合はエラー
-			int n,message;
-
-			Pattern p = Pattern.compile("^ *([1-9]+[0-9]?) *$");
-			Matcher m = p.matcher(input);
-
-			if(m.find()) {
-				n = Integer.parseInt(m.group(1));
-				if(n == 3 || n == 4) {
-					message = 0;
-				}else {
-					message = 2;
-				}
-			}else {
-				message = 2;
-			}
-
-			if(message == 0) {
-				valueStr = m.group(1);
-			}
-
-			return message;
-		}
-	},
+	フィン枚数("フィン", "フィン枚数",new IntegerChecker(3,4)),
 	フィン高さ("フィン", "フィン高さ"),
 	フィン根本長さ("フィン", "フィン根本長さ"),
 	フィン端部長さ("フィン", "フィン端部長さ"),
@@ -247,7 +112,7 @@ public enum Parameter{
 	protected String valueStr;
 
 	private static Properties FormatProperty = new Properties();
-	
+
 	static {
 		try {
 			FormatProperty.load(new InputStreamReader(getFormatStream(),"UTF-8"));
@@ -256,22 +121,24 @@ public enum Parameter{
 			e.printStackTrace();
 		}
 	}
-	
-	private static final class CheckersHolder{
-		private static final Map<String,ParameterChecker> CheckerMap = new HashMap<>();
-		static{
-			
-		}
+
+	private static final class DefaultChecker{
+		private static final ParameterChecker checker = new DefaultParameterChecker();
 	}
 
 	private static InputStream getFormatStream() {
 		return Parameter.class.getResourceAsStream("入力データフォーマット.properties");
 	}
 
+
+	/*コンストラクタ*/
 	Parameter(String parentLabel, String childLabel){
+		this(parentLabel, childLabel, DefaultChecker.checker);
+	}
+	Parameter(String parentLabel, String childLabel, ParameterChecker checker){
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
-		Class<? extends ParameterChecker> checkerClass = DefaultParameterChecker.class;
+		this.checker = checker;
 	}
 
 
@@ -283,8 +150,8 @@ public enum Parameter{
 	 * @param input 入力値のString表現
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
-	public int checkFormatOf(String input) {
-		
+	public final int checkFormatOf(String input) {
+		return checker.checkFormatOf(input, FormatProperty.getProperty("Max"+childLabel), FormatProperty.getProperty("Min"+childLabel));
 	}
 
 

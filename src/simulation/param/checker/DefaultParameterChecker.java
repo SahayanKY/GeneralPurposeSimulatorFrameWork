@@ -1,8 +1,10 @@
 package simulation.param.checker;
 
-import icg.UnitEditor;
-
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import icg.UnitEditor;
 
 public class DefaultParameterChecker implements ParameterChecker {
 
@@ -28,14 +30,21 @@ public class DefaultParameterChecker implements ParameterChecker {
 					//物理量でも無次元量でもなかった場合
 					message = 2;
 				}else {
-					HashMap<String,Integer> map = UnitEditor.moldUnit(input);
-					if(map.get("m") == null && map.get("kg") == null
-							&& map.get("s") == null && map.get("A") == null) {
-						//単位計算の結果無次元量
-						message = 0;
+					Pattern p = Pattern.compile("^( *-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?)(.*)");
+					Matcher m = p.matcher(input);
+					if(!m.find()) {
+						message = 2;
 					}else {
-						//最大最小の指定が無い物理量の場合
-						message = 1;
+						String inputUnits = m.group(3);
+						HashMap<String,Integer> map = UnitEditor.moldUnit(inputUnits);
+						if(map.get("m") == null && map.get("kg") == null
+								&& map.get("s") == null && map.get("A") == null) {
+							//単位計算の結果無次元量
+							message = 0;
+						}else {
+							//最大最小の指定が無い物理量の場合
+							message = 1;
+						}
 					}
 				}
 			}

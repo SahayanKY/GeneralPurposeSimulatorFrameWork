@@ -171,9 +171,12 @@ public class UnitEditor {
 	/*
 	 * 単位(組立単位)を受け取り、m,kg,s,Aの次数と10^-3などの接頭辞による係数を
 	 * もったマップを返す。接頭辞による係数のキーは"none"
-	 * 指定する単位は適切な組立単位であることが前提である。(isUnit()かisPhysicalQuantity()を通しておく)
+	 * 指定する単位は適切な組立単位であることが前提である。
 	 * */
 	public static HashMap<String,Integer> moldUnit(String targetUnit){
+		if(!isUnit(targetUnit)) {
+			throw new IllegalArgumentException("指定された文字列は単位ではありません");
+		}
 		HashMap<String,Integer> unitMap = new HashMap<>();
 		String[][] units;
 		String[] positiveUnits = targetUnit.split("/");
