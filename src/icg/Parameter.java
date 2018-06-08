@@ -14,16 +14,25 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import simulation.param.checker.BeforeAfterParamChecker;
+import simulation.param.checker.DateFormatChecker;
+import simulation.param.checker.DefaultParameterChecker;
+import simulation.param.checker.IntegerChecker;
+import simulation.param.checker.ParameterChecker;
+import simulation.param.checker.ThrustDataChecker;
+import simulation.param.checker.WhiteSpaceChecker;
+
 /*
  * 入力データの保持及び保存を担うクラス
  * */
 public enum Parameter{
-	機体バージョン("一般","機体バージョン"){
+	機体バージョン("一般","機体バージョン",new WhiteSpaceChecker()){
 		@Override
 		public int checkFormatOf(String input) {
 			//未入力、または空白文字のみの場合エラー
@@ -35,7 +44,7 @@ public enum Parameter{
 			}
 		}
 	},
-	燃焼データ年月("一般","使用燃焼データ年月20XX/YY"){
+	燃焼データ年月("一般","使用燃焼データ年月20XX/YY",new DateFormatChecker()){
 		@Override
 		public int checkFormatOf(String input) {
 			//年月の入力フォーマットに即していない場合エラー
@@ -47,7 +56,7 @@ public enum Parameter{
 			}
 		}
 	},
-	燃焼データファイル("一般","燃焼データファイル"){
+	燃焼データファイル("一般","燃焼データファイル",new ThrustDataChecker()){
 		@Override
 		public int checkFormatOf(String input) {
 			//データファイルを読み込み、それが燃焼データのフォーマットに即していない場合はエラー
@@ -94,7 +103,8 @@ public enum Parameter{
 				}
 				return true;
 			} catch (IOException | NumberFormatException e) {
-				System.out.println(e);
+				e.printStackTrace();
+				//System.out.println(e);
 				//IOException ファイルが存在しない場合false
 				//NumberFormatException ファイル内の文字列が数値に変換不可能であればfalse
 				return false;
@@ -111,7 +121,7 @@ public enum Parameter{
 	ロケット外径("ロケット全体","ロケット外径"),
 	ロケット内径("ロケット全体","ロケット内径"),
 	全体圧力中心位置("ロケット全体","全体圧力中心位置"),
-	全体重心位置("ロケット全体","全体重心位置"){
+	全体重心位置("ロケット全体","全体重心位置",new BeforeAfterParamChecker()){
 		@Override
 		public int checkFormatOf(String input) {
 			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
@@ -128,7 +138,7 @@ public enum Parameter{
 		}
 	},
 	ロケット全長("ロケット全体","ロケット全長"),
-	ロケット質量("ロケット全体","ロケット質量"){
+	ロケット質量("ロケット全体","ロケット質量",new BeforeAfterParamChecker()){
 		@Override
 		public int checkFormatOf(String input) {
 			//入力値が"a"で終わる場合燃焼後を、"b"で終わる場合燃焼前を意味する。
@@ -193,7 +203,7 @@ public enum Parameter{
 	酸化剤タンク外径("酸化剤タンク", "酸化剤タンク外径"),
 
 
-	フィン枚数("フィン", "フィン枚数"){
+	フィン枚数("フィン", "フィン枚数",new IntegerChecker(3,4)){
 		@Override
 		public int checkFormatOf(String input) {
 			//整数値でない場合や想定の整数値でない場合はエラー
@@ -232,18 +242,25 @@ public enum Parameter{
 
 	public final String parentLabel;
 	public final String childLabel;
+	private final ParameterChecker checker;
 
 	protected String valueStr;
 
 	private static Properties FormatProperty = new Properties();
 	
 	static {
-
 		try {
 			FormatProperty.load(new InputStreamReader(getFormatStream(),"UTF-8"));
 		} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
+		}
+	}
+	
+	private static final class CheckersHolder{
+		private static final Map<String,ParameterChecker> CheckerMap = new HashMap<>();
+		static{
+			
 		}
 	}
 
@@ -254,6 +271,7 @@ public enum Parameter{
 	Parameter(String parentLabel, String childLabel){
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
+		Class<? extends ParameterChecker> checkerClass = DefaultParameterChecker.class;
 	}
 
 
@@ -266,42 +284,7 @@ public enum Parameter{
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
 	public int checkFormatOf(String input) {
-		try {
-			String maxValueStr = FormatProperty.getProperty("Max"+childLabel);
-			String minValueStr = FormatProperty.getProperty("Min"+childLabel);
-
-			int message=0;
-
-			if(maxValueStr != null && UnitEditor.isLargerA_thanB(input,maxValueStr)) {
-				//最大値の設定があるが、それを上回っていた場合
-				message = 1;
-			}
-			if(minValueStr != null && UnitEditor.isLargerA_thanB(minValueStr,input)) {
-				message = 1;
-			}
-			if(maxValueStr == null && minValueStr == null) {
-				if(UnitEditor.isPhysicalQuantity(input) == -1) {
-					//物理量でも無次元量でもなかった場合
-					message = 2;
-				}else {
-					HashMap<String,Integer> map = UnitEditor.moldUnit(input);
-					if(map.get("m") == null && map.get("kg") == null
-							&& map.get("s") == null && map.get("A") == null) {
-						//単位計算の結果無次元量
-						message = 0;
-					}else {
-						//最大最小の指定が無い物理量の場合
-						message = 1;
-					}
-				}
-			}
-
-			valueStr = input;
-			return message;
-		}catch(IllegalArgumentException e) {
-			//物理量入力のフォーマットに従っていない
-			return 2;
-		}
+		
 	}
 
 
