@@ -234,13 +234,9 @@ public enum Parameter{
 	public final String childLabel;
 
 	protected String valueStr;
-	protected double value;
 
 	private static Properties FormatProperty = new Properties();
-	//private static File FormatPropertyFile;
-	//※decode()で受け取ったStringは先頭に"/"がついててPathに直接変換できない
-	//private static InputStream FormatPropertyStream;
-
+	
 	static {
 
 		try {
@@ -262,7 +258,6 @@ public enum Parameter{
 
 
 	public String getParameterStringValue() {return this.valueStr;	}
-	public double getParameterDoubleValue() {return this.value;}
 
 
 	/*
@@ -378,7 +373,7 @@ public enum Parameter{
 		}
 	}
 
-	/* 外部から既存プロパティファイルをセットする時の呼び出し用
+	/* 外部の既存プロパティファイルでセットする時の呼び出し用
 	 * 指定されたプロパティファイルを読み込み、その値を各列挙子にセットする。
 	 * このファイルがプロパティファイルでなかった場合、処理はされない。
 	 * また、対応しないプロパティに関しては変化しない。
