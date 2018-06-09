@@ -64,7 +64,7 @@ public class PhysicalQuantity {
 
 	public final QuantityElements elements;
 
-	public PhysicalQuantity(String valueStr) throws IllegalArgumentException{
+	public PhysicalQuantity(String valueStr) throws IllegalArgumentException,NullPointerException{
 		HashMap<String,Number> result = UnitEditor.dimensionAnalysis(valueStr);
 
 		Double Number = (result.get("Number") == null)? null : (Double)result.get("Number") * Math.pow(10, (Integer) result.getOrDefault("none", 0));

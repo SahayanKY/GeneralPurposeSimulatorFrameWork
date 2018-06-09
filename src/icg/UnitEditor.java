@@ -37,9 +37,6 @@ public class UnitEditor {
 	 *　false：どちらでもない文字列
 	 * */
 	private static boolean isPhysicalQuantity_OrNumberOnly(String target){
-		if(target == null){
-			return false;
-		}
 		Matcher physicalM = physicalQuantityPattern.matcher(target);
 		if(physicalM.find()) {
 			return true;
@@ -68,7 +65,10 @@ public class UnitEditor {
 	 * 返るマップには"Number"(元の文字列の数値の部分),"none"(接頭辞の解析結果),"m","kg","s","A"のキーが最大でマップされている
 	 * その値が0のときはキーは除去されている
 	 * */
-	static HashMap<String,Number> dimensionAnalysis(String quantity){
+	public static HashMap<String,Number> dimensionAnalysis(String quantity){
+		if(quantity == null) {
+			throw new NullPointerException();
+		}
 		HashMap<String,Number> unitMap = new HashMap<String,Number>();
 		Matcher matcher;
 		String[] UnitLineSlashSplit;
