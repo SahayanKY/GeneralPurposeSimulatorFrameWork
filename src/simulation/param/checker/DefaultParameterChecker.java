@@ -12,22 +12,25 @@ public class DefaultParameterChecker implements ParameterChecker {
 	@Override
 	public int checkFormatOf(String input, String maxValue, String minValue) {
 		try {
+			int message = 0;
+
 			PhysicalQuantity inputQ = new PhysicalQuantity(input);
 			PhysicalQuantity maxQ;
 			PhysicalQuantity minQ;
-			try {
-				maxQ = new PhysicalQuantity(maxValue);
-				minQ = new PhysicalQuantity(minValue);
-			}catch(IllegalArgumentException | NullPointerException e) {
-				System.out.println("DefaultParameterChecker.checkFormatOf(String,String,String)"+e);
-				return 0;
-			}
 
-			if(inputQ.isLargerThan(maxQ) || minQ.isLargerThan(inputQ)) {
-				return 1;
-			}else {
-				return 0;
+			if(maxValue != null) {
+				maxQ = new PhysicalQuantity(maxValue);
+				if(inputQ.isLargerThan(maxQ)) {
+					message = 1;
+				}
 			}
+			if(minValue != null) {
+				minQ = new PhysicalQuantity(minValue);
+				if(minQ.isLargerThan(inputQ)) {
+					message = 1;
+				}
+			}
+			return message;
 		}catch(IllegalArgumentException e) {
 			//物理量入力のフォーマットに従っていない
 			return 2;
