@@ -1,10 +1,15 @@
 package icg;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class UnitEditor {
+	private static Pattern physicalQuantityPattern = Pattern.compile("^ *\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?(?: +((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)? */? *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)))? *$");
+	private static Pattern unitsPattern = Pattern.compile("^ *((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)? */? *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)) *$");
+	private static Pattern oneUnitPattern = Pattern.compile("([μmcdhkM]|da)?[mgsA](-?[0-9]+)?");
+
 	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
 
 	/*
@@ -118,29 +123,34 @@ public class UnitEditor {
 	 * 指定された文字列が物理量であるかどうかを調べる。物理量であれば1を、無次元量であれば0を、
 	 * どちらでもないものであれば-1を返す。なお、先頭と後端の余分な半角スペースがあってもよい。
 	 * @param target 調べる文字列
+	 * @param map 次元解析の結果を得たい場合はMapインスタンスを渡す。そうでなければnullで可。
 	 * @int 1:物理量(単位の計算はしないため無次元量である可能性もある),
 	 * 		 0：無次元量,
 	 * 		-1：どちらでもない文字列
 	 * */
-	public static int isPhysicalQuantity(String target){
-		if(target.matches(" *"+doubleRegex+" *")){
-			//無次元量の場合
-			return 0;
-		}else{
-			if(!target.matches(" *"+doubleRegex+" +"+"[μmcdhkMdagsA/\\-0-9 ]*")) {
-				//"468.46 cm 4684.453 ks"等の数字の2回以上の入力を無効にする
-				//"fs468.38 cm"等の数字の前に文字が来るのを無効にする
-				//単位の部分の不確かさは後で各単体単位毎に判定を行う
-				return -1;
-			}
-			String unitStr = target.split(" *"+doubleRegex+" +")[1];
-
-			if(isUnit(unitStr)) {
-				return 1;
-			}else {
-				return -1;
-			}
+	public static int isPhysicalQuantity(String target, Map<String,Integer> map){
+		Matcher physicalM = physicalQuantityPattern.matcher(target);
+		if(!physicalM.find()) {
+			return -1;
 		}
+		String unitStr = physicalM.group(1);
+		if(unitStr == null) {
+			return 0;
+		}
+		HashMap<String,Integer> resultMap = moldUnit(unitStr);
+		if(map != null) {
+			map.putAll(resultMap);
+		}
+		if(resultMap.get("kg") == null && resultMap.get("m") == null && resultMap.get("s") == null && resultMap.get("A") == null) {
+			//次元解析の結果、無次元量だった場合
+			return 0;
+		}else {
+			return 1;
+		}
+	}
+
+	public static int isPhysicalQuantity(String target) {
+		return isPhysicalQuantity(target,null);
 	}
 
 	/*
@@ -149,23 +159,12 @@ public class UnitEditor {
 	 * @return true:単位と判定,　false：単位ではないと判定
 	 * */
 	private static boolean isUnit(String target){
-		if(target.split("/").length > 2) {
-			//"/"を使いすぎている
+		Matcher m = unitsPattern.matcher(target);
+		if(!m.find()) {
 			return false;
+		}else {
+			return true;
 		}
-		//単体単位(km,ms2,kA-2など)の配列に変換し、単体単位かどうかを調べる
-		String[] units = target.split(" |/");
-		for(String unit:units){
-			if(unit.equals("")){
-				continue;
-			}
-			if(unit.matches(" *([μmcdhkM]|da)?[mgsA](-?[0-9]+)? *")){
-				continue;
-			}else{
-				return false;
-			}
-		}
-		return true;
 	}
 
 	/*
@@ -173,7 +172,7 @@ public class UnitEditor {
 	 * もったマップを返す。接頭辞による係数のキーは"none"
 	 * 指定する単位は適切な組立単位であることが前提である。
 	 * */
-	public static HashMap<String,Integer> moldUnit(String targetUnit){
+	private static HashMap<String,Integer> moldUnit(String targetUnit){
 		if(!isUnit(targetUnit)) {
 			throw new IllegalArgumentException("指定された文字列は単位ではありません");
 		}

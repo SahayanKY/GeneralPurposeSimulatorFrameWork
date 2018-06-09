@@ -1,9 +1,5 @@
 package simulation.param.checker;
 
-import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import icg.UnitEditor;
 
 public class DefaultParameterChecker implements ParameterChecker {
@@ -16,8 +12,23 @@ public class DefaultParameterChecker implements ParameterChecker {
 	@Override
 	public int checkFormatOf(String input, String maxValue, String minValue) {
 		try {
-			int message=0;
+			switch(UnitEditor.isPhysicalQuantity(input)) {
+				case 0:
+					//無次元量の場合
+					return 0;
+				case 1:
+					//物理量の場合
+					if(UnitEditor.isLargerA_thanB(input, maxValue) || UnitEditor.isLargerA_thanB(minValue, input)) {
+						return 1;
+					}else {
+						return 0;
+					}
+				case -1:
+				default:
+					return 2;
+			}
 
+/*
 			if(maxValue != null && UnitEditor.isLargerA_thanB(input,maxValue)) {
 				//最大値の設定があるが、それを上回っていた場合
 				message = 1;
@@ -50,6 +61,7 @@ public class DefaultParameterChecker implements ParameterChecker {
 			}
 
 			return message;
+			*/
 		}catch(IllegalArgumentException e) {
 			//物理量入力のフォーマットに従っていない
 			return 2;
