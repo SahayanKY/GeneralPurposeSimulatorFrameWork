@@ -71,7 +71,7 @@ public class UnitEditorTest {
 		@Test
 		@Theory
 		public void testConvert_from_toWithUnits(String[] s) {
-			String result = UnitEditor.convert_from_toWithUnits(s[0], s[1]);
+			String result = UnitEditor.convert_from_to(s[0], s[1]);
 			assertEquals(result , s[2]);
 		}
 		
