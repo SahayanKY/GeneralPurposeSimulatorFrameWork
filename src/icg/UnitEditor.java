@@ -11,6 +11,13 @@ public class UnitEditor {
 		Prefixs(int n){
 			this.n = n;
 		}
+
+		/*
+		 * 列挙子に対応する整数を返す。指定された文字列に対応する列挙子が存在しない場合、
+		 * 0が返る。
+		 * @param 変換したい接頭辞の文字列表現
+		 * @return 対応する整数値
+		 * */
 		public static int convertPrefix(String prefix) {
 			for(Prefixs p:Prefixs.values()) {
 				if(p.name().equals(prefix)) {
@@ -34,7 +41,7 @@ public class UnitEditor {
 	 * @param target 調べる文字列
 	 * @boolean
 	 * true:物理量または数値
-	 *　false：どちらでもない文字列
+	 * false：どちらでもない文字列
 	 * */
 	private static boolean isPhysicalQuantity_OrNumberOnly(String target){
 		Matcher physicalM = physicalQuantityPattern.matcher(target);
@@ -49,7 +56,9 @@ public class UnitEditor {
 	/*
 	 * 指定された文字列が適切な組立単位かどうかを判定する。
 	 * @param target 調べる文字列
-	 * @return true:単位と判定,　false：単位ではないと判定
+	 * @return
+	 * true:単位,
+	 * false:単位ではない
 	 * */
 	private static boolean isUnit(String target){
 		Matcher m = unitsPattern.matcher(target);
@@ -63,7 +72,9 @@ public class UnitEditor {
 	/*
 	 * 指定された物理量、数値または単位の次元解析を行う。
 	 * 返るマップには"Number"(元の文字列の数値の部分),"none"(接頭辞の解析結果),"m","kg","s","A"のキーが最大でマップされている
-	 * その値が0のときはキーは除去されている
+	 * なお、その値が0のときはキーは除去されている。
+	 * @param 次元解析を行う文字列
+	 * @return その結果を表すマップ
 	 * */
 	public static HashMap<String,Number> dimensionAnalysis(String quantity){
 		if(quantity == null) {
