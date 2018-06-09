@@ -23,7 +23,8 @@ public class PhysicalQuantityTest {
 		public static Object[][] param = {
 			//正常な入力
 			{"1 kg m", 1.0, 1, 1, 0, 0},
-			{" 1 kg m2", 1.0, 2, 1, 0, 0},			
+			{" 1 kg m2", 1.0, 2, 1, 0, 0},
+			{"1", 1.0, 0, 0, 0, 0},
 		};
 		
 		@Test

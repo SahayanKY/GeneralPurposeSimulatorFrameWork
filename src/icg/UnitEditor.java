@@ -191,6 +191,12 @@ public class UnitEditor {
 			matcher = physicalQuantityPattern.matcher(quantity);
 			matcher.find();
 			unitMap.put("Number", Double.parseDouble(matcher.group(1)));
+			
+			String unitline = matcher.group(2);
+			if(unitline == null){
+				//単位が全くない指定だった場合
+				return unitMap;
+			}
 			UnitSlashSplit = matcher.group(2).split("/");
 		}else if(isUnit(quantity)){
 			//単位単体に関する条件分岐
