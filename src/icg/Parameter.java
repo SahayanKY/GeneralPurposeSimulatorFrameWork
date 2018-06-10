@@ -117,7 +117,6 @@ public enum Parameter{
 		try {
 			FormatProperty.load(new InputStreamReader(getFormatStream(),"UTF-8"));
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 	}
@@ -221,7 +220,7 @@ public enum Parameter{
 		if(ErrorTime>0) {
 			return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 		}else if(WarnTime>0) {
-			return "要検証 : "+WarnTime +"件\n "+ Warnings.toString();
+			return "要検証 : "+WarnTime +"件\n"+ Warnings.toString();
 		}else {
 			return null;
 		}
