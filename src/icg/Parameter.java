@@ -105,24 +105,23 @@ public enum Parameter{
 	フィン圧力中心位置("フィン", "フィン圧力中心位置"),
 	フィン法線力係数("フィン", "フィン法線力係数");
 
-	public final String parentLabel;
-	public final String childLabel;
+	public final String parentLabel, childLabel, maxValueStr, minValueStr;
 	private final ParameterChecker checker;
 
-	protected String valueStr;
+	private String valueStr;
 
-	private static Properties FormatProperty = new Properties();
 
-	static {
-		try {
-			FormatProperty.load(new InputStreamReader(getFormatStream(),"UTF-8"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private static final class DefaultChecker{
+	private static final class StaticField{
 		private static final ParameterChecker checker = new DefaultParameterChecker();
+		private static final Properties FormatProperty = new Properties();
+
+		static {
+			try {
+				FormatProperty.load(new InputStreamReader(getFormatStream(),"UTF-8"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private static InputStream getFormatStream() {
@@ -132,11 +131,13 @@ public enum Parameter{
 
 	/*コンストラクタ*/
 	Parameter(String parentLabel, String childLabel){
-		this(parentLabel, childLabel, DefaultChecker.checker);
+		this(parentLabel, childLabel, StaticField.checker);
 	}
 	Parameter(String parentLabel, String childLabel, ParameterChecker checker){
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
+		this.maxValueStr = StaticField.FormatProperty.getProperty("Max"+childLabel);
+		this.minValueStr = StaticField.FormatProperty.getProperty("Min"+childLabel);
 		this.checker = checker;
 	}
 
@@ -150,7 +151,7 @@ public enum Parameter{
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
 	private final int checkFormatOf(String input) {
-		int message = checker.checkFormatOf(input, FormatProperty.getProperty("Max"+childLabel), FormatProperty.getProperty("Min"+childLabel));
+		int message = checker.checkFormatOf(input, maxValueStr, minValueStr);
 		if(message == 0 || message == 1) {
 			valueStr = input;
 		}
