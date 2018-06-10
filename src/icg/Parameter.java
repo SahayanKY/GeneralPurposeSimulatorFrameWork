@@ -149,7 +149,7 @@ public enum Parameter{
 	 * @param input 入力値のString表現
 	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
 	 */
-	public final int checkFormatOf(String input) {
+	private final int checkFormatOf(String input) {
 		int message = checker.checkFormatOf(input, FormatProperty.getProperty("Max"+childLabel), FormatProperty.getProperty("Min"+childLabel));
 		if(message == 0 || message == 1) {
 			valueStr = input;
