@@ -3,10 +3,10 @@ package icgtest;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
 import org.junit.experimental.theories.DataPoints;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
-import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
 import icg.UnitEditor;
@@ -81,28 +81,6 @@ public class UnitEditorTest {
 	public static class compareValueTest{
 		@DataPoints
 		public static Object[][] param = {
-			//正常な入力
-			{"1 kg", "100 g", true}, //0
-			{"1 km", "1 m", true}, //1
-			{"10 m/ms", "1 km/s", true}, //2
-			{"-1.05 kg", "0 kg", false}, //3
-			{"-22 cm", "-10 /cm-1", false}, //4
-			
-			//変換前後一致型
-			{"5.0888 das", "1.0 das", true}, //5
-			{"-0.2 Mg-10 s2", ".5 s2 Mg-10 ", false}, //6
-			
-			//無次元量シリーズ
-			{"1513 mm/m","10 m/m", false}, //7
-			{"10.15", "10 m/m", true}, //8
-			{".15 kg/g", "160", false}, //9
-			{"  10.15  g/mg ", "10151", false}, //10
-			{"15.4", "48", false}, //11
-			
-			//指数表記の入力
-			{"5.145E5 mm ks-1", "0.52 /m-1 s", false}, //12
-			{"-5.145E5 mm ks-1", "-0.1 m s-1", false}, //13
-			{"-5.145E-5 Mg-1", "-5.0E-11 g-1", false}, //14
 		};
 
 		@Test
