@@ -7,7 +7,7 @@ import java.io.Reader;
 public class DoubleBackSlashReader extends FilterReader{
 	private boolean inInBackslash = false;
 
-	DoubleBackSlashReader(Reader reader){
+	public DoubleBackSlashReader(Reader reader){
 		super(reader);
 	}
 

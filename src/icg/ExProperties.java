@@ -19,7 +19,7 @@ import java.util.Properties;
 public class ExProperties extends Properties{
 	private File file;
 
-	ExProperties(File file){
+	public ExProperties(File file){
 		this.file = file;
 	}
 
