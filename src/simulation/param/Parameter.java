@@ -1,7 +1,6 @@
 package simulation.param;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 import simulation.param.checker.ParameterChecker;
 
@@ -29,6 +28,14 @@ public abstract class Parameter {
 	public abstract int checkFormatOf(String input) ;
 
 	/*
+	 * このパラメータのもつ値を返す。
+	 * @return このパラメータのもつvalueの値
+	 * */
+	public String getValue() {
+		return this.value;
+	}
+
+	/*
 	 * パラメータの配列を返す。
 	 * @return このパラメータ(列挙子)をすべて持つ配列
 	 * */
@@ -40,20 +47,6 @@ public abstract class Parameter {
 		return params;
 	}
 
-	/*
-	 * パラメータの構造を示すマップを返す。
-	 * */
-	public static LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
-		LinkedHashMap<String,LinkedHashMap<String,String>> parentMap = new LinkedHashMap<>();
-		for(Parameter param : Parameter.values()) {
-			String parentLabel = param.parentLabel;
-			String childLabel = param.childLabel;
-			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<String,String>());
-			childMap.put(childLabel, param.value);
-			parentMap.put(parentLabel, childMap);
-		}
-		return parentMap;
-	}
 
 	/*
 	 * このパラメータが「燃焼データ」を表すものかどうかを判断する。
