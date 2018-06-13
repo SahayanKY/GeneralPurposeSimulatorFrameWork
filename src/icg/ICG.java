@@ -2,6 +2,9 @@ package icg;
 
 import java.time.LocalDateTime;
 
+import icg.frame.DataInputFrame;
+import icg.frame.ProgressInformFrame;
+
 public class ICG {
 	private String calcResultDirectoryPath;
 	private DataInputFrame datainputF;
