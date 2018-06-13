@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
@@ -17,7 +18,11 @@ import icg.DoubleBackSlashReader;
 import icg.ExProperties;
 
 public class ParameterManager {
-	//private static ArrayList<Parameter> paramList = new ArrayList<>();
+	private final ArrayList<Parameter> paramList;
+
+	ParameterManager(ArrayList<Parameter> paramList){
+		this.paramList = paramList;
+	}
 
 	/* 外部(Frame)から入力値をセットする時の呼び出し用
 	 * データ入力に不具合がないかをチェックし、同時にcheckFormatOf()内で各Parameterのvalueを更新する。
@@ -29,11 +34,11 @@ public class ParameterManager {
 	 * 特に何も無かった場合nullを返す。
 	 * @exception 引数より受けたデータに直ちに停止すべき不具合がある場合(入力値が空文字や数値でない、またはnull)
 	 * */
-	public static String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
+	public String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
 		//入力値のチェック
 		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n");
 		int ErrorTime=0,WarnTime=0;
-		for(Parameter param : Parameter.values()) {
+		for(Parameter param : paramList) {
 			String inputString = checkMap.get(param.parentLabel).get(param.childLabel);
 			switch(param.checkFormatOf(inputString)) {
 				case 0:
@@ -64,13 +69,13 @@ public class ParameterManager {
 	 * @param choosedFile 指定するプロパティファイル
 	 * @throws IOException 指定されたファイルの操作の際に発生した何らかの不具合
 	 * */
-	public static void setData_by(File choosedFile) throws IOException{
+	public void setData_by(File choosedFile) throws IOException{
 		try (DoubleBackSlashReader reader = new DoubleBackSlashReader(new InputStreamReader(new FileInputStream(choosedFile), "UTF-8"))){
 			Properties ExistingProperty = new Properties();
 			ExistingProperty.load(reader);
 
-			for(Parameter param : Parameter.values()) {
-				param.value = ExistingProperty.getProperty(param.childLabel);
+			for(Parameter param : paramList) {
+				param.setValue(ExistingProperty.getProperty(param.childLabel));
 			}
 		} catch (IOException e) {
 			throw e;
@@ -84,7 +89,7 @@ public class ParameterManager {
 	 * @return エラーが起きた場合、その理由を示すStringを返す。
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合
 	 * */
-	public static void writeProperty_on(File choosedDirectory) throws IOException{
+	public void writeProperty_on(File choosedDirectory) throws IOException{
 		Path storeFilePath = Paths.get(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
 		File storeFile = storeFilePath.toFile();
 		if(storeFile.exists()) {
@@ -94,8 +99,8 @@ public class ParameterManager {
 		Files.copy(getFormatStream() , storeFilePath);
 
 		ExProperties exP = new ExProperties(storeFile);
-		for(Parameter param : Parameter.values()) {
-			exP.setProperty(param.childLabel, param.value);
+		for(Parameter param : paramList) {
+			exP.setProperty(param.childLabel, param.getValue());
 		}
 		exP.postscript();
 
@@ -104,13 +109,13 @@ public class ParameterManager {
 	/*
 	 * パラメータの構造を示すマップを返す。
 	 * */
-	public static LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
+	public LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
 		LinkedHashMap<String,LinkedHashMap<String,String>> parentMap = new LinkedHashMap<>();
-		for(Parameter param : Parameter.values()) {
+		for(Parameter param : paramList) {
 			String parentLabel = param.parentLabel;
 			String childLabel = param.childLabel;
 			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<String,String>());
-			childMap.put(childLabel, param.value);
+			childMap.put(childLabel, param.getValue());
 			parentMap.put(parentLabel, childMap);
 		}
 		return parentMap;
