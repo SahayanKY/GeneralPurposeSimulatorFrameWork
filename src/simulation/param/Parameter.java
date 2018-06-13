@@ -6,17 +6,16 @@ public class Parameter {
 	public final String parentLabel, childLabel, maxValue, minValue;
 	public final ParameterChecker checker;
 
-	public final boolean isThrustDataParam;
+	public static Parameter ThrustDataParam=null;
 
 	private String value;
 
-	Parameter(String parentLabel, String childLabel, String maxValue, String minValue, boolean isThrustDataParam, ParameterChecker checker){
+	Parameter(String parentLabel, String childLabel, String maxValue, String minValue, ParameterChecker checker){
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
 		this.maxValue = maxValue;
 		this.minValue = minValue;
 		this.checker = checker;
-		this.isThrustDataParam = isThrustDataParam;
 	}
 
 	/*
@@ -40,14 +39,22 @@ public class Parameter {
 		return this.value;
 	}
 
-
+	/*
+	 * このインスタンスが燃焼データを表すものであることを定義する。
+	 * すでに定義済みであった場合、この処理は無視される。
+	 * */
+	public void setThrustDataParam() {
+		if(ThrustDataParam == null) {
+			ThrustDataParam = this;
+		}
+	}
 
 	/*
 	 * このパラメータが「燃焼データ」を表すものかどうかを判断する。
 	 * @return このパラメータが「燃焼データ」であればtrue,そうでなければfalse
 	 * */
 	public boolean isThrustDataParameter() {
-		return this.isThrustDataParam;
+		return this == ThrustDataParam;
 	}
 
 	public void setValue(String inputValue) {
