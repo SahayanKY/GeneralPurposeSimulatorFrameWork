@@ -11,42 +11,16 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 
 public class ImagePainter {
 
 
-	public static void main(String[] args) {/*
-
-		BufferedImage bufferImage = null;
-
-		//	ファイル読み込み
-		try
-		{
-    		  bufferImage = ImageIO.read(new File("D:/ゆうき/キャプチャ1.jpg"));
-		} catch (Exception e) {
-    		  e.printStackTrace();
-		}
-
-		Graphics graphics = bufferImage.createGraphics();
-
-		//	いたずら書き
-		graphics.setColor(Color.RED);
-		graphics.drawString("いたずら書きだよー",0,20);
-
-		//	ファイル保存
-	    	try
-    		{
-        		  ImageIO.write(bufferImage, "jpeg", new File("test.jpg"));
-    		}
-    		catch (Exception e)
-    		{
-        		  e.printStackTrace();
-    		}
-
-    		System.out.println("終わりました");*/
-
-
+	public static void main(String[] args) {
 		try (FileImageOutputStream output = new FileImageOutputStream(new File("D:/ゆうき/test.jpg"))) {
 
 			BufferedImage readImage = ImageIO.read(new File("D:/ゆうき/キャプチャ1.jpg"));
@@ -67,5 +41,20 @@ public class ImagePainter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
+
+		JFrame f = new JFrame();
+		f.setBounds(100,300,500,300);
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		JPanel p = new JPanel();
+		f.add(p);
+
+		JLabel lb = new JLabel();
+		ImageIcon icon = new ImageIcon("D:/ゆうき/test.jpg");
+		lb.setIcon(icon);
+		p.add(lb);
+
+		f.setVisible(true);
 	}
 }
