@@ -22,7 +22,10 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-
+/*
+ * このクラスがgetGraphics()で渡すGraphicsインスタンスで描画した内容を
+ * 画像ファイルとして保存するクラス。
+ * */
 public class ImagePainter extends JPanel implements MouseListener, ActionListener{
 	private Point point = new Point(-5,-5);
 
