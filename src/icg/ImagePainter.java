@@ -49,9 +49,10 @@ public class ImagePainter extends JPanel {
 		frame.add(this);
 
 		graphLb = new GraphViewLabel();
-		ImageIcon icon = new ImageIcon("D:/ゆうき/キャプチャ1.jpg");
+		ImageIcon icon = new ImageIcon("D:/ゆうき/キャプチャ10.jpg");
 		graphLb.setIcon(icon);
 		setPainter(GraphKind.TwoD_Graph.painter);
+		graphLb.setOpaque(false);
 		this.add(graphLb);
 
 		JButton paintBtn = new JButton("描画");
@@ -69,7 +70,7 @@ public class ImagePainter extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 				try (FileImageOutputStream output = new FileImageOutputStream(new File("D:/ゆうき/AAA.jpg"))) {
 
-					BufferedImage readImage = ImageIO.read(new File("D:/ゆうき/キャプチャ1.jpg"));
+					BufferedImage readImage = ImageIO.read(new File("D:/ゆうき/キャプチャ10.jpg"));
 
 					Graphics graphics = readImage.createGraphics();
 
