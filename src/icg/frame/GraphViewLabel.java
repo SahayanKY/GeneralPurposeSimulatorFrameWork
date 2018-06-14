@@ -31,6 +31,7 @@ public class GraphViewLabel extends JLabel implements MouseListener {
 		painter.graphPaint(g);
 	}
 
+
 	@Override
 	public void mouseClicked(MouseEvent e){
 		point = e.getPoint();
