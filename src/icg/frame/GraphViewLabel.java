@@ -14,13 +14,6 @@ import icg.GraphPainter;
  *
  * */
 public class GraphViewLabel extends JLabel implements MouseListener {
-	public enum GraphKind{
-		TwoD_Graph(),
-		Dispersion_Graph();
-
-		GraphPainter painter;
-	}
-
 	private Point point=new Point(-50,-50);
 	private GraphPainter painter;
 
@@ -28,6 +21,9 @@ public class GraphViewLabel extends JLabel implements MouseListener {
 		addMouseListener(this);
 	}
 
+	public void setGraphPainter(GraphPainter painter) {
+		this.painter = painter;
+	}
 
 	@Override
 	public void paintComponent(Graphics g) {
@@ -39,7 +35,7 @@ public class GraphViewLabel extends JLabel implements MouseListener {
 	public void mouseClicked(MouseEvent e){
 		point = e.getPoint();
 		Object obj;
-		if((obj = e.getSource()) instanceof JLabel) {
+		if((obj = e.getSource()) instanceof GraphViewLabel) {
 			((JLabel)obj).repaint();
 		}
 	}
