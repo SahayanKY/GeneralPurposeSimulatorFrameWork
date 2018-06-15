@@ -10,14 +10,17 @@ import javax.swing.JLabel;
 import icg.GraphPainter;
 
 /*
- * シミュレーションの結果得られた数値データをグラフにするクラス
+ * シミュレーションの結果得られた数値データのグラフを表示するラベルクラス
  *
  * */
-public class GraphViewLabel extends JLabel implements MouseListener {
+public class GraphLabel extends JLabel implements MouseListener {
 	private Point point=new Point(-50,-50);
+	/*このインスタンスが描画を委譲するPainterクラスインスタンス*/
 	private GraphPainter painter;
+	/*このインスタンスがクリックに対して反応するかどうかを設定*/
+	private boolean isReactiveToClick = false;
 
-	public GraphViewLabel(){
+	public GraphLabel(){
 		addMouseListener(this);
 	}
 
@@ -25,18 +28,25 @@ public class GraphViewLabel extends JLabel implements MouseListener {
 		this.painter = painter;
 	}
 
+	public void setReactiveToClick(boolean isReactive) {
+		this.isReactiveToClick = isReactive;
+	}
+
+
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		painter.graphPaint(g);
 	}
 
-
 	@Override
 	public void mouseClicked(MouseEvent e){
+		if(!this.isReactiveToClick) {
+			return;
+		}
 		point = e.getPoint();
 		Object obj;
-		if((obj = e.getSource()) instanceof GraphViewLabel) {
+		if((obj = e.getSource()) instanceof GraphLabel) {
 			((JLabel)obj).repaint();
 		}
 	}

@@ -17,13 +17,12 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import icg.frame.GraphViewLabel;
+import icg.frame.GraphLabel;
 
 /*
- * このクラスがgetGraphics()で渡すGraphicsインスタンスで描画した内容を
- * 画像ファイルとして保存するクラス。
+ *
  * */
-public class ImagePainter extends JPanel {
+public class GraphViewFrame extends JFrame {
 	public enum GraphKind{
 		TwoD_Graph(new TwoD_GraphPainter()),
 		Dispersion_Graph(new Dispersion_GraphPainter());
@@ -34,26 +33,26 @@ public class ImagePainter extends JPanel {
 		public GraphPainter painter;
 	}
 
-	private GraphViewLabel graphLb;
+	private GraphLabel graphLb;
 
 	private GraphPainter currentPainter;
 
 	public static void main(String[] args) {
-		new ImagePainter("ImagePainter");
+		new GraphViewFrame("GraphFrame");
 	}
 
-	ImagePainter(String title){
-		JFrame frame = new JFrame(title);
-		frame.setBounds(100,100,700,700);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.add(this);
+	GraphViewFrame(String title){
+		setBounds(100,100,700,700);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		graphLb = new GraphViewLabel();
+		JPanel panel = new JPanel();
+
+		graphLb = new GraphLabel();
 		ImageIcon icon = new ImageIcon("D:/ゆうき/キャプチャ10.jpg");
 		graphLb.setIcon(icon);
 		setPainter(GraphKind.TwoD_Graph.painter);
-		graphLb.setOpaque(false);
-		this.add(graphLb);
+		graphLb.setReactiveToClick(true);
+		panel.add(graphLb);
 
 		JButton paintBtn = new JButton("描画");
 		paintBtn.addActionListener(new ActionListener() {
@@ -62,7 +61,7 @@ public class ImagePainter extends JPanel {
 				graphLb.repaint();
 			}
 		});
-		this.add(paintBtn);
+		panel.add(paintBtn);
 
 		JButton savebtn = new JButton("保存");
 		savebtn.addActionListener(new ActionListener() {
@@ -89,7 +88,7 @@ public class ImagePainter extends JPanel {
 				}
 			}
 		});
-		this.add(savebtn);
+		panel.add(savebtn);
 
 		JButton changeBtn = new JButton("画像変更");
 		changeBtn.addActionListener(new ActionListener() {
@@ -97,10 +96,10 @@ public class ImagePainter extends JPanel {
 			public void actionPerformed(ActionEvent e) {
 			}
 		});
-		this.add(changeBtn);
+		panel.add(changeBtn);
 
-
-		frame.setVisible(true);
+		this.add(panel);
+		setVisible(true);
 	}
 
 
