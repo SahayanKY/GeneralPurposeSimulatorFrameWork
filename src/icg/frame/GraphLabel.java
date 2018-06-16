@@ -36,7 +36,9 @@ public class GraphLabel extends JLabel implements MouseListener {
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		painter.graphPaint(g);
+		if(painter!=null) {
+			painter.graphPaint(g);
+		}
 	}
 
 	@Override

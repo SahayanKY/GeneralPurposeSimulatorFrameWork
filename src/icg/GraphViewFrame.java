@@ -6,12 +6,14 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import icg.ChooseFileDialog.ChooseTarget;
 import icg.frame.GraphLabel;
 
 /*
@@ -52,7 +54,7 @@ public class GraphViewFrame extends JFrame {
 		add(cardPanel);
 		//グラフ(画像)を描画するラベルの追加
 		graphLb = new GraphLabel();
-		setPainter(GraphKind.TwoD_Graph.painter);
+		//setPainter(GraphKind.TwoD_Graph.painter);
 		graphLb.setOpaque(true);
 		graphLb.setBackground(Color.red);
 		graphLb.setReactiveToClick(true);
@@ -74,9 +76,8 @@ public class GraphViewFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				LayoutOfPanel.show(cardPanel, "card2");
-				/*
+				setPainter(GraphKind.Dispersion_Graph.painter);
 				graphLb.repaint();
-				*/
 			}
 		});
 		LayoutOfCardsPanel.setComponent(startDispertionGraphBtn, 0, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
@@ -115,6 +116,7 @@ public class GraphViewFrame extends JFrame {
 		exitBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				GraphViewFrame.this.dispose();
 			}
 		});
 		LayoutOfCardsPanel.setComponent(exitBtn, 0, 2, 1, 1, 0, 1, GridBagConstraints.CENTER);
@@ -137,6 +139,7 @@ public class GraphViewFrame extends JFrame {
 		MapFileSelectBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ".", "地図画像の選択");
 
 			}
 		});
