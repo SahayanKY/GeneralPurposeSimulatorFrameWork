@@ -10,6 +10,7 @@ import java.io.File;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -28,7 +29,7 @@ public class GraphViewFrame extends JFrame {
 
 	public GraphViewFrame(String title){
 		setTitle(title);
-		setBounds(50,50,900,800);
+		setBounds(50,50,1000,900);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setComponent();
 		setVisible(true);
@@ -47,7 +48,7 @@ public class GraphViewFrame extends JFrame {
 		graphLb.setOpaque(true);
 		graphLb.setBackground(Color.white);
 		graphLb.setReactiveToClick(true);
-		graphLb.setPreferredSize(new Dimension(600,600));
+		graphLb.setPreferredSize(new Dimension(750,750));
 		LayoutOfFrame.setComponent(graphLb, 1, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
 		add(graphLb);
 
@@ -55,7 +56,7 @@ public class GraphViewFrame extends JFrame {
 		cardPanel.setLayout(LayoutOfPanel);
 		ComponentSetter LayoutOfCardsPanel = new ComponentSetter();
 		//------------------------------------------------------------------------
-		//--------------------カードパネルその1-----------------------------------
+		//--------------------カードパネルその1--初期画面-------------------------
 		//------------------------------------------------------------------------
 		JPanel startCard = new JPanel();
 		cardPanel.add(startCard, "card1");
@@ -94,7 +95,7 @@ public class GraphViewFrame extends JFrame {
 
 
 		//------------------------------------------------------------------------
-		//--------------------カードパネルその1-----------------------------------
+		//--------------------カードパネルその2--落下分散画面---------------------
 		//------------------------------------------------------------------------
 		JPanel dispersion_setConfigCard = new JPanel();
 		cardPanel.add(dispersion_setConfigCard, "card2");
@@ -107,6 +108,8 @@ public class GraphViewFrame extends JFrame {
 		dispersion_setConfigCard.add(MapFilePathText);
 
 		JButton MapFileSelectBtn = new JButton("選択");
+		JButton saveBtn = new JButton("保存");
+
 		MapFileSelectBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -117,12 +120,28 @@ public class GraphViewFrame extends JFrame {
 				MapFilePathText.setText(selectedFile.toString());
 				((Dispersion_GraphPainter) currentPainter).setMapImage(selectedFile);
 				graphLb.repaint();
+				saveBtn.setEnabled(true);
 			}
 		});
 		LayoutOfCardsPanel.setComponent(MapFileSelectBtn, 1, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		dispersion_setConfigCard.add(MapFileSelectBtn);
 
 
+		saveBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ".", "保存する");
+				if(selectedFile.exists()) {
+					JOptionPane.showMessageDialog(GraphViewFrame.this, "同名のファイルが既に存在します" , "エラー", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				currentPainter.savePaint(selectedFile);
+			}
+
+		});
+		saveBtn.setEnabled(false);
+		LayoutOfCardsPanel.setComponent(saveBtn, 0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(saveBtn);
 
 	}
 
