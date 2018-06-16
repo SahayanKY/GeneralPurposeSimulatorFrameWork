@@ -20,16 +20,6 @@ import icg.frame.GraphLabel;
  *
  * */
 public class GraphViewFrame extends JFrame {
-	public enum GraphKind{
-		TwoD_Graph(new TwoD_GraphPainter()),
-		Dispersion_Graph(new Dispersion_GraphPainter());
-
-		GraphKind(GraphPainter painter){
-			this.painter = painter;
-		}
-		public GraphPainter painter;
-	}
-
 	private GraphLabel graphLb;
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel cardPanel = new JPanel();
@@ -38,7 +28,7 @@ public class GraphViewFrame extends JFrame {
 
 	public GraphViewFrame(String title){
 		setTitle(title);
-		setBounds(50,50,600,600);
+		setBounds(50,50,900,800);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setComponent();
 		setVisible(true);
@@ -54,11 +44,10 @@ public class GraphViewFrame extends JFrame {
 		add(cardPanel);
 		//グラフ(画像)を描画するラベルの追加
 		graphLb = new GraphLabel();
-		//setPainter(GraphKind.TwoD_Graph.painter);
 		graphLb.setOpaque(true);
-		graphLb.setBackground(Color.red);
+		graphLb.setBackground(Color.white);
 		graphLb.setReactiveToClick(true);
-		graphLb.setPreferredSize(new Dimension(250,250));
+		graphLb.setPreferredSize(new Dimension(600,600));
 		LayoutOfFrame.setComponent(graphLb, 1, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
 		add(graphLb);
 
@@ -76,7 +65,7 @@ public class GraphViewFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				LayoutOfPanel.show(cardPanel, "card2");
-				setPainter(GraphKind.Dispersion_Graph.painter);
+				setPainter(new Dispersion_GraphPainter(graphLb));
 				graphLb.repaint();
 			}
 		});
@@ -87,26 +76,7 @@ public class GraphViewFrame extends JFrame {
 		start2DGraphBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				/*
-				try (FileImageOutputStream output = new FileImageOutputStream(new File("D:/ゆうき/AAA.jpg"))) {
 
-					BufferedImage readImage = ImageIO.read(new File("D:/ゆうき/キャプチャ10.jpg"));
-
-					Graphics graphics = readImage.createGraphics();
-
-					currentPainter.graphPaint(graphics);
-
-					ImageWriter writeImage = ImageIO.getImageWritersByFormatName("jpeg").next();
-					ImageWriteParam writeParam = writeImage.getDefaultWriteParam();
-					writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-					writeParam.setCompressionQuality(1.0f);
-					writeImage.setOutput(output);
-					writeImage.write(null, new IIOImage(readImage, null, null), writeParam);
-					writeImage.dispose();
-				} catch (IOException exc) {
-					exc.printStackTrace();
-				}
-				*/
 			}
 		});
 		LayoutOfCardsPanel.setComponent(start2DGraphBtn, 0, 1, 1, 1, 0, 1, GridBagConstraints.CENTER);
@@ -131,6 +101,7 @@ public class GraphViewFrame extends JFrame {
 
 		JTextField MapFilePathText = new JTextField();
 		MapFilePathText.setEditable(false);
+		MapFilePathText.setPreferredSize(new Dimension(170,30));
 		LayoutOfCardsPanel.setFill(GridBagConstraints.HORIZONTAL);
 		LayoutOfCardsPanel.setComponent(MapFilePathText, 0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		dispersion_setConfigCard.add(MapFilePathText);
@@ -140,7 +111,12 @@ public class GraphViewFrame extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ".", "地図画像の選択");
-
+				if(selectedFile == null) {
+					return;
+				}
+				MapFilePathText.setText(selectedFile.toString());
+				((Dispersion_GraphPainter) currentPainter).setMapImage(selectedFile);
+				graphLb.repaint();
 			}
 		});
 		LayoutOfCardsPanel.setComponent(MapFileSelectBtn, 1, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
