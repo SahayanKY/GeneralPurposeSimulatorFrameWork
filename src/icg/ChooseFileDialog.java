@@ -54,26 +54,38 @@ public abstract class ChooseFileDialog {
 		}
 
 		File selectedFile;
-		while(true) {
+		chooseLoop: while(true) {
 			int selected = chooser.showOpenDialog(c);
 			if(selected == JFileChooser.APPROVE_OPTION) {
+				//選択したときの対応
 				if((selectedFile = chooser.getSelectedFile()) == null) {
-					continue;
+					//nullなら当然もう一回
+					continue chooseLoop;
 				}
 				if(target.equals(ChooseTarget.DirectoryOnly) && !selectedFile.isDirectory()) {
-					continue;
+					//ディレクトリ選択なのにディレクトリを選択してなかったらもう一回
+					continue chooseLoop;
 				}
-				if(!chooser.getFileFilter().accept(selectedFile)) {
-					if(purpose.equals(ChoosePurpose.ToSave)) {
-						selectedFile = new File(selectedFile.toString() +".jpg");
-					}else {
-						continue;
-					}
+				switch(purpose) {
+					case ToSave:
+						if(!chooser.getFileFilter().accept(selectedFile)) {
+							//拡張子がついていなかった場合
+							if(target.equals(ChooseTarget.ImageFileOnly)) {
+								selectedFile = new File(selectedFile.toString() +".jpg");
+							}
+						}
+						break chooseLoop;
+
+					case ToSelect:
+						if(chooser.getFileFilter().accept(selectedFile) && selectedFile.exists()) {
+							//選んだファイルがフィルターに即していて、存在すれば終了
+							break chooseLoop;
+						}
 				}
-				break;
 			}else {
+				//「×」ボタンや取消ボタンへの対応
 				selectedFile = null;
-				break;
+				break chooseLoop;
 			}
 		}
 
