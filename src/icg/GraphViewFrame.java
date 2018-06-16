@@ -14,6 +14,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
 import icg.frame.GraphLabel;
 
@@ -113,7 +114,7 @@ public class GraphViewFrame extends JFrame {
 		MapFileSelectBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ".", "地図画像の選択");
+				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ChoosePurpose.ToSelect, ".", "地図画像の選択");
 				if(selectedFile == null) {
 					return;
 				}
@@ -130,7 +131,10 @@ public class GraphViewFrame extends JFrame {
 		saveBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ".", "保存する");
+				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ChoosePurpose.ToSave, ".", "保存する");
+				if(selectedFile == null) {
+					return;
+				}
 				if(selectedFile.exists()) {
 					JOptionPane.showMessageDialog(GraphViewFrame.this, "同名のファイルが既に存在します" , "エラー", JOptionPane.ERROR_MESSAGE);
 					return;

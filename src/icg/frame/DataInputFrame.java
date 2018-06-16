@@ -21,6 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import icg.ChooseFileDialog;
+import icg.ChooseFileDialog.ChoosePurpose;
+import icg.ChooseFileDialog.ChooseTarget;
 import icg.ComponentSetter;
 import icg.Parameter;
 
@@ -180,7 +182,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						}
 					}
 					//保存先のディレクトリを選択、nullの場合は処理を終了
-					File choosedDirectory = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, "D:\\ゆうき", "保存先のフォルダを選択");
+					File choosedDirectory = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, ChoosePurpose.ToSelect, "D:\\ゆうき", "保存先のフォルダを選択");
 					if(choosedDirectory == null) {
 						break;
 					}
@@ -195,7 +197,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				break;
 
 			case SelectThrustDataFile:
-				File choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.ThrustFileOnly, "D:\\ゆうき", "燃焼データファイルを選択");
+				File choosedFile = ChooseFileDialog.choose(this, ChooseTarget.ThrustFileOnly, ChoosePurpose.ToSelect, "D:\\ゆうき", "燃焼データファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
@@ -208,7 +210,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				break;
 
 			case SetExistingInputData:
-				choosedFile = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.PropertiesFileOnly, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
+				choosedFile = ChooseFileDialog.choose(this, ChooseTarget.PropertiesFileOnly, ChoosePurpose.ToSelect, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
