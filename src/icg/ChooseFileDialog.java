@@ -15,7 +15,7 @@ import javax.swing.filechooser.FileView;
  * */
 public class ChooseFileDialog {
 	public enum ChooseTarget{
-		DirectoryOnly,ThrustFileOnly,PropertiesFileOnly;
+		DirectoryOnly,ThrustFileOnly,PropertiesFileOnly,ImageFileOnly;
 	}
 
 	private ChooseFileDialog(){	}
@@ -41,16 +41,21 @@ public class ChooseFileDialog {
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			chooser.setDialogTitle(title);
 		}else {
-			String label=null,extension=null;
+			String label=null,extension[]=null;
 			switch(target) {
 				case ThrustFileOnly:
 					label = "THRUSTファイル";
-					extension = "thrust";
+					extension = new String[]{"thrust"};
 					break;
 
 				case PropertiesFileOnly:
 					label = "PROPERTIESファイル";
-					extension = "properties";
+					extension = new String[] {"properties"};
+					break;
+
+				case ImageFileOnly:
+					label = "画像ファイル";
+					extension = new String[]{"png", "jpg", "Jpeg", "GIF", "bmp"};
 					break;
 				default:
 			}
@@ -60,7 +65,6 @@ public class ChooseFileDialog {
 			chooser.setAcceptAllFileFilterUsed(false);
 			chooser.setDialogTitle(title);
 		}
-
 
 		int selected = chooser.showOpenDialog(c);
 		if(selected == JFileChooser.APPROVE_OPTION) {
