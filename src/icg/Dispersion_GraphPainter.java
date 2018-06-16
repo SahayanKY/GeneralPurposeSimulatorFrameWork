@@ -5,7 +5,11 @@ import java.awt.Graphics2D;
 import java.io.File;
 import java.io.IOException;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
 
 import icg.frame.GraphLabel;
 
@@ -19,6 +23,7 @@ public class Dispersion_GraphPainter extends GraphPainter {
 	public void setMapImage(File ImageFile) {
 		try {
 			this.labelImage = ImageIO.read(ImageFile);
+
 			setParameter(paintingLabel.getSize().width, paintingLabel.getSize().height, labelImage.getWidth(), labelImage.getHeight());
 			System.out.println(labelImage.getHeight());
 		} catch (IOException e) {
@@ -45,26 +50,17 @@ public class Dispersion_GraphPainter extends GraphPainter {
 
 
 	@Override
-	public void savePaint() {
-		/*
-		try (FileImageOutputStream output = new FileImageOutputStream(new File("D:/ゆうき/AAA.jpg"))) {
-
-			BufferedImage readImage = ImageIO.read(new File("D:/ゆうき/キャプチャ10.jpg"));
-
-			Graphics graphics = readImage.createGraphics();
-
-			currentPainter.graphPaint(graphics);
-
+	public void savePaint(File saveFile) {
+		try (FileImageOutputStream output = new FileImageOutputStream(saveFile)) {
 			ImageWriter writeImage = ImageIO.getImageWritersByFormatName("jpeg").next();
 			ImageWriteParam writeParam = writeImage.getDefaultWriteParam();
 			writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 			writeParam.setCompressionQuality(1.0f);
 			writeImage.setOutput(output);
-			writeImage.write(null, new IIOImage(readImage, null, null), writeParam);
+			writeImage.write(null, new IIOImage(labelImage, null, null), writeParam);
 			writeImage.dispose();
 		} catch (IOException exc) {
 			exc.printStackTrace();
 		}
-		*/
 	}
 }

@@ -3,6 +3,7 @@ package icg;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 import icg.frame.GraphLabel;
 
@@ -28,7 +29,7 @@ public class TwoD_GraphPainter extends GraphPainter {
 	}
 
 	@Override
-	public void savePaint() {
+	public void savePaint(File saveFile) {
 
 	}
 }

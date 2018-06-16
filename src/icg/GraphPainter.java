@@ -3,8 +3,10 @@ package icg;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 import icg.frame.GraphLabel;
 
@@ -30,11 +32,16 @@ public abstract class GraphPainter {
 			setParameter(labelDimension.width, labelDimension.height, labelImage.getWidth(), labelImage.getHeight());
 		}
 
-		Graphics2D g2 = labelImage.createGraphics();
-		makeGraph(g2);
+		makeGraph(labelImage.createGraphics());
 
-		g.drawImage(labelImage, ImageOriginPoint.x, ImageOriginPoint.y, labelDimension.width-2*ImageOriginPoint.x, labelDimension.height-2*ImageOriginPoint.y, null);
 
+		//ちょっと重たい
+		Image scaledImage = labelImage.getScaledInstance((int)(labelImage.getWidth()*scaleToLabel), -1, Image.SCALE_SMOOTH);
+		g.drawImage(scaledImage, ImageOriginPoint.x, ImageOriginPoint.y, null);
+
+
+		//荒すぎ
+		//g.drawImage(labelImage, ImageOriginPoint.x, ImageOriginPoint.y, labelDimension.width-2*ImageOriginPoint.x, labelDimension.height-2*ImageOriginPoint.y, null);
 	};
 
 	/*
@@ -54,5 +61,5 @@ public abstract class GraphPainter {
 
 	protected abstract void makeGraph(Graphics2D g2);
 	public abstract void setData(double[][] data);
-	public abstract void savePaint();
+	public abstract void savePaint(File saveFile);
 }
