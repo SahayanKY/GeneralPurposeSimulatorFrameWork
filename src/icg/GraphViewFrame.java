@@ -30,8 +30,9 @@ public class GraphViewFrame extends JFrame {
 
 	public GraphViewFrame(String title){
 		setTitle(title);
-		setBounds(50,50,1000,900);
+		setBounds(50,50,1100,650);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setResizable(false);
 		setComponent();
 		setVisible(true);
 	}
@@ -49,7 +50,7 @@ public class GraphViewFrame extends JFrame {
 		graphLb.setOpaque(true);
 		graphLb.setBackground(Color.white);
 		graphLb.setReactiveToClick(true);
-		graphLb.setPreferredSize(new Dimension(750,750));
+		graphLb.setPreferredSize(new Dimension(620,620));
 		LayoutOfFrame.setComponent(graphLb, 1, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
 		add(graphLb);
 

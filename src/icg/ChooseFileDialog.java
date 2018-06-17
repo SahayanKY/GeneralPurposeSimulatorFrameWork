@@ -49,7 +49,10 @@ public abstract class ChooseFileDialog {
 				chooser.addChoosableFileFilter(new FileNameExtensionFilter("propertiesファイル", "properties"));
 				break;
 			case ImageFileOnly:
-				chooser.addChoosableFileFilter(new FileNameExtensionFilter("画像ファイル", "png", "jpg", "Jpeg", "GIF", "bmp"));
+				chooser.addChoosableFileFilter(new FileNameExtensionFilter("画像ファイル", "png", "jpg", "Jpeg", "GIF"));
+				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Portable Network Graphics File(PNG)(*.png)","png"));
+				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Graphics Interchange Format File(*.GIF)","GIF"));
+				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Joint Photographic Experts Group File(*.JPG)","jpg","jpeg"));
 				break;
 		}
 
@@ -66,18 +69,18 @@ public abstract class ChooseFileDialog {
 					//ディレクトリ選択なのにディレクトリを選択してなかったらもう一回
 					continue chooseLoop;
 				}
+				FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
 				switch(purpose) {
 					case ToSave:
-						if(!chooser.getFileFilter().accept(selectedFile)) {
+						if(!filter.accept(selectedFile)) {
 							//拡張子がついていなかった場合
-							if(target.equals(ChooseTarget.ImageFileOnly)) {
-								selectedFile = new File(selectedFile.toString() +".jpg");
-							}
+							String extensions[] = filter.getExtensions();
+							selectedFile = new File(selectedFile.toString()+"."+extensions[0]);
 						}
 						break chooseLoop;
 
 					case ToSelect:
-						if(chooser.getFileFilter().accept(selectedFile) && selectedFile.exists()) {
+						if(filter.accept(selectedFile) && selectedFile.exists()) {
 							//選んだファイルがフィルターに即していて、存在すれば終了
 							break chooseLoop;
 						}

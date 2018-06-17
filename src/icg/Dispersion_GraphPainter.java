@@ -5,10 +5,7 @@ import java.awt.Graphics2D;
 import java.io.File;
 import java.io.IOException;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
 
 import icg.frame.GraphLabel;
@@ -52,13 +49,15 @@ public class Dispersion_GraphPainter extends GraphPainter {
 	@Override
 	public void savePaint(File saveFile) {
 		try (FileImageOutputStream output = new FileImageOutputStream(saveFile)) {
-			ImageWriter writeImage = ImageIO.getImageWritersByFormatName("jpeg").next();
+			ImageIO.write(labelImage, "png", output);
+			/*ImageWriter writeImage = ImageIO.getImageWritersByFormatName("jpg").next();
 			ImageWriteParam writeParam = writeImage.getDefaultWriteParam();
 			writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 			writeParam.setCompressionQuality(1.0f);
 			writeImage.setOutput(output);
 			writeImage.write(null, new IIOImage(labelImage, null, null), writeParam);
 			writeImage.dispose();
+	//		*/
 		} catch (IOException exc) {
 			exc.printStackTrace();
 		}
