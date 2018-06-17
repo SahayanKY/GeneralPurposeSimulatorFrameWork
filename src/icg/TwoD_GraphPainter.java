@@ -13,7 +13,7 @@ public class TwoD_GraphPainter extends GraphPainter {
 
 	public TwoD_GraphPainter(GraphLabel lb) {
 		super(lb);
-		this.labelImage = new BufferedImage(100,100, BufferedImage.TYPE_INT_ARGB);
+		this.bImage = new BufferedImage(100,100, BufferedImage.TYPE_INT_ARGB);
 	}
 
 	@Override

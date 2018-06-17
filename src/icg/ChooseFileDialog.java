@@ -23,7 +23,13 @@ public abstract class ChooseFileDialog {
 
 	/*
 	 * コンストラクタで指定した通りのダイアログを表示し、選択結果をFileインスタンスとして返す。
-	 * @return 選択されたFileインスタンス
+	 * @param
+	 * c このComponentインスタンスの上にダイアログを表示する
+	 * target ダイアログにて選ぶ対象をEnum型ChooseTargetに従って指定する。
+	 * purpose 選択の目的をEnum型ChoosePurposeに従って指定する。
+	 * currentPath ダイアログの初期位置をString型で指定する。"."でカレントディレクトリを指定できる。
+	 * title このダイアログに付けるタイトルを指定する。
+	 * @return 選択されたFileインスタンス。選択されずにダイアログが閉じられた場合、nullが返される。
 	 * */
 	public static File choose(Component c, ChooseTarget target, ChoosePurpose purpose, String currentPath, String title) {
 		JFileChooser chooser = new JFileChooser();
@@ -49,11 +55,19 @@ public abstract class ChooseFileDialog {
 				chooser.addChoosableFileFilter(new FileNameExtensionFilter("propertiesファイル", "properties"));
 				break;
 			case ImageFileOnly:
-				chooser.addChoosableFileFilter(new FileNameExtensionFilter("画像ファイル", "png", "jpg", "Jpeg", "GIF"));
-				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Portable Network Graphics File(PNG)(*.png)","png"));
-				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Graphics Interchange Format File(*.GIF)","GIF"));
-				chooser.addChoosableFileFilter(new FileNameExtensionFilter("Joint Photographic Experts Group File(*.JPG)","jpg","jpeg"));
+				if(purpose.equals(ChoosePurpose.ToSelect)) {
+					chooser.addChoosableFileFilter(new FileNameExtensionFilter("画像ファイル", "png", "jpg", "Jpeg", "GIF"));
+				}else {
+					chooser.addChoosableFileFilter(new FileNameExtensionFilter("Portable Network Graphics File(PNG)(*.png)","png"));
+					chooser.addChoosableFileFilter(new FileNameExtensionFilter("Graphics Interchange Format File(*.GIF)","GIF"));
+					chooser.addChoosableFileFilter(new FileNameExtensionFilter("Joint Photographic Experts Group File(*.JPG)","jpg","jpeg"));
+				}
 				break;
+		}
+
+		//ApproveButtonのテキストを変える
+		if(purpose.equals(ChoosePurpose.ToSave)) {
+			chooser.setApproveButtonText("保存");
 		}
 
 		File selectedFile;

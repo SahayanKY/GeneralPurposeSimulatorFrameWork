@@ -21,19 +21,38 @@ public class GraphLabel extends JLabel implements MouseListener {
 	/*このインスタンスがクリックに対して反応するかどうかを設定*/
 	private boolean isReactiveToClick = false;
 
+	/*
+	 * コンストラクタ。
+	 * */
 	public GraphLabel(){
 		addMouseListener(this);
 	}
 
+
+	/*
+	 * このGraphLabelインスタンスへ描画を行うGraphPainterを指定する。
+	 * @param
+	 * painter 描画を行うGraphPainter実装クラスのインスタンス
+	 * */
 	public void setGraphPainter(GraphPainter painter) {
 		this.painter = painter;
 	}
 
+
+	/*
+	 * このGraphLabelインスタンスがマウスのクリックに対して反応するかを指定する。
+	 * これによりクリックに応じた描画更新の有無が規定される。
+	 * @param
+	 * isReactive クリックに対して反応させる場合はtrue
+	 * */
 	public void setReactiveToClick(boolean isReactive) {
 		this.isReactiveToClick = isReactive;
 	}
 
 
+	/*
+	 * このGraphLabelの描画処理
+	 * */
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
@@ -43,6 +62,9 @@ public class GraphLabel extends JLabel implements MouseListener {
 		this.isCliked = false;
 	}
 
+	/*
+	 * このGraphLabelのマウスクリックへの反応処理
+	 * */
 	@Override
 	public void mouseClicked(MouseEvent e){
 		if(!this.isReactiveToClick) {

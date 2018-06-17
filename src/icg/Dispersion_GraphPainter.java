@@ -11,18 +11,16 @@ import javax.imageio.stream.FileImageOutputStream;
 import icg.frame.GraphLabel;
 
 public class Dispersion_GraphPainter extends GraphPainter {
-	int i=0;
-
 	public Dispersion_GraphPainter(GraphLabel lb) {
 		super(lb);
 	}
 
 	public void setMapImage(File ImageFile) {
 		try {
-			this.labelImage = ImageIO.read(ImageFile);
+			this.bImage = ImageIO.read(ImageFile);
 
-			setParameter(paintingLabel.getSize().width, paintingLabel.getSize().height, labelImage.getWidth(), labelImage.getHeight());
-			System.out.println(labelImage.getHeight());
+			setParameter(paintingLabel.getSize().width, paintingLabel.getSize().height, bImage.getWidth(), bImage.getHeight());
+			System.out.println(bImage.getHeight());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -49,7 +47,7 @@ public class Dispersion_GraphPainter extends GraphPainter {
 	@Override
 	public void savePaint(File saveFile) {
 		try (FileImageOutputStream output = new FileImageOutputStream(saveFile)) {
-			ImageIO.write(labelImage, "png", output);
+			ImageIO.write(bImage, "png", output);
 			/*ImageWriter writeImage = ImageIO.getImageWritersByFormatName("jpg").next();
 			ImageWriteParam writeParam = writeImage.getDefaultWriteParam();
 			writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
