@@ -11,18 +11,27 @@ import java.io.File;
 import icg.frame.GraphLabel;
 
 public abstract class GraphPainter {
-	protected BufferedImage bImage;
-	protected GraphLabel paintingLabel;
+	protected BufferedImage saveImage;
+
+	/*
+	 * このイメージの原点とスケールはGraphLabelのそれと一致する。
+	 * */
+	protected BufferedImage temporaryImage;
+
+	protected final GraphLabel paintingLabel;
+	protected final Dimension labelDimension;
 
 	/*ラベル中の画像の左上の座標位置*/
 	protected Point ImageOriginPoint;
 	protected double scaleToLabel;
 
+
 	/*
 	 * コンストラクタ。描画対象となるGraphLabelインスタンスを指定する。
 	 * */
-	GraphPainter(GraphLabel lb){
-		this.paintingLabel = lb;
+	GraphPainter(GraphLabel paintingLabel){
+		this.paintingLabel = paintingLabel;
+		this.labelDimension = paintingLabel.getSize();
 	}
 
 	/*
@@ -30,24 +39,27 @@ public abstract class GraphPainter {
 	 * 基づいて描画を行う。
 	 * @param 描画対象のGraphLabelが取得したGraphicsインスタンス
 	 * */
-	public void PaintGraph(Graphics g) {
-		if(bImage==null) {
+	public void paintGraph(Graphics g) {
+		if(saveImage==null) {
 			return;
 		}
-		Dimension labelDimension = paintingLabel.getSize();
 
 		if(ImageOriginPoint == null) {
-			setParameter(labelDimension.width, labelDimension.height, bImage.getWidth(), bImage.getHeight());
+			setParameter(labelDimension.width, labelDimension.height, saveImage.getWidth(), saveImage.getHeight());
 		}
 
-		makeGraph(bImage.createGraphics());
+		makeSaveGraph(saveImage.createGraphics());
 
 		//ちょっと重たい
-		Image scaledImage = bImage.getScaledInstance((int)(bImage.getWidth()*scaleToLabel), -1, Image.SCALE_SMOOTH);
+		Image scaledImage = saveImage.getScaledInstance((int)(saveImage.getWidth()*scaleToLabel), -1, Image.SCALE_SMOOTH);
 		g.drawImage(scaledImage, ImageOriginPoint.x, ImageOriginPoint.y, null);
 
-		//荒すぎ
-		//g.drawImage(labelImage, ImageOriginPoint.x, ImageOriginPoint.y, labelDimension.width-2*ImageOriginPoint.x, labelDimension.height-2*ImageOriginPoint.y, null);
+		if(temporaryImage == null) {
+			return;
+		}else {
+			makeTemporaryGraph(temporaryImage.createGraphics());
+			g.drawImage(temporaryImage, 0, 0, null);
+		}
 	};
 
 	/*
@@ -60,7 +72,7 @@ public abstract class GraphPainter {
 	 * imageW オフスクリーンイメージの幅
 	 * imageH オフスクリーンイメージの縦幅
 	 * */
-	protected final void setParameter(int labelW, int labelH, int imageW, int imageH) {
+	protected void setParameter(int labelW, int labelH, int imageW, int imageH) {
 		if(labelW*imageH<imageW*labelH) {
 			//画像の横幅をラベルの横幅に合わせる場合
 			scaleToLabel = ((double)labelW)/imageW;
@@ -74,10 +86,19 @@ public abstract class GraphPainter {
 
 	/*
 	 * GraphPainterを実装するクラスが規定する描画処理を行う。引数にはGraphPainterが内部に保持する
-	 * オフクリーンイメージ(BufferedImage)から生成したGraphics2Dインスタンスを指定する。
-	 * @param bImageのGraphics2Dインスタンス
+	 * オフクリーンイメージ(saveImage)から生成したGraphics2Dインスタンスを指定する。
+	 * このメソッドではイメージを保存する際に、保存したいその内容を記述する。
+	 * @param saveImageのGraphics2Dインスタンス
 	 * */
-	protected abstract void makeGraph(Graphics2D g2);
+	protected abstract void makeSaveGraph(Graphics2D g2);
+
+	/*
+	 * GraphPainterを実装するクラスが規定する描画処理を行う。引数にはGraphPainterが内部に保持する
+	 * オフクリーンイメージ(temporaryImage)から生成したGraphics2Dインスタンスを指定する。
+	 * このメソッドではGraphLabelに一時的に描画し、イメージを保存する際には含めたくない内容を記述する。
+	 * @param temporaryImageのGraphics2Dインスタンス
+	 * */
+	protected void makeTemporaryGraph(Graphics2D g2) {}
 
 	/*
 	 * 描画に必要なデータをこのGraphPainterにセットする。

@@ -13,11 +13,11 @@ public class TwoD_GraphPainter extends GraphPainter {
 
 	public TwoD_GraphPainter(GraphLabel lb) {
 		super(lb);
-		this.bImage = new BufferedImage(100,100, BufferedImage.TYPE_INT_ARGB);
+		this.saveImage = new BufferedImage(100,100, BufferedImage.TYPE_INT_ARGB);
 	}
 
 	@Override
-	protected void makeGraph(Graphics2D g2) {
+	protected void makeSaveGraph(Graphics2D g2) {
 		g2.setColor(Color.black);
 		g2.drawLine(0, i, 100, 100+i);
 		i+=10;

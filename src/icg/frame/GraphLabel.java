@@ -57,7 +57,7 @@ public class GraphLabel extends JLabel implements MouseListener {
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		if(painter!=null) {
-			painter.PaintGraph(g);
+			painter.paintGraph(g);
 		}
 		this.isCliked = false;
 	}
