@@ -30,7 +30,7 @@ public class GraphViewFrame extends JFrame {
 
 	public GraphViewFrame(String title){
 		setTitle(title);
-		setBounds(50,50,1100,650);
+		setBounds(50,50,1000,620);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setResizable(false);
 		setComponent();
@@ -42,7 +42,7 @@ public class GraphViewFrame extends JFrame {
 		setLayout(LayoutOfFrame);
 
 		//カードレイアウトのパネルの追加
-		cardPanel.setPreferredSize(new Dimension(250,250));
+		cardPanel.setPreferredSize(new Dimension(380,280));
 		LayoutOfFrame.setComponent(cardPanel, 0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		add(cardPanel);
 		//グラフ(画像)を描画するラベルの追加
@@ -50,7 +50,7 @@ public class GraphViewFrame extends JFrame {
 		graphLb.setOpaque(true);
 		graphLb.setBackground(Color.white);
 		graphLb.setReactiveToClick(true);
-		graphLb.setPreferredSize(new Dimension(620,620));
+		graphLb.setPreferredSize(new Dimension(580,580));
 		LayoutOfFrame.setComponent(graphLb, 1, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
 		add(graphLb);
 
@@ -61,6 +61,7 @@ public class GraphViewFrame extends JFrame {
 		//--------------------カードパネルその1--初期画面-------------------------
 		//------------------------------------------------------------------------
 		JPanel startCard = new JPanel();
+		startCard.setLayout(LayoutOfCardsPanel);
 		cardPanel.add(startCard, "card1");
 
 		JButton startDispertionGraphBtn = new JButton("落下分散の図を作成");
@@ -72,7 +73,7 @@ public class GraphViewFrame extends JFrame {
 				graphLb.repaint();
 			}
 		});
-		LayoutOfCardsPanel.setComponent(startDispertionGraphBtn, 0, 0, 1, 1, 0, 1, GridBagConstraints.CENTER);
+		LayoutOfCardsPanel.setComponent(startDispertionGraphBtn, 0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		startCard.add(startDispertionGraphBtn);
 
 		JButton start2DGraphBtn = new JButton("数値データのグラフを作成");
@@ -82,7 +83,7 @@ public class GraphViewFrame extends JFrame {
 
 			}
 		});
-		LayoutOfCardsPanel.setComponent(start2DGraphBtn, 0, 1, 1, 1, 0, 1, GridBagConstraints.CENTER);
+		LayoutOfCardsPanel.setComponent(start2DGraphBtn, 0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		startCard.add(start2DGraphBtn);
 
 		JButton exitBtn = new JButton("終了");
@@ -92,7 +93,7 @@ public class GraphViewFrame extends JFrame {
 				GraphViewFrame.this.dispose();
 			}
 		});
-		LayoutOfCardsPanel.setComponent(exitBtn, 0, 2, 1, 1, 0, 1, GridBagConstraints.CENTER);
+		LayoutOfCardsPanel.setComponent(exitBtn, 0, 2, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		startCard.add(exitBtn);
 
 
@@ -100,19 +101,26 @@ public class GraphViewFrame extends JFrame {
 		//--------------------カードパネルその2--落下分散画面---------------------
 		//------------------------------------------------------------------------
 		JPanel dispersion_setConfigCard = new JPanel();
+		dispersion_setConfigCard.setLayout(LayoutOfCardsPanel);
 		cardPanel.add(dispersion_setConfigCard, "card2");
 
+		JButton selectMapImageBtn = new JButton("画像を選択");
+		JButton setMapReducedScaleBtn = new JButton("次に進む");
+		JButton resetMapReducedScaleBtn = new JButton("やり直す");
+		JButton setDispersionDataBtn = new JButton("落下分散データファイルを選択");
+		JButton saveBtn = new JButton("保存");
+
 		JTextField MapFilePathText = new JTextField();
+		JTextField mapScaleInputText = new JTextField();
+
 		MapFilePathText.setEditable(false);
 		MapFilePathText.setPreferredSize(new Dimension(170,30));
 		LayoutOfCardsPanel.setFill(GridBagConstraints.HORIZONTAL);
 		LayoutOfCardsPanel.setComponent(MapFilePathText, 0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		dispersion_setConfigCard.add(MapFilePathText);
 
-		JButton MapFileSelectBtn = new JButton("選択");
-		JButton saveBtn = new JButton("保存");
 
-		MapFileSelectBtn.addActionListener(new ActionListener() {
+		selectMapImageBtn.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				File selectedFile = ChooseFileDialog.choose(GraphViewFrame.this, ChooseTarget.ImageFileOnly, ChoosePurpose.ToSelect, ".", "地図画像の選択");
@@ -122,12 +130,65 @@ public class GraphViewFrame extends JFrame {
 				MapFilePathText.setText(selectedFile.toString());
 				((Dispersion_GraphPainter) currentPainter).setMapImage(selectedFile);
 				graphLb.repaint();
-				saveBtn.setEnabled(true);
+				JOptionPane.showConfirmDialog(GraphViewFrame.this, "画像の縮尺の端2点をクリックで選択し、その長さを入力してください。", "確認", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+				setMapReducedScaleBtn.setEnabled(true);
+				resetMapReducedScaleBtn.setEnabled(true);
 			}
 		});
-		LayoutOfCardsPanel.setComponent(MapFileSelectBtn, 1, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
-		dispersion_setConfigCard.add(MapFileSelectBtn);
+		LayoutOfCardsPanel.setComponent(selectMapImageBtn, 1, 0, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(selectMapImageBtn);
 
+
+		mapScaleInputText.setPreferredSize(new Dimension(100,30));
+		LayoutOfCardsPanel.setComponent(mapScaleInputText, 0, 1, 2, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(mapScaleInputText);
+
+
+		resetMapReducedScaleBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int ans = JOptionPane.showConfirmDialog(GraphViewFrame.this, "画像上の点を消去し、やり直しますか？", "確認", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if(ans == JOptionPane.OK_OPTION) {
+					((Dispersion_GraphPainter)currentPainter).resetTemporaryImage();
+					graphLb.repaint();
+				}
+			}
+		});
+		resetMapReducedScaleBtn.setEnabled(false);
+		LayoutOfCardsPanel.setComponent(resetMapReducedScaleBtn, 0, 2, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(resetMapReducedScaleBtn);
+
+
+		setMapReducedScaleBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String mapScaleStr = mapScaleInputText.getText();
+				PhysicalQuantity scaleQ;
+				try {
+					scaleQ = new PhysicalQuantity(mapScaleStr);
+					if(!scaleQ.equalsDimension(new PhysicalQuantity("m"))) {
+						//入力された次元がメートルでない
+						throw new IllegalArgumentException();
+					}
+				}catch(IllegalArgumentException exc) {
+					JOptionPane.showMessageDialog(GraphViewFrame.this, "縮尺の入力値が異常です。" , "エラー", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
+		setMapReducedScaleBtn.setEnabled(false);
+		LayoutOfCardsPanel.setComponent(setMapReducedScaleBtn, 1, 2, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(setMapReducedScaleBtn);
+
+
+		setDispersionDataBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		setDispersionDataBtn.setEnabled(false);
+		LayoutOfCardsPanel.setComponent(setDispersionDataBtn, 0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		dispersion_setConfigCard.add(setDispersionDataBtn);
 
 		saveBtn.addActionListener(new ActionListener() {
 			@Override
@@ -145,8 +206,10 @@ public class GraphViewFrame extends JFrame {
 
 		});
 		saveBtn.setEnabled(false);
-		LayoutOfCardsPanel.setComponent(saveBtn, 0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		LayoutOfCardsPanel.setComponent(saveBtn, 0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER);
 		dispersion_setConfigCard.add(saveBtn);
+
+
 
 	}
 

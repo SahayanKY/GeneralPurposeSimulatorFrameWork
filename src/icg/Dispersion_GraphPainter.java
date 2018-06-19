@@ -75,4 +75,8 @@ public class Dispersion_GraphPainter extends GraphPainter {
 			exc.printStackTrace();
 		}
 	}
+
+	public void resetTemporaryImage() {
+		this.temporaryImage = new BufferedImage(labelDimension.width, labelDimension.height, BufferedImage.TYPE_INT_ARGB);
+	}
 }
