@@ -14,7 +14,7 @@ import icg.GraphPainter;
  *
  * */
 public class GraphLabel extends JLabel implements MouseListener {
-	public boolean isCliked = false;
+	public boolean isClicked = false;
 	public Point clickedPoint=new Point(-50,-50);
 	/*このインスタンスが描画を委譲するPainterクラスインスタンス*/
 	private GraphPainter painter;
@@ -59,7 +59,7 @@ public class GraphLabel extends JLabel implements MouseListener {
 		if(painter!=null) {
 			painter.paintGraph(g);
 		}
-		this.isCliked = false;
+		this.isClicked = false;
 	}
 
 	/*
@@ -73,7 +73,7 @@ public class GraphLabel extends JLabel implements MouseListener {
 		clickedPoint = e.getPoint();
 		Object obj;
 		if((obj = e.getSource()) instanceof GraphLabel) {
-			this.isCliked = true;
+			this.isClicked = true;
 			((GraphLabel)obj).repaint();
 		}
 	}
