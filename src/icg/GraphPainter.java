@@ -84,6 +84,12 @@ public abstract class GraphPainter {
 		}
 	}
 
+	protected Point convertCoordinate_LabelToImage() {
+		int clikedPointx =(int) ((this.paintingLabel.clickedPoint.x - this.ImageOriginPoint.x)/scaleToLabel);
+		int clikedPointy = (int) ((this.paintingLabel.clickedPoint.y - this.ImageOriginPoint.y)/scaleToLabel);
+		return new Point(clikedPointx,clikedPointy);
+	}
+
 	/*
 	 * GraphPainterを実装するクラスが規定する描画処理を行う。引数にはGraphPainterが内部に保持する
 	 * オフクリーンイメージ(saveImage)から生成したGraphics2Dインスタンスを指定する。

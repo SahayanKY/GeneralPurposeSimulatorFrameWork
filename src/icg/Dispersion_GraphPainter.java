@@ -2,6 +2,7 @@ package icg;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +13,9 @@ import javax.imageio.stream.FileImageOutputStream;
 import icg.frame.GraphLabel;
 
 public class Dispersion_GraphPainter extends GraphPainter {
-	int i = 0;
+	protected Point scaleP1,scaleP2,launchP;
 
+	protected int dispersionPaintState = 0;
 	protected final boolean hasTemporaryImage = true;
 
 	public Dispersion_GraphPainter(GraphLabel lb) {
@@ -36,19 +38,27 @@ public class Dispersion_GraphPainter extends GraphPainter {
 	@Override
 	protected void makeSaveGraph(Graphics2D g2) {
 		g2.setColor(Color.black);
-		if(paintingLabel.isCliked) {
+		if(paintingLabel.isClicked) {
 			//saveImage上でクリックされた位置を計算
-			int clikedPointx =(int) ((this.paintingLabel.clickedPoint.x - this.ImageOriginPoint.x)/scaleToLabel);
-			int clikedPointy = (int) ((this.paintingLabel.clickedPoint.y - this.ImageOriginPoint.y)/scaleToLabel);
-			g2.drawLine(clikedPointx, clikedPointy, 50, 100);
+			Point clickedImagePoint = convertCoordinate_LabelToImage();
+			g2.drawLine(clickedImagePoint.x, clickedImagePoint.y, 50, 100);
 		}
 	}
 
 	@Override
 	protected void makeTemporaryGraph(Graphics2D g2) {
-		if(paintingLabel.isCliked) {
+		if(paintingLabel.isClicked) {
 			g2.setColor(Color.red);
 			g2.fillOval(paintingLabel.clickedPoint.x-4, paintingLabel.clickedPoint.y-4, 8, 8);
+
+
+			if(scaleP1 == null) {
+				scaleP1 = paintingLabel.clickedPoint;
+			}else if(scaleP2 == null) {
+				scaleP2 = paintingLabel.clickedPoint;
+			}else if() {
+
+			}
 		}
 	}
 
@@ -57,7 +67,9 @@ public class Dispersion_GraphPainter extends GraphPainter {
 
 	}
 
+	public void setReducedScale() {
 
+	}
 
 	@Override
 	public void savePaint(File saveFile) {
