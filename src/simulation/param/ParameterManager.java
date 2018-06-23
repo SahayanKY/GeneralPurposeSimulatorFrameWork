@@ -1,13 +1,12 @@
 package simulation.param;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.io.OutputStreamWriter;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,13 +14,15 @@ import java.util.Properties;
 import java.util.StringJoiner;
 
 import icg.DoubleBackSlashReader;
-import icg.ExProperties;
+import simulation.Simulater;
 
 public class ParameterManager {
+	private final Simulater simulater;
 	private final ArrayList<Parameter> paramList;
 
-	ParameterManager(ArrayList<Parameter> paramList){
-		this.paramList = paramList;
+	public ParameterManager(Simulater simulater){
+		this.simulater = simulater;
+		this.paramList = simulater.getParameterList();
 	}
 
 	/* 外部(Frame)から入力値をセットする時の呼び出し用
@@ -32,23 +33,26 @@ public class ParameterManager {
 	 * 計算を続行できない不具合の場合"エラー"から始まる文字列を、
 	 * 計算の続行は可能な不具合の場合"要検証"から始まる文字列を、
 	 * 特に何も無かった場合nullを返す。
-	 * @exception 引数より受けたデータに直ちに停止すべき不具合がある場合(入力値が空文字や数値でない、またはnull)
 	 * */
 	public String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
 		//入力値のチェック
 		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n");
 		int ErrorTime=0,WarnTime=0;
 		for(Parameter param : paramList) {
+			if(param.isSystemInputParameter) {
+				//システムが入力するパラメータならチェックする必要なし
+				continue;
+			}
 			String inputString = checkMap.get(param.parentLabel).get(param.childLabel);
 			switch(param.checkFormatOf(inputString)) {
 				case 0:
 					continue;
 				case 1:
-					Warnings.add(param.childLabel);
+					Warnings.add(param.parentLabel+"."+param.childLabel);
 					WarnTime++;
 					continue;
 				case 2:
-					Errors.add(param.childLabel);
+					Errors.add(param.parentLabel+"."+param.childLabel);
 					ErrorTime++;
 					continue;
 			}
@@ -75,7 +79,10 @@ public class ParameterManager {
 			ExistingProperty.load(reader);
 
 			for(Parameter param : paramList) {
-				param.setValue(ExistingProperty.getProperty(param.childLabel));
+				if(param.isSystemInputParameter) {
+					continue;
+				}
+				param.setValue(ExistingProperty.getProperty(param.propertyLabel));
 			}
 		} catch (IOException e) {
 			throw e;
@@ -84,38 +91,56 @@ public class ParameterManager {
 
 
 	/*
-	 * 各列挙子がもつvalueStrを指定されたプロパティファイルに書き込む
+	 * 各パラメータがもつvalueを指定されたディレクトリに作成したプロパティファイルに書き込む
 	 * @param choosedDirectory 保存先ディレクトリ
-	 * @return エラーが起きた場合、その理由を示すStringを返す。
-	 * @throws IOException ファイル保存の際に発生した何らかの不具合
+	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
 	public void writeProperty_on(File choosedDirectory) throws IOException{
-		Path storeFilePath = Paths.get(choosedDirectory.getPath() +"\\"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")) +"シミュレーション.properties");
-		File storeFile = storeFilePath.toFile();
+		simulater.setSystemInputParameterValue();
+		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーション.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止
 			throw new IOException("同名のファイルが存在");
 		}
-		Files.copy(getFormatStream() , storeFilePath);
-
-		ExProperties exP = new ExProperties(storeFile);
-		for(Parameter param : paramList) {
-			exP.setProperty(param.childLabel, param.getValue());
+		try(
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
+		){
+			writer.write("#シミュレーション条件記録ファイル");
+			writer.newLine();
+			writer.newLine();
+			writer.write("#各項目の想定Min値から想定Max値の間に無いものには警告が出ます");
+			for(Parameter p:paramList) {
+				writer.newLine();
+				writer.write(p.propertyLabel +"="+ p.getValue());
+				if(p.maxValue != null) {
+					writer.newLine();
+					writer.write("Max"+p.propertyLabel +"="+ p.maxValue);
+				}
+				if(p.minValue != null) {
+					writer.newLine();
+					writer.write("Min"+p.propertyLabel +"="+ p.minValue);
+				}
+				writer.newLine();
+			}
+			writer.flush();
+		}catch(IOException e) {
+			throw e;
 		}
-		exP.postscript();
-
 	}
 
 	/*
 	 * パラメータの構造を示すマップを返す。
 	 * */
-	public LinkedHashMap<String,LinkedHashMap<String,String>> getEnumMap(){
-		LinkedHashMap<String,LinkedHashMap<String,String>> parentMap = new LinkedHashMap<>();
+	public LinkedHashMap<String,LinkedHashMap<String,Parameter>> getUserInputParamMap(){
+		LinkedHashMap<String,LinkedHashMap<String,Parameter>> parentMap = new LinkedHashMap<>();
 		for(Parameter param : paramList) {
+			if(param.isSystemInputParameter) {
+				continue;
+			}
 			String parentLabel = param.parentLabel;
 			String childLabel = param.childLabel;
-			LinkedHashMap<String,String> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<String,String>());
-			childMap.put(childLabel, param.getValue());
+			LinkedHashMap<String,Parameter> childMap = parentMap.getOrDefault(parentLabel, new LinkedHashMap<String,Parameter>());
+			childMap.put(childLabel, param);
 			parentMap.put(parentLabel, childMap);
 		}
 		return parentMap;

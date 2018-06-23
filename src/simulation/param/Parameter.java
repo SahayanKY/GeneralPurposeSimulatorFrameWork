@@ -1,22 +1,46 @@
 package simulation.param;
 
+import java.util.ArrayList;
+
 import simulation.param.checker.ParameterChecker;
 
 public class Parameter {
-	public final String parentLabel, childLabel, maxValue, minValue;
+	public final String parentLabel, childLabel, propertyLabel, maxValue, minValue;
 	public final ParameterChecker checker;
+	public final boolean isSystemInputParameter;
 
-	public static Parameter ThrustDataParam=null;
+	private static ArrayList<Parameter> needInputButtonParams = new ArrayList<>();
 
 	private String value;
 
-	Parameter(String parentLabel, String childLabel, String maxValue, String minValue, ParameterChecker checker){
+	//ユーザーの入力するパラメータについてのコンストラクタ
+	public Parameter(String parentLabel, String childLabel, String propertyLabel, String minValue, String maxValue, ParameterChecker checker) {
+		if(parentLabel == null || childLabel == null || propertyLabel == null || checker == null) {
+			throw new IllegalArgumentException();
+		}
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
+		this.propertyLabel = propertyLabel;
 		this.maxValue = maxValue;
 		this.minValue = minValue;
 		this.checker = checker;
+		this.isSystemInputParameter = false;
 	}
+
+	//プログラムが入力するパラメータについてのコンストラクタ
+	public Parameter(String parentLabel, String childLabel, String propertyLabel) {
+		if(parentLabel == null || childLabel == null || propertyLabel == null) {
+			throw new IllegalArgumentException();
+		}
+		this.parentLabel = parentLabel;
+		this.childLabel = childLabel;
+		this.propertyLabel = propertyLabel;
+		this.maxValue = null;
+		this.minValue = null;
+		this.checker = null;
+		this.isSystemInputParameter = true;
+	}
+
 
 	/*
 	 * パラメータのチェック。同時にその値をvalueに格納。
@@ -39,26 +63,38 @@ public class Parameter {
 		return this.value;
 	}
 
-	/*
-	 * このインスタンスが燃焼データを表すものであることを定義する。
-	 * すでに定義済みであった場合、この処理は無視される。
-	 * */
-	public void setThrustDataParam() {
-		if(ThrustDataParam == null) {
-			ThrustDataParam = this;
-		}
-	}
 
 	/*
-	 * このパラメータが「燃焼データ」を表すものかどうかを判断する。
-	 * @return このパラメータが「燃焼データ」であればtrue,そうでなければfalse
+	 * このパラメータの値をセットする。
+	 * @param
+	 * inputValue セットする値のString表現
 	 * */
-	public boolean isThrustDataParameter() {
-		return this == ThrustDataParam;
-	}
-
 	public void setValue(String inputValue) {
 		this.value = inputValue;
 	}
+
+
+	/*
+	 * このパラメータの値のセットにボタンを使用したい場合用いる。
+	 * */
+	public void setNeedInputButtonParameter() {
+		needInputButtonParams.add(this);
+	}
+
+	/*
+	 * このパラメータが値のセットにボタンを使うものかどうかを判断する。
+	 * @return このパラメータがボタンを使うものであればtrue,そうでなければfalse
+	 * */
+	public boolean isNeedInputButtonParameter() {
+		boolean isNeed = false;
+		for(Parameter p:needInputButtonParams) {
+			isNeed= (this == p);
+			if(isNeed) {
+				break;
+			}
+		}
+		return isNeed;
+	}
+
 }
 
