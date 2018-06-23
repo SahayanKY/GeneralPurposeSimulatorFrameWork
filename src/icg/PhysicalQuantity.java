@@ -137,4 +137,12 @@ public class PhysicalQuantity {
 	public boolean isNonDimension() {
 		return kgDegree == 0 && mDegree == 0 && sDegree == 0 && ADegree == 0;
 	}
+
+	/*
+	 * このインスタンスをMKSA単位系で表示したときの数値部分を返す。
+	 * @return MKSA単位系における数値を表すDoubleインスタンス
+	 * */
+	public Double getNumber() {
+		return this.Number;
+	}
 }
