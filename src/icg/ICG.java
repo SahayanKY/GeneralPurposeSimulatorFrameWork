@@ -2,11 +2,12 @@ package icg;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
-import icg.frame.DataInputFrame;
 import simulation.Simulater;
 import simulation.param.Parameter;
+import simulation.param.ParameterManager;
 import simulation.param.checker.BeforeAfterParamChecker;
 import simulation.param.checker.DateFormatChecker;
 import simulation.param.checker.DefaultParameterChecker;
@@ -28,12 +29,43 @@ public class ICG extends Simulater{
 		icg.openInputFrame();
 	}
 
-
 	@Override
-	protected void process(List<Object> list) {
-		// TODO 自動生成されたメソッド・スタブ
+	protected void executeSimulation() {
+		LinkedHashMap<String,LinkedHashMap<String,Parameter>> paramMap = (new ParameterManager(this)).getUserInputParamMap();
+		double paramMap.get("")
+		publish("時間,z,vz");
+		double progressRate = 0;
+		double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
+		String format = "%f,%f,%f";
+		publish(String.format(format, t,z,vz));
+		System.out.println(progressRate);
+		for(int i=0;updateProgress(progressRate) && z>=0;i++) {
+
+
+
+/*			double vz2 = g*step + vz;
+			double z2 = vz*step +z;
+			double t2 = step*(i+1);
+			publish(String.format(format, t2,z2,vz2));
+			vz = vz2;
+			z = z2;
+			progressRate = Math.abs(g*step*(i+1)/(2*Math.sqrt(vz*vz-2*g*z)));
+			System.out.println(progressRate);
+*/
+			try {
+				Thread.sleep((long)(step*1000));
+			}catch(InterruptedException e) {
+			}
+		}
+
 
 	}
+
+	@Override
+	protected void process(List<String> list) {
+		super.process(list);
+	}
+
 
 
 	@Override
@@ -42,9 +74,7 @@ public class ICG extends Simulater{
 		paramList.get(0).setValue(this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")));
 	}
 
-	public void openInputFrame() {
-		DataInputFrame inputFrame = new DataInputFrame(this);
-	}
+
 
 	@Override
 	public ArrayList<Parameter> getParameterList(){

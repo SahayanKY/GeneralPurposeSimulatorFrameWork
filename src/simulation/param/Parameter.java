@@ -11,7 +11,7 @@ public class Parameter {
 
 	private static ArrayList<Parameter> needInputButtonParams = new ArrayList<>();
 
-	private String value;
+	private String valueStr;
 
 	//ユーザーの入力するパラメータについてのコンストラクタ
 	public Parameter(String parentLabel, String childLabel, String propertyLabel, String minValue, String maxValue, ParameterChecker checker) {
@@ -50,7 +50,7 @@ public class Parameter {
 	public int checkFormatOf(String input) {
 		int message = checker.checkFormatOf(input, maxValue, minValue);
 		if(message == 0 || message == 1) {
-			value = input;
+			valueStr = input;
 		}
 		return message;
 	}
@@ -60,7 +60,7 @@ public class Parameter {
 	 * @return このパラメータのもつvalueの値
 	 * */
 	public String getValue() {
-		return this.value;
+		return this.valueStr;
 	}
 
 
@@ -70,7 +70,7 @@ public class Parameter {
 	 * inputValue セットする値のString表現
 	 * */
 	public void setValue(String inputValue) {
-		this.value = inputValue;
+		this.valueStr = inputValue;
 	}
 
 
