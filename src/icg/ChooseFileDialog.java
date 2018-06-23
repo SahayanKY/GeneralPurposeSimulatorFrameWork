@@ -84,6 +84,9 @@ public abstract class ChooseFileDialog {
 					continue chooseLoop;
 				}
 				FileNameExtensionFilter filter = (FileNameExtensionFilter) chooser.getFileFilter();
+				if(filter == null) {
+					break chooseLoop;
+				}
 				switch(purpose) {
 					case ToSave:
 						if(!filter.accept(selectedFile)) {
