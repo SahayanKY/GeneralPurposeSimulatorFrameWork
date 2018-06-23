@@ -35,7 +35,7 @@ public class ExProperties extends Properties{
 			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(copyFile),"UTF-8"));
 		){
 			String lineStr;
-			Hashtable<Object,Object> tab = (Hashtable<Object,Object>)clone();
+			Hashtable<Object,Object> tab = (Hashtable<Object,Object>)this.clone();
 			while((lineStr = reader.readLine())!=null) {
 				if(lineStr.matches("[#!]{1}.*") || !lineStr.matches(".+[=]{1}.*")) {
 					//プロパティを記述している文で無かった場合
