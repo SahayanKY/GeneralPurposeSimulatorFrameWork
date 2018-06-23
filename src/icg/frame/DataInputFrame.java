@@ -24,9 +24,12 @@ import icg.ChooseFileDialog;
 import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
 import icg.ComponentSetter;
+import icg.ICG;
 import icg.Parameter;
+import icg.Simulater;
 
 public class DataInputFrame extends JFrame implements ActionListener,FocusListener{
+
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
 
@@ -190,7 +193,9 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					Parameter.writeProperty_on(choosedDirectory);
 					//このフレームの操作を不能にし、次のステージに進める
 					this.setEnabled(false);
-					new ProgressInformFrame();
+
+					Simulater simu = new ICG(choosedDirectory);
+					simu.execute();
 				}catch(NullPointerException | IllegalArgumentException | IOException exc) {
 					JOptionPane.showMessageDialog(this, exc, "エラー", JOptionPane.ERROR_MESSAGE);
 				}
