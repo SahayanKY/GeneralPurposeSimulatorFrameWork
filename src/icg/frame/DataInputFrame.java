@@ -24,12 +24,13 @@ import icg.ChooseFileDialog;
 import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
 import icg.ComponentSetter;
-import icg.ICG;
-import icg.Parameter;
-import icg.Simulater;
+import simulation.Simulater;
+import simulation.param.Parameter;
+import simulation.param.ParameterManager;
 
 public class DataInputFrame extends JFrame implements ActionListener,FocusListener{
-
+	private Simulater simulater;
+	private ParameterManager paramManager;
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
 
@@ -38,10 +39,11 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 	private static final String ShowCard = "showCard",
 			StartCalculation = "StartCalculation",
 			ChangeTextFieldColor = "ChangeTextFieldColor",
-			SelectThrustDataFile = "SelectFile",
 			SetExistingInputData = "SetInputData";
 
-	public DataInputFrame(){
+	public DataInputFrame(Simulater simulater){
+		this.simulater = simulater;
+		this.paramManager = new ParameterManager(this.simulater);
 		//フレームの設定
 		setTitle("ICGシミュレーション");
 		setBounds(250,150,800,500);
@@ -66,7 +68,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,String>> map = Parameter.getEnumValueMap();
+		LinkedHashMap<String,LinkedHashMap<String,Parameter>> map = paramManager.getUserInputParamMap();
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -105,11 +107,20 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
-				if(parameterName.equals(Parameter.燃焼データファイル.childLabel)) {
+				if(map.get(Name).get(parameterName).isNeedInputButtonParameter()) {
 					y++;
 					JButton selectFileButton = new JButton("ファイルを選択");
-					selectFileButton.addActionListener(this);
-					selectFileButton.setActionCommand(SelectThrustDataFile);
+					selectFileButton.addActionListener(new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							File choosedFile = ChooseFileDialog.choose(DataInputFrame.this, ChooseTarget.ThrustFileOnly, ChoosePurpose.ToSelect, ".", "燃焼データファイルを選択");
+							//選択に失敗した場合
+							if(choosedFile != null) {
+								text.setText(choosedFile.toString().replace("\\", "/"));
+								changeTextFieldColor(text);
+							}
+						}
+					});
 					LayoutOfCards.setComponent(selectFileButton, row%splitNum*2+1, y, 1, 1, 0, 0.1, GridBagConstraints.WEST);
 					card.add(selectFileButton);
 				}
@@ -170,7 +181,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						StringDataMap.put(key, deepMap);
 					}
 					//データのチェックを行い、結果文字列を得る
-					String message = Parameter.checkAllInputDataFormat(StringDataMap);
+					String message = paramManager.checkAllInputDataFormat(StringDataMap);
 					//受け取った文字列に対応してダイアログを表示、処理を終了
 					if(message != null) {
 						if(message.startsWith("エラー")) {
@@ -189,45 +200,33 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					if(choosedDirectory == null) {
 						break;
 					}
+					//シミュレーション日時の設定
+					simulater.setSimulationStartTime();
 					//指定したディレクトリにパラメータを保存させる
-					Parameter.writeProperty_on(choosedDirectory);
+					paramManager.writeProperty_on(choosedDirectory);
 					//このフレームの操作を不能にし、次のステージに進める
 					this.setEnabled(false);
 
-					Simulater simu = new ICG(choosedDirectory);
-					simu.execute();
+					simulater.execute(choosedDirectory);
 				}catch(NullPointerException | IllegalArgumentException | IOException exc) {
 					JOptionPane.showMessageDialog(this, exc, "エラー", JOptionPane.ERROR_MESSAGE);
 				}
 				break;
 
-			case SelectThrustDataFile:
-				File choosedFile = ChooseFileDialog.choose(this, ChooseTarget.ThrustFileOnly, ChoosePurpose.ToSelect, "D:\\ゆうき", "燃焼データファイルを選択");
-				//選択に失敗した場合
-				if(choosedFile == null) {
-					break;
-				}
-				Parameter parameter = Parameter.燃焼データファイル;
-				JTextField thrustTF = dataField.get(parameter.parentLabel).get(parameter.childLabel);
-				thrustTF.setText(choosedFile.toString().replace("\\", "/"));
-				thrustTF.setBackground(Color.WHITE);
-
-				break;
-
 			case SetExistingInputData:
-				choosedFile = ChooseFileDialog.choose(this, ChooseTarget.PropertiesFileOnly, ChoosePurpose.ToSelect, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
+				File choosedFile = ChooseFileDialog.choose(this, ChooseTarget.PropertiesFileOnly, ChoosePurpose.ToSelect, "D:\\ゆうき\\大学\\プログラム\\Eclipse\\ICG_Simulation", "既存のプロパティファイルを選択");
 				//選択に失敗した場合
 				if(choosedFile == null) {
 					break;
 				}
 				try {
 					//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
-					Parameter.setData_by(choosedFile);
-					LinkedHashMap<String,LinkedHashMap<String,String>> paramMap = Parameter.getEnumValueMap();
+					paramManager.setData_by(choosedFile);
+					LinkedHashMap<String,LinkedHashMap<String,Parameter>> paramMap = paramManager.getUserInputParamMap();
 					for(String key:dataField.keySet()) {
 						LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
 						for(String deepKey:deepMap.keySet()) {
-							String data = paramMap.get(key).get(deepKey);
+							String data = paramMap.get(key).get(deepKey).getValue();
 							JTextField targetTF = deepMap.get(deepKey);
 							targetTF.setText(data);
 							changeTextFieldColor(targetTF);
