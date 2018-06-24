@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.swing.ProgressMonitor;
@@ -149,7 +150,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		}
 	}
 
-	public abstract void setSystemInputParameterValue();
+	public abstract void setSystemInputParameterValue(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
 
 	public abstract void createParameters();
 
