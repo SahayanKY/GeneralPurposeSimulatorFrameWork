@@ -96,7 +96,7 @@ public class ParameterManager {
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
 	public void writeProperty_on(File choosedDirectory) throws IOException{
-		simulater.setSystemInputParameterValue(getInputParamMap(false));
+		simulater.calculateAndSetParameterValue(getInputParamMap(false));
 		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーションパラメータ.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止

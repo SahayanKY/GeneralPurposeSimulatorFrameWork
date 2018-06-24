@@ -19,13 +19,15 @@ import javax.swing.SwingWorker;
 
 import icg.frame.DataInputFrame;
 import simulation.param.Parameter;
+import simulation.param.ParameterManager;
 
 public abstract class Simulater extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
 	private BufferedWriter resultWriter;
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
-
+	private ParameterManager paraMan;
+	private File resultStoreDirectory;
 	private double startTime,currentProgressRate;
 
 
@@ -75,25 +77,11 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	 * 計算結果の出力先のディレクトリを指定し、シミュレーションを開始する。
 	 * 同名のexecute()では正しく起動しない仕様であるので注意。
 	 * */
-	public void execute(File resultSaveDirectory) throws IOException {
-		try {
-			File storeFile = new File(resultSaveDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
-			if(storeFile.exists()) {
-				//同名のファイルが存在する場合
-				throw new IOException("同名のファイルが存在");
-			}
-
-			this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
-			execute();
-		}catch(IOException e) {
-			try {
-				if(resultWriter != null) {
-					resultWriter.close();
-				}
-			} catch (IOException e1) {
-			}
-			throw e;
-		}
+	public void execute(File resultStoreDirectory) throws IOException{
+		//シミュレーション日時の決定
+		setSimulationStartTime();
+		this.resultStoreDirectory = resultStoreDirectory;
+		execute();
 	}
 
 	@Override
@@ -101,7 +89,28 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	 * シミュレーションの計算実行開始メソッド。
 	 * */
 	protected Object doInBackground() {
-		executeSimulation();
+		try {
+			//指定したディレクトリにパラメータを保存させる
+			paraMan.writeProperty_on(resultStoreDirectory);
+
+			File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
+			if(storeFile.exists()) {
+				//同名のファイルが存在する場合
+				throw new IOException("同名のファイルが存在");
+			}
+			this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
+			executeSimulation(paraMan.getInputParamMap(false));
+
+		}catch(Exception e) {
+			try {
+				if(resultWriter != null) {
+					resultWriter.close();
+				}
+			} catch (IOException e1) {
+			}
+			e.printStackTrace();
+		}
+
 		monitor.close();
 
 		return null;
@@ -111,7 +120,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	 * シミュレーション本体の実装部分。Simulaterの子クラスはこのメソッドをオーバーライドし、
 	 * 計算を行うようにすること。また、計算の各段階で適切にupdateProgress(double)とpublish(String)を使うこと。
 	 * */
-	protected abstract void executeSimulation();
+	protected abstract void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
 
 	/*
 	 * シミュレーションの計算進捗率を指定する。もし、シミュレーションを中断する
@@ -150,13 +159,18 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		}
 	}
 
-	public abstract void setSystemInputParameterValue(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
+	public abstract void calculateAndSetParameterValue(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
 
 	public abstract void createParameters();
 
 	public abstract ArrayList<Parameter> getParameterList();
 
+	public ParameterManager getParameterManager() {
+		return this.paraMan;
+	}
+
 	public final void openInputFrame() {
+		paraMan = new ParameterManager(this);
 		inputFrame = new DataInputFrame(this);
 		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
 	}
@@ -172,7 +186,9 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 			e.printStackTrace();
 		}finally {
 			try {
-				this.resultWriter.close();
+				if(resultWriter != null) {
+					this.resultWriter.close();
+				}
 			} catch (IOException e) {
 				// TODO 自動生成された catch ブロック
 				e.printStackTrace();
