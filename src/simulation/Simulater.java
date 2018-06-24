@@ -4,12 +4,9 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,11 +20,11 @@ import simulation.param.ParameterManager;
 
 public abstract class Simulater extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
-	private BufferedWriter resultWriter;
+	protected BufferedWriter resultWriter;
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
 	private ParameterManager paraMan;
-	private File resultStoreDirectory;
+	protected File resultStoreDirectory;
 	private double startTime,currentProgressRate;
 
 
@@ -92,13 +89,6 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		try {
 			//指定したディレクトリにパラメータを保存させる
 			paraMan.writeProperty_on(resultStoreDirectory);
-
-			File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
-			if(storeFile.exists()) {
-				//同名のファイルが存在する場合
-				throw new IOException("同名のファイルが存在");
-			}
-			this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
 			executeSimulation(paraMan.getInputParamMap(false));
 
 		}catch(Exception e) {
@@ -148,16 +138,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	}
 
 	@Override
-	protected void process(List<String> list) {
-		for(String strline:list) {
-			try {
-				this.resultWriter.write(strline);
-				this.resultWriter.newLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+	protected abstract void process(List<String> list);
 
 	public abstract void calculateAndSetParameterValue(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
 

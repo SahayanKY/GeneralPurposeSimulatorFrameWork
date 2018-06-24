@@ -1,5 +1,12 @@
 package icg;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,8 +26,8 @@ import simulation.param.checker.WhiteSpaceChecker;
 
 public class ICG extends Simulater{
 	private ArrayList<Parameter> paramList = new ArrayList<>();
-	
-	private double 
+	private File thrustFile;
+	private double
 		ρ,
 		Vmax,
 		lsp,
@@ -50,7 +57,7 @@ public class ICG extends Simulater{
 		tube3M,
 		tubeM,
 		tubeCG,
-		
+
 		aluminumPlateM,
 		aluminumPlateTop,
 		aluminumPlateL,
@@ -86,7 +93,7 @@ public class ICG extends Simulater{
 		finM,
 		finCP,
 		finCNα,
-		
+
 		rocketAftM,
 		rocketAftCG,
 		Kfb,
@@ -108,17 +115,60 @@ public class ICG extends Simulater{
 
 	@Override
 	protected void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map) {
-		//double paramMap.get("")
-		publish("時間,z,vz");
-		double progressRate = 0;
-		double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
-		String format = "%f,%f,%f";
-		publish(String.format(format, t,z,vz));
-		System.out.println(progressRate);
-		for(int i=0;updateProgress(progressRate) && z>=0;i++) {
+		for(int i=0;i<2;i++) {
+		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
+			long size = thrustFile.length();
+			double progressRate = 0;
+			int readedByte=0;
+			String st;
+		/*	publish("時間,z,vz");
+
+			double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
+			String format = "%f,%f,%f";
+			publish(String.format(format, t,z,vz));
+			System.out.println(progressRate);
+			*/
+			if(i==0) {
+				publish("start");
+			}else if(i!=0) {
+				publish("restart");
+			}
+			for(int j=0;updateProgress(progressRate) && (st = reader.readLine()) != null;j++) {
+				System.out.println(j+":"+st);
+				publish(j+","+st);
+				readedByte += st.getBytes("UTF-8").length;
+
+				progressRate = (double)readedByte/size;
+
+			/*
+			F2燃焼時間:tb
+			B2ロケット質量(酸化剤抜き)	=ロケット質量(燃焼後)[/g]*10^(-3)
+			B3燃料質量（酸化剤質量）	=(酸化剤タンク燃焼前質量[/g]-酸化剤タンク燃焼後質量[/g])*10^(-3)
+			B5機体全長*	=ロケット全長Lr[/mm]*10^(-3)
+			B6ロケット断面積	=(ロケット外径[/mm]/2)^2*PI()*10^(-6)
+			B7ロケット重心位置	=全体重心位置G(乾燥時)[/mm]*10^(-3)
+			B8酸化剤タンク重心位置	=(酸化剤タンク先端位置[/mm]+酸化剤タンク長さ[/mm]/2)*10^(-3)
+			B9圧力中心位置(機体全体)	=全体圧力中心位置X[/mm]*10^(-3)
+			B10圧力中心位置(ノーズコーン)	=ノーズコーン先端からの圧力中心位置[/mm]*10^(-3)
+			B11圧力中心位置(フィン)	=フィン先端からの圧力中心位置[/mm]*10^(-3)
+			B12抗力係数	=ロケット全体抗力係数C_D
+			B14法線力係数(機体全体)	=B23+N4
+			B15慣性モーメント(ピッチ・ヨー)	=パラメータ入力!N22
+			B18打ち上げ角度	70
 
 
+			B22法線力係数(ノーズコーン)	=ノーズコーン抗力係数(C_Nα)n
+			B23法線力係数(フィン)	=B71*N3
+			B24ランチャ長さ	10
+			B25地上気圧	1013
+			B26地上気温	20
+			B27重力加速度	9.8
 
+			//落下分散算出時に必要
+			B19打ち上げ方向	160
+			B28回転行列の回転角	=C24-90
+					 * */
+/*
 			double vz2 = g*step + vz;
 			double z2 = vz*step +z;
 			double t2 = step*(i+1);
@@ -127,19 +177,53 @@ public class ICG extends Simulater{
 			z = z2;
 			progressRate = Math.abs(g*step*(i+1)/(2*Math.sqrt(vz*vz-2*g*z)));
 			System.out.println(progressRate);
+*/
+				try {
+					Thread.sleep(100);
+				}catch(InterruptedException e) {
+				}
 
-			try {
-				Thread.sleep((long)(step*1000));
-			}catch(InterruptedException e) {
 			}
+		} catch (IOException e) {
 		}
-
+		}
 
 	}
 
 	@Override
 	protected void process(List<String> list) {
-		super.process(list);
+		for(String strline:list) {
+			if(strline.equals("restart") || strline.equals("start")) {
+				for(int i=0;i<5;i++) {
+					if(strline.equals("restart")) {
+						this.setSimulationStartTime();
+					}
+					File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
+					if(storeFile.exists()) {
+						//同名のファイルが存在する場合
+						continue;
+					}
+					try {
+						if(this.resultWriter != null) {
+							this.resultWriter.close();
+						}
+						this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
+						break;
+					} catch (IOException e) {
+					}
+					if(i==4) {
+						throw new Error("保存ファイル作成に5回失敗しました。");
+					}
+				}
+				continue;
+			}
+			try {
+				this.resultWriter.write(strline);
+				this.resultWriter.newLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 
@@ -164,6 +248,7 @@ public class ICG extends Simulater{
 
 		setStringValue.accept(new String[] {一般,"日時"}, this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")));
 
+		thrustFile = new File(map.get(一般).get("燃焼データファイル").getValue());
 
 		ρ = getValue.apply(一般,"空気密度");
 		Vmax = getValue.apply(一般,"最大飛行速度");
@@ -171,7 +256,7 @@ public class ICG extends Simulater{
 		tb = getValue.apply(一般,"燃焼持続時間");
 		laucherL = getValue.apply(一般,"ランチャー長さ");
 		anemometerH = getValue.apply(一般,"風速計高さ");
-		
+
 		rocketOuterDiameter = getValue.apply(ロケット全体,"外径");
 		rocketInnerDiameter = getValue.apply(ロケット全体,"内径");
 		rocketCP = getValue.apply(ロケット全体,"圧力中心位置");
@@ -289,38 +374,6 @@ public class ICG extends Simulater{
 			+finM*(Math.pow(rocketOuterDiameter/2+finH,3)-Math.pow(rocketOuterDiameter, 3)/8)/finH;
 		setStringValue.accept(new String[] {合成パラメータ,"慣性モーメント(ピッチ・ヨー)"}, String.valueOf(pitchyawI));
 		setStringValue.accept(new String[] {合成パラメータ,"慣性モーメント(ロール)"}, String.valueOf(rollI));
-		/*
-ICGのパラメータ入力パネル
-燃焼時間	=燃焼持続時間tb[/s]
-
-ロケット質量(酸化剤抜き)	=ロケット質量(燃焼後)[/g]*10^(-3)
-燃料質量（酸化剤質量）	=(酸化剤タンク燃焼前質量[/g]-酸化剤タンク燃焼後質量[/g])*10^(-3)
-比推力*	=比推力*[/s]
-機体全長*	=ロケット全長Lr[/mm]*10^(-3)
-ロケット断面積	=(ロケット外径[/mm]/2)^2*PI()*10^(-6)
-ロケット重心位置	=全体重心位置G(乾燥時)[/mm]*10^(-3)
-酸化剤タンク重心位置	=(酸化剤タンク先端位置[/mm]+酸化剤タンク長さ[/mm]/2)*10^(-3)
-圧力中心位置(機体全体)	=全体圧力中心位置X[/mm]*10^(-3)
-圧力中心位置(ノーズコーン)	=ノーズコーン先端からの圧力中心位置[/mm]*10^(-3)
-圧力中心位置(フィン)	=フィン先端からの圧力中心位置[/mm]*10^(-3)
-抗力係数	=ロケット全体抗力係数C_D
-減衰モーメント係数*	=N7+N8
-法線力係数(機体全体)	=B23+N4
-慣性モーメント(ピッチ・ヨー)	=パラメータ入力!N22
-慣性モーメント（ロール）*	=パラメータ入力!N30
-降下速度	10
-打ち上げ角度	70
-打ち上げ方向	160
-分離機構動作時刻*	10
-
-法線力係数(ノーズコーン)	=ノーズコーン抗力係数(C_Nα)n
-法線力係数(フィン)	=B71*N3
-ランチャ長さ	10
-地上気圧	1013
-地上気温	20
-重力加速度	9.8
-回転行列の回転角	=C24-90
-		 * */
 	}
 
 
@@ -432,7 +485,6 @@ ICGのパラメータ入力パネル
 
 		paramList.add(new Parameter(合成パラメータ, "干渉係数", "干渉係数Kfb"));
 		paramList.add(new Parameter(合成パラメータ, "干渉込みフィン法線力係数", "干渉込みフィン法線力係数CNαfb"));
-//ノーズ圧力中心	paramList.add(new Parameter(合成パラメータ, "Xn","Xn[mm]"));
 		paramList.add(new Parameter(合成パラメータ, "合計法線力係数", "合計法線力係数CNα"));
 		paramList.add(new Parameter(合成パラメータ, "復元モーメント係数", "復元モーメント係数C1"));
 		paramList.add(new Parameter(合成パラメータ, "空力減衰モーメント", "空力減衰モーメントCA(燃焼前)"));
