@@ -15,7 +15,7 @@ import icg.UnitEditor;
 public class UnitEditorTest {
 
 	@RunWith(Theories.class)
-	public static class convertUnitTest{
+	public static class isPhysicalQuantity_OrNumberTest{
 		@DataPoints
 		public static String[][] param = {
 			//正常な入力
@@ -38,9 +38,9 @@ public class UnitEditorTest {
 			{"  1 kg", "g", "1000.0 g"}, //10
 			{"10  km /  s", "hm/s", "100.0 hm/s"}, //11
 
-			//空白少なめ
+			/*//空白少なめ
 			{"7kg", "g", null}, //12
-
+*/
 			//負符号
 			{"-1 m", "km", "-0.001 km"}, //13
 			{"-1.05 m", "mm", "-1050.0 mm"}, //14
@@ -71,23 +71,7 @@ public class UnitEditorTest {
 		@Test
 		@Theory
 		public void testConvert_from_toWithUnits(String[] s) {
-			String result = UnitEditor.convert_from_to(s[0], s[1]);
-			assertEquals(result , s[2]);
-		}
-		
-	}
-	
-	@RunWith(Theories.class)
-	public static class compareValueTest{
-		@DataPoints
-		public static Object[][] param = {
-		};
-
-		@Test
-		@Theory
-		public void testIsLargeA_thanB(Object[] s) {
-			boolean result = UnitEditor.isLargerA_thanB((String)s[0], (String)s[1]);
-			assertEquals(result , (boolean)s[2]);
+			assertEquals(UnitEditor.isPhysicalQuantity_OrNumberOnly(s[0]) ,true);
 		}
 		
 	}

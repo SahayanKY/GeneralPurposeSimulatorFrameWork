@@ -27,8 +27,9 @@ public class UnitEditor {
 			return 0;
 		}
 	}
+//	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)( +(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| +/ *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
 
-	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)( +(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| +/ *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
+	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?) *( (?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| / *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
 	private static Pattern unitsPattern = Pattern.compile("^ *((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)? */? *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)) *$");
 	private static Pattern oneUnitPattern = Pattern.compile("((?:[μmcdhkM]|da)?)([mgsA])((?:-?[0-9]+)?)");
 

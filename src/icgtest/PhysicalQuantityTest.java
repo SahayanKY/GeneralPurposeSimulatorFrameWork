@@ -20,9 +20,9 @@ public class PhysicalQuantityTest {
 		public static Object[][] param = {
 			//正常な入力
 			{"1 kg m"},
-			{" 1 kg m2"},
+			{" 1  kg m2"},
 			{"1"},
-			{"1  "},
+			{"0.53 "},
 			{"/m"},
 			{"m /s"},
 			{"kg"},
