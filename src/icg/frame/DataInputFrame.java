@@ -43,7 +43,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 	public DataInputFrame(Simulater simulater){
 		this.simulater = simulater;
-		this.paramManager = new ParameterManager(this.simulater);
+		this.paramManager = simulater.getParameterManager();
 		//フレームの設定
 		setTitle("ICGシミュレーション");
 		setBounds(250,150,800,500);
@@ -200,10 +200,6 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					if(choosedDirectory == null) {
 						break;
 					}
-					//シミュレーション日時の設定
-					simulater.setSimulationStartTime();
-					//指定したディレクトリにパラメータを保存させる
-					paramManager.writeProperty_on(choosedDirectory);
 					//このフレームの操作を不能にし、次のステージに進める
 					this.setEnabled(false);
 
