@@ -68,7 +68,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,Parameter>> map = paramManager.getUserInputParamMap();
+		LinkedHashMap<String,LinkedHashMap<String,Parameter>> map = paramManager.getInputParamMap(true);
 		int row=0;
 		int splitNum = 2;
 		JPanel card=null;
@@ -222,7 +222,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				try {
 					//ファイルを渡し、パラメータをセットさせ、その値をTextFieldにセットする
 					paramManager.setData_by(choosedFile);
-					LinkedHashMap<String,LinkedHashMap<String,Parameter>> paramMap = paramManager.getUserInputParamMap();
+					LinkedHashMap<String,LinkedHashMap<String,Parameter>> paramMap = paramManager.getInputParamMap(true);
 					for(String key:dataField.keySet()) {
 						LinkedHashMap<String,JTextField> deepMap = dataField.get(key);
 						for(String deepKey:deepMap.keySet()) {
