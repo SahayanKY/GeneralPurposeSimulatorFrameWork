@@ -115,12 +115,39 @@ public class ICG extends Simulater{
 
 	@Override
 	protected void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map) {
-		for(int i=0;i<2;i++) {
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
-			long size = thrustFile.length();
-			double progressRate = 0;
-			int readedByte=0;
+			ArrayList<double[]> thrust = new ArrayList<>();
 			String st;
+			for(int i=0;(st = reader.readLine()) != null;i++) {
+				String[] dataList = st.split(" +|	+|,{1}");
+				thrust.add(new double[] {Double.parseDouble(dataList[0]),Double.parseDouble(dataList[1])});
+			}
+			double progressRate = 0;
+			double g=9.8,
+					N_M = rocketAftM+grainContentsM+tankContentsM,
+					N_RocketCG = (rocketAftM*rocketAftCG+grainContentsM*grainCG+tankContentsM*tankCG)/(rocketAftM+grainContentsM+tankContentsM),
+					N_CD = rocketCD,
+					atomosP = 1013, //hPa単位なので注意
+					temperature = 20, //℃単位なので注意
+					N_ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
+					crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
+					anemometerV = 1,
+					windSpeed = 0, //風速!$D$4*(Xn-1/風速!$D$5)^(1/風速!$B$8)
+					windAngle = 0,
+					attackAngle = 0,
+					diffCGCP = rocketCP-N_RocketCG,
+					Vx = 0,
+					Vz = 0,
+					XCG = 0,
+					ZCG = 0,
+					relativeVelocityToAir = 0,
+					normalForce = 0,
+					drag = 0,
+					ω = 0,
+					θ = Math.toRadians(70),
+					staticMoment = 0,
+					dampingMoment = 0,
+					dampingMomentCoefficient = 0;
 		/*	publish("時間,z,vz");
 
 			double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
@@ -128,17 +155,19 @@ public class ICG extends Simulater{
 			publish(String.format(format, t,z,vz));
 			System.out.println(progressRate);
 			*/
-			if(i==0) {
-				publish("start");
-			}else if(i!=0) {
-				publish("restart");
-			}
-			for(int j=0;updateProgress(progressRate) && (st = reader.readLine()) != null;j++) {
+			publish("start");
+
+			for(int j=0;updateProgress(progressRate) && ZCG>=0 ;j++) {
 				System.out.println(j+":"+st);
 				publish(j+","+st);
-				readedByte += st.getBytes("UTF-8").length;
+	//			readedByte += st.getBytes("UTF-8").length;
 
-				progressRate = (double)readedByte/size;
+	//			progressRate = (double)readedByte/size;
+
+			/*
+			 *
+			 *
+			 * */
 
 			/*
 			F2燃焼時間:tb
@@ -185,7 +214,6 @@ public class ICG extends Simulater{
 
 			}
 		} catch (IOException e) {
-		}
 		}
 
 	}
