@@ -127,8 +127,7 @@ public class ICG extends Simulater{
 				String[] dataSet = st.split(" +|	+|,{1}");
 				thrustList.add(new double[] {Double.parseDouble(dataSet[0]),Double.parseDouble(dataSet[1])});
 			}
-			double[][] thrustArray = (double[][]) thrustList.toArray();
-			thrustList = null;
+			int thrustListSize = thrustList.size();
 			double progressRate = 0;
 			double time=0,
 					dt=0,
@@ -149,6 +148,7 @@ public class ICG extends Simulater{
 					diffCGCP = rocketCP-N_RocketCG,
 					Vx = 0,
 					Vz = 0,
+					Velocity = 0,
 					XCG = 0,
 					ZCG = 0,
 					relativeVelocityToAir = 0,
@@ -159,7 +159,7 @@ public class ICG extends Simulater{
 					staticMoment = 0,
 					dampingMoment = 0,
 					dampingMomentCoefficient = 0;
-			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,");
+			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad");
 			/*
 			double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
 			String format = "%f,%f,%f";
@@ -167,23 +167,23 @@ public class ICG extends Simulater{
 			System.out.println(progressRate);
 			*/
 			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
-			publish(String.format(format, time, thrustArray[0][1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
+			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
 
 			for(int j=0;updateProgress(progressRate) && ZCG>=0 ;j++) {
-				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust,Velocity;
-				if(j < thrustArray.length) {
-					if(thrustArray[j][1]<=0) {
+				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust;
+				if(j < thrustListSize) {
+					if(thrustList.get(j)[1]<=0) {
 						continue;
 					}
 					//推力が出ていた場合(Bn>0)
-					N_grainContentsM = grainContentsM*(thrustArray[thrustArray.length-1][0]-thrustArray[j][0])/(thrustArray[thrustArray.length-1][0]-thrustArray[0][0]);
-					N_tankContentsM = tankContentsM*(thrustArray[thrustArray.length-1][0]-thrustArray[j][0])/(thrustArray[thrustArray.length-1][0]-thrustArray[0][0]);
+					N_grainContentsM = grainContentsM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
+					N_tankContentsM = tankContentsM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
 					N_RocketM = rocketAftM +N_grainContentsM +N_tankContentsM;
 					N_RocketCG = (rocketAftM*rocketAftCG+N_grainContentsM*grainCG+N_tankContentsM*tankCG)/(rocketAftM+N_grainContentsM+N_tankContentsM);
 
-					if(j<thrustArray.length-1) {
-						dt = thrustArray[j+1][0] -thrustArray[j][0];
-						thrust = thrustArray[j+1][1];
+					if(j<thrustListSize-1) {
+						dt = thrustList.get(j+1)[0] -thrustList.get(j)[0];
+						thrust = thrustList.get(j+1)[1];
 					}else {
 						thrust = 0;
 					}
@@ -211,30 +211,26 @@ public class ICG extends Simulater{
 				normalForce = (ZCG2<Math.sin(Math.toRadians(fireAngle)) && Vz2>0)? 0:rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
 				staticMoment = normalForce *diffCGCP;
 				dampingMoment = N_ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
-				//readedByte += st.getBytes("UTF-8").length;
 
-				//progressRate = (double)readedByte/size;
+				//得られた次のステップを出力する
+				publish(String.format(format, time+dt, thrust, N_RocketM, N_RocketCG, CD2, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2));
 
-/*
-			double vz2 = g*step + vz;
-			double z2 = vz*step +z;
-			double t2 = step*(i+1);
-			publish(String.format(format, t2,z2,vz2));
-			vz = vz2;
-			z = z2;
-			progressRate = Math.abs(g*step*(i+1)/(2*Math.sqrt(vz*vz-2*g*z)));
-			System.out.println(progressRate);
-*/
-				time += dt;
+				//ループの更新処理
 				ω = ω2;
-				publish(String.format(format, time, thrustArray[0][1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
+				θ = θ2;
+				N_CD = CD2;
+				Vx = Vx2;
+				Vz = Vz2;
+				XCG = XCG2;
+				ZCG = ZCG2;
+				time += dt;
 
+				progressRate = Math.abs(g*time/(2*Math.sqrt(Vz*Vz-2*g*ZCG)));
 
 				try {
-					Thread.sleep(100);
+					Thread.sleep((long)(dt*1000));
 				}catch(InterruptedException e) {
 				}
-
 			}
 		} catch (IOException e) {
 		}
