@@ -32,7 +32,7 @@ public class ICG extends Simulater{
 		Vmax,
 		lsp,
 		tb,
-		laucherL,
+		launcherL,
 		anemometerH,
 
 		rocketOuterDiameter,
@@ -102,6 +102,8 @@ public class ICG extends Simulater{
 		CR,
 		rollI,
 		pitchyawI;
+	private Double launcherAzimuth;
+	private Double fireAngle;
 
 	public ICG() {
 		//new DataInputFrame(this);
@@ -116,15 +118,22 @@ public class ICG extends Simulater{
 	@Override
 	protected void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map) {
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
-			ArrayList<double[]> thrust = new ArrayList<>();
+			publish("start");
+
+			ArrayList<double[]> thrustList = new ArrayList<>();
 			String st;
 			for(int i=0;(st = reader.readLine()) != null;i++) {
-				String[] dataList = st.split(" +|	+|,{1}");
-				thrust.add(new double[] {Double.parseDouble(dataList[0]),Double.parseDouble(dataList[1])});
+				String[] dataSet = st.split(" +|	+|,{1}");
+				thrustList.add(new double[] {Double.parseDouble(dataSet[0]),Double.parseDouble(dataSet[1])});
 			}
+			double[][] thrust = (double[][]) thrustList.toArray();
 			double progressRate = 0;
-			double g=9.8,
-					N_M = rocketAftM+grainContentsM+tankContentsM,
+			double time=0,
+					dt=0,
+					g=9.8,
+					N_grainContentsM = grainContentsM,
+					N_tankContentsM = tankContentsM,
+					N_RocketM = rocketAftM+N_grainContentsM+N_tankContentsM,
 					N_RocketCG = (rocketAftM*rocketAftCG+grainContentsM*grainCG+tankContentsM*tankCG)/(rocketAftM+grainContentsM+tankContentsM),
 					N_CD = rocketCD,
 					atomosP = 1013, //hPa単位なので注意
@@ -144,30 +153,94 @@ public class ICG extends Simulater{
 					normalForce = 0,
 					drag = 0,
 					ω = 0,
-					θ = Math.toRadians(70),
+					θ = Math.toRadians(fireAngle),
 					staticMoment = 0,
 					dampingMoment = 0,
 					dampingMomentCoefficient = 0;
-		/*	publish("時間,z,vz");
-
+			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,");
+			/*
 			double m=0.5, t=0, z=0, g=-9.8, vz=50, step = 0.3;
 			String format = "%f,%f,%f";
 			publish(String.format(format, t,z,vz));
 			System.out.println(progressRate);
 			*/
-			publish("start");
+			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
+			publish(String.format(format, time, thrust[0][1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
 
 			for(int j=0;updateProgress(progressRate) && ZCG>=0 ;j++) {
-				System.out.println(j+":"+st);
-				publish(j+","+st);
+				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2;
+				if(j < thrust.length) {
+					if(thrust[j][1]<=0) {
+						continue;
+					}
+					//推力が出ていた場合(Bn>0)
+					N_grainContentsM = grainContentsM*(thrust[thrust.length-1][0]-thrust[j][0])/(thrust[thrust.length-1][0]-thrust[0][0]);
+					N_tankContentsM = tankContentsM*(thrust[thrust.length-1][0]-thrust[j][0])/(thrust[thrust.length-1][0]-thrust[0][0]);
+					N_RocketM = rocketAftM +N_grainContentsM +N_tankContentsM;
+					N_RocketCG = (rocketAftM*rocketAftCG+N_grainContentsM*grainCG+N_tankContentsM*tankCG)/(rocketAftM+N_grainContentsM+N_tankContentsM);
+
+					if(j<thrust.length-1) {
+						dt = thrust[j+1][0] -thrust[j][0];
+					}
+				}
+				ω2 = ω - (staticMoment +dampingMoment)/pitchyawI*dt;
+				windAngle = Math.atan2(Vz, Vx+windSpeed);
+				θ2 = θ + (ω+ω2)/2*dt;
+				attackAngle = (ZCG < Math.sin(Math.toRadians(fireAngle))*launcherL && Vz >=0)? 0:θ2-windAngle;
+				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
+				N_ρ = atomosP/(2.87*(temperature+273.15));
+				diffCGCP = rocketCP -N_RocketCG;
+				windSpeed = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
+
+				//E重心
+				//B推力
+				//C質量
+				//パラメータB3燃料質量
+				//パラメータF2燃焼時間
+				//VVz
+				//UVx
+				//XZ重心
+				//WX重心
+				//AEθ
+				//ADω
+				//F抗力係数
+				//K風方向角
+				//M迎え角
+				//H空気密度
+				//Q気圧
+				//R気温
+				//PCG-CP
 	//			readedByte += st.getBytes("UTF-8").length;
 
 	//			progressRate = (double)readedByte/size;
 
-			/*
+			/**
+			 *Qn=$Q$2*(1-(0.0065*Xn)/($R$2+273.15))^0.5257
+			 *Rn=$R$2-0.0065*Xn
+			 *
+			 *Un=IF(OR(AND(Vn-1<=0,Xn-1<=0,Wn-1<>0),AND(Un-1=0,Bn=0)),0,IF(AND(Vn-1<0,An-1>5),-Jn,Un-1+(COS(AEn)*Bn/Cn-COS(Kn)/Cn*ACn)*(An-An-1)))
+			 *Vn=IF(OR(AND(Vn-1<=0,Xn-1<=0,AFn-1=パラメータ!$B$18,Bn=0),AND(Xn-1<=0,Bn=0)),0,IF(AND(Vn-1<0,An-1>5),-パラメータ!$B$17,Vn-1+(SIN(AEn)*(Bn)/Cn-Dn-SIN(Kn)*ACn/Cn)*(An-An-1)))
+			 *Wn=IF(AND(Xn-1<=0,Vn-1<0),Wn-1,Wn-1+(Un-1+Un)/2*(An-An-1))
+			 *Xn=IF(Xn-1<0,0,Xn-1+(Vn-1+Vn)/2*(An-An-1))
+			 *
+			 *Zn=(Un^2+Vn^2)^0.5
+
+			 *ABn=IF(AND(Xn<SIN($AE$2)*パラメータ!$B$24,Vn>0),0,パラメータ!$B$14*Hn*AAn^2*Mn*パラメータ!$B$6/2)
+			 *ACn=IF(AND(Xn-1<SIN($AE$2)*パラメータ!$B$24,Vn-1>0),0,Fn*Hn*パラメータ!$B$6*AAn-1^2/2)
+			 *AAn=((Un+Jn)^2+Vn^2)^0.5
+			 *AGn=ABn*Pn
+			 *AHn=Hn*パラメータ!$B$6*Zn/2*(パラメータ!$B$22*(パラメータ!$B$10-パラメータ!$B$7)^2+パラメータ!$B$23*(パラメータ!$B$7-パラメータ!$B$11)^2)*ADn-1
 			 *
 			 *
-			 * */
+			 *
+			 *=Wn+0.978*COS(AEn)
+			 *=Wn-0.941*COS(AEn)
+			 *=Xn+0.978*SIN(AEn)
+			 *=Xn-0.941*SIN(AEn)
+(n=100)
+
+			 *
+			 ***/
 
 			/*
 			F2燃焼時間:tb
@@ -207,6 +280,11 @@ public class ICG extends Simulater{
 			progressRate = Math.abs(g*step*(i+1)/(2*Math.sqrt(vz*vz-2*g*z)));
 			System.out.println(progressRate);
 */
+				time += dt;
+				ω = ω2;
+				publish(String.format(format, time, thrust[0][1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
+
+
 				try {
 					Thread.sleep(100);
 				}catch(InterruptedException e) {
@@ -282,7 +360,9 @@ public class ICG extends Simulater{
 		Vmax = getValue.apply(一般,"最大飛行速度");
 		lsp = getValue.apply(一般,"比推力");
 		tb = getValue.apply(一般,"燃焼持続時間");
-		laucherL = getValue.apply(一般,"ランチャー長さ");
+		launcherL = getValue.apply(一般,"ランチャー長さ");
+		launcherAzimuth = getValue.apply(一般, "打上げ方位角[°]");
+		fireAngle = getValue.apply(一般, "射角[°]");
 		anemometerH = getValue.apply(一般,"風速計高さ");
 
 		rocketOuterDiameter = getValue.apply(ロケット全体,"外径");
@@ -438,6 +518,8 @@ public class ICG extends Simulater{
 		paramList.add(new Parameter(一般, "比推力", "比推力", "50 s", "500 s", def));
 		paramList.add(new Parameter(一般, "燃焼持続時間", "燃焼持続時間", "2 s", "30 s", def));
 		paramList.add(new Parameter(一般, "ランチャー長さ", "ランチャー長さ", "3 m", "10 m", def));
+		paramList.add(new Parameter(一般, "打上げ方位角[°]", "磁東からの打上げ方位角[°]", "0", "359", def));
+		paramList.add(new Parameter(一般, "射角[°]", "射角[°]", "50", "90", def));
 		paramList.add(new Parameter(一般, "風速計高さ", "風速計高さ", "0 m", "15 m", def));
 
 
