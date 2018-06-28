@@ -113,7 +113,7 @@ public class ICG extends Simulater{
 	public static void main(String args[]) {
 		ICG icg = new ICG();
 		icg.createParameters();
-		icg.openInputFrame();
+		icg.openInputFrame(340,450);
 	}
 
 	@Override
@@ -169,7 +169,7 @@ public class ICG extends Simulater{
 			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
 			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
 
-			for(int j=0;updateProgress(progressRate) && ZCG>=0 ;j++) {
+			for(int j=0;updateProgress(0) && ZCG>=0 ;j++) {
 				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust;
 				if(j < thrustListSize) {
 					if(thrustList.get(j)[1]<=0) {
@@ -224,14 +224,8 @@ public class ICG extends Simulater{
 				XCG = XCG2;
 				ZCG = ZCG2;
 				time += dt;
-
-				progressRate = Math.abs(g*time/(2*Math.sqrt(Vz*Vz-2*g*ZCG)));
-
-				try {
-					Thread.sleep((long)(dt*1000));
-				}catch(InterruptedException e) {
-				}
 			}
+			updateProgress(1);
 		} catch (IOException e) {
 		}
 
@@ -242,16 +236,18 @@ public class ICG extends Simulater{
 		for(String strline:list) {
 			if(strline.equals("restart") || strline.equals("start")) {
 				for(int i=0;i<5;i++) {
-					if(strline.equals("restart")) {
-						this.setSimulationStartTime();
-					}
-					File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
-					if(storeFile.exists()) {
-						//同名のファイルが存在する場合
-						continue;
-					}
 					try {
+						if(strline.equals("restart")) {
+							this.setSimulationStartTime();
+						}
+						File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
+						if(storeFile.exists()) {
+							//同名のファイルが存在する場合
+							continue;
+						}
+
 						if(this.resultWriter != null) {
+							this.resultWriter.flush();
 							this.resultWriter.close();
 						}
 						this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));

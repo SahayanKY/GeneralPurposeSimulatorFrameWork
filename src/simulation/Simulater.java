@@ -150,9 +150,9 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		return this.paraMan;
 	}
 
-	public final void openInputFrame() {
+	public final void openInputFrame(int width, int height) {
 		paraMan = new ParameterManager(this);
-		inputFrame = new DataInputFrame(this);
+		inputFrame = new DataInputFrame(this,width,height);
 		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
 	}
 
@@ -160,6 +160,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	protected void done() {
 		inputFrame.dispose();
 		System.out.println("done()");
+		System.out.println("done():currentProgressRate:"+currentProgressRate);
 		try {
 			this.resultWriter.flush();
 		} catch (IOException e) {
