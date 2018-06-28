@@ -3,7 +3,6 @@ package icg.frame;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,6 +13,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -34,6 +34,8 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
 
+	private int contentPaneH,contentPaneW;
+
 	private LinkedHashMap<String, LinkedHashMap<String,JTextField>> dataField = new LinkedHashMap<>();
 
 	private static final String ShowCard = "showCard",
@@ -41,13 +43,19 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			ChangeTextFieldColor = "ChangeTextFieldColor",
 			SetExistingInputData = "SetInputData";
 
-	public DataInputFrame(Simulater simulater){
+	public DataInputFrame(Simulater simulater, int width, int height){
 		this.simulater = simulater;
 		this.paramManager = simulater.getParameterManager();
 		//フレームの設定
 		setTitle("ICGシミュレーション");
-		setBounds(250,150,800,500);
+		//内側のサイズをコンストラクタの引数で指定
+		this.contentPaneW = width;
+		this.contentPaneH = height;
+		getContentPane().setPreferredSize(new Dimension(contentPaneW,contentPaneH));
+		pack();
+
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setLocationRelativeTo(null);
 
 		setComponent();
 		setVisible(true);
@@ -60,42 +68,74 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 		ComponentSetter LayoutOfFrame = new ComponentSetter();
 		setLayout(LayoutOfFrame);
 
-		Font f = new Font(Font.SERIF, Font.BOLD, 20);
+		LinkedHashMap<String,LinkedHashMap<String,Parameter>> map = paramManager.getInputParamMap(true);
+
+		//入力値を既存のファイルから取得し、セットする
+		JButton setInputDataButton = new JButton("既存のデータファイルからパラメータをセットする");
+		setInputDataButton.addActionListener(this);
+		setInputDataButton.setActionCommand(SetExistingInputData);
+		LayoutOfFrame.setFill(GridBagConstraints.HORIZONTAL);
+		LayoutOfFrame.setComponent(setInputDataButton, 0, 0, 1, 1 , 0, 0, GridBagConstraints.CENTER);
+		add(setInputDataButton);
+
+		//パネル変更用のcomboboxの作成
+		JComboBox combo = new JComboBox();
+		combo.addActionListener(this);
+		combo.setActionCommand(ShowCard);
+		LayoutOfFrame.setFill(GridBagConstraints.HORIZONTAL);
+		LayoutOfFrame.setComponent(combo, 0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER);
+		add(combo);
+
+		JButton calcStartButton = new JButton("計算開始");
+		calcStartButton.addActionListener(this);
+		calcStartButton.setActionCommand(StartCalculation);
+		LayoutOfFrame.setComponent(calcStartButton, 0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER);
+		add(calcStartButton);
+
 
 		//カードレイアウトパネルを追加
 		CardPanel.setLayout(LayoutOfPanel);
+		LayoutOfFrame.setComponent(CardPanel, 0, 2, 1, 1, 0, 1.0d, GridBagConstraints.CENTER);
 		add(CardPanel);
+
+		int minCardPanelH = contentPaneH
+							-setInputDataButton.getPreferredSize().height
+							-combo.getPreferredSize().height
+							-calcStartButton.getPreferredSize().height;
 
 		//カードレイアウトパネルに追加するパネルを作成
 		//同時にtextFieldをメンバ変数のhashmapに登録しておく
-		LinkedHashMap<String,LinkedHashMap<String,Parameter>> map = paramManager.getInputParamMap(true);
-		int row=0;
-		int splitNum = 2;
-		JPanel card=null;
 		ComponentSetter LayoutOfCards = new ComponentSetter();
+		Dimension d = new Dimension(90,30);
 		for(String Name:map.keySet()) {
-			if(row%splitNum==0) {
-				card = new JPanel();
-				card.setLayout(LayoutOfCards);
-				CardPanel.add(card, "Card"+row/splitNum);
-			}
-			//一番上に来る大まかなネームを貼り付け
-			int y=0;
-			JLabel label = new JLabel(Name);
-			label.setFont(f);
-			label.setHorizontalAlignment(JLabel.CENTER);
-			LayoutOfCards.setFill(GridBagConstraints.HORIZONTAL);
-			LayoutOfCards.setComponent(label, row%splitNum*2, y, 2, 1, 0.2d, 0.8d, GridBagConstraints.CENTER);
-			card.add(label);
+			//ひとつのparentLabelのパラメータの数が多い場合、
+			//複数のパネルに分割する
+			//適切な枚数を計算
+			int NumberOfPanelForOneParent = map.get(Name).size()*30;
+			NumberOfPanelForOneParent = NumberOfPanelForOneParent/minCardPanelH +((NumberOfPanelForOneParent%minCardPanelH == 0)? 0:1);
 
 			LinkedHashMap<String,JTextField> TextFieldMap = new LinkedHashMap<>();
+			dataField.put(Name, TextFieldMap);
+
+			int line = minCardPanelH/30;
+
+			int x=0,y=0;
 			//各パラメータをその下に貼り付けていく
+			JPanel card = null;
 			for(String parameterName:map.get(Name).keySet()) {
-				Dimension d = new Dimension(100,30);
-				y++;
-				JLabel paramLabel = new JLabel(parameterName.replace(Name,""));
+				if((x==0)||(y == line)) {
+					x++;
+					y=0;
+					card = new JPanel();
+					card.setLayout(LayoutOfCards);
+					String n = (NumberOfPanelForOneParent == 1)? "":String.valueOf(x);
+					CardPanel.add(card, Name+n);
+					combo.addItem(Name+n);
+				}
+
+				JLabel paramLabel = new JLabel(parameterName);
 				LayoutOfCards.setFill(GridBagConstraints.HORIZONTAL);
-				LayoutOfCards.setComponent(paramLabel, row%splitNum*2, y, 1, 1, 0.5, 0.1,GridBagConstraints.EAST);
+				LayoutOfCards.setComponent(paramLabel, 0, y, 1, 1, 0.7, 0.1,GridBagConstraints.EAST);
 				card.add(paramLabel);
 
 				JTextField text = new JTextField();
@@ -103,13 +143,12 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				text.setBackground(Color.RED);
 				text.addFocusListener(this);
 				text.setActionCommand(ChangeTextFieldColor);
-				LayoutOfCards.setComponent(text, row%splitNum*2+1, y, 1, 1, 0.5, 0.2, GridBagConstraints.WEST);
+				LayoutOfCards.setComponent(text, 1, y, 1, 1, 0.3, 0.2, GridBagConstraints.WEST);
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
 				if(map.get(Name).get(parameterName).isNeedInputButtonParameter()) {
-					y++;
-					JButton selectFileButton = new JButton("ファイルを選択");
+					JButton selectFileButton = new JButton("選択");
 					selectFileButton.addActionListener(new ActionListener() {
 						@Override
 						public void actionPerformed(ActionEvent e) {
@@ -121,54 +160,24 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 							}
 						}
 					});
-					LayoutOfCards.setComponent(selectFileButton, row%splitNum*2+1, y, 1, 1, 0, 0.1, GridBagConstraints.WEST);
+					LayoutOfCards.setComponent(selectFileButton, 2, y, 1, 1, 0, 0.1, GridBagConstraints.WEST);
 					card.add(selectFileButton);
 				}
+				y++;
 			}
-			row++;
-
-			dataField.put(Name, TextFieldMap);
-		}
-		//カードの枚数
-		int cardNum = row/splitNum+1-(splitNum-row%splitNum)/splitNum;
-
-		//入力値を既存のファイルから取得し、セットする
-		JButton setInputDataButton = new JButton("既存のデータファイルからパラメータをセットする");
-		setInputDataButton.addActionListener(this);
-		setInputDataButton.setActionCommand(SetExistingInputData);
-		LayoutOfFrame.setFill(GridBagConstraints.HORIZONTAL);
-		LayoutOfFrame.setComponent(setInputDataButton, 0, 0, cardNum, 1 , 0, 0, GridBagConstraints.CENTER);
-		add(setInputDataButton);
-
-		//パネル変更用のボタンの作成
-		for(int i=0;i<cardNum;i++) {
-			JButton button = new JButton("パラメーターその"+(i+1));
-			button.addActionListener(this);
-			button.setActionCommand(ShowCard+i);
-			LayoutOfFrame.setFill(GridBagConstraints.HORIZONTAL);
-			LayoutOfFrame.setComponent(button, i,1,1,1,1,0,GridBagConstraints.CENTER);
-			add(button);
 		}
 
-		JButton calcStartButton = new JButton("計算開始");
-		calcStartButton.addActionListener(this);
-		calcStartButton.setActionCommand(StartCalculation);
-		LayoutOfFrame.setComponent(calcStartButton, 0, 3, cardNum, 1, 0, 0, GridBagConstraints.CENTER);
-		add(calcStartButton);
-
-		//ボタン数に応じてカードパネルの幅を調整
-		LayoutOfFrame.setComponent(CardPanel, 0, 2, cardNum, 1, 0, 1.0d, GridBagConstraints.CENTER);
 	}
+
 
 	public void actionPerformed(ActionEvent e) {
 		String cmd = e.getActionCommand();
-
-		if(cmd.startsWith(ShowCard)) {
-			int n=Integer.parseInt(cmd.substring(8));
-			LayoutOfPanel.show(CardPanel,"Card"+n);
-			return;
-		}
 		switch(cmd) {
+			case ShowCard:
+				String itemLabel = (String) ((JComboBox)(e.getSource())).getSelectedItem();
+				LayoutOfPanel.show(CardPanel,itemLabel);
+				break;
+
 			case StartCalculation:
 				try {
 					//TextFieldにセットされている文字列をParameterに渡す
