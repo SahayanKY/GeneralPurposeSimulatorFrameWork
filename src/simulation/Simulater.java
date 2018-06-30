@@ -4,10 +4,12 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -23,7 +25,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	protected BufferedWriter resultWriter;
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
-	private ParameterManager paraMan;
+	protected ParameterManager paraMan;
 	protected File resultStoreDirectory;
 	private double startTime,currentProgressRate;
 
@@ -138,20 +140,50 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	}
 
 	@Override
-	protected abstract void process(List<String> list);
+	protected void process(List<String> list) {
+		for(String strline:list) {
+			if(strline.equals("restart") || strline.equals("start")) {
+				for(int i=0;i<5;i++) {
+					try {
+						if(strline.equals("restart")) {
+							this.setSimulationStartTime();
+						}
+						File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
+						if(storeFile.exists()) {
+							//同名のファイルが存在する場合
+							continue;
+						}
 
-	public abstract void calculateAndSetParameterValue(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
+						if(this.resultWriter != null) {
+							this.resultWriter.flush();
+							this.resultWriter.close();
+						}
+						this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
+						break;
+					} catch (IOException e) {
+					}
+					if(i==4) {
+						throw new Error("保存ファイル作成に5回失敗しました。");
+					}
+				}
+				continue;
+			}
+			try {
+				this.resultWriter.write(strline);
+				this.resultWriter.newLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	public abstract void createParameters();
-
-	public abstract ArrayList<Parameter> getParameterList();
 
 	public ParameterManager getParameterManager() {
 		return this.paraMan;
 	}
 
-	public final void openInputFrame(int width, int height) {
-		paraMan = new ParameterManager(this);
+	public void openDataInputFrame(int width, int height) {
 		inputFrame = new DataInputFrame(this,width,height);
 		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
 	}
