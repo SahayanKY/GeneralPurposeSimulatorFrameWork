@@ -18,11 +18,11 @@ import simulation.Simulater;
 
 public class ParameterManager {
 	private final Simulater simulater;
-	private final ArrayList<Parameter> paramList;
+	private ArrayList<Parameter> paramList = new ArrayList<>();
+	private Runnable runnable;
 
 	public ParameterManager(Simulater simulater){
 		this.simulater = simulater;
-		this.paramList = simulater.getParameterList();
 	}
 
 	/* 外部(Frame)から入力値をセットする時の呼び出し用
@@ -35,12 +35,16 @@ public class ParameterManager {
 	 * 特に何も無かった場合nullを返す。
 	 * */
 	public String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
+		Parameter warningParam=null;
 		//入力値のチェック
 		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n");
 		int ErrorTime=0,WarnTime=0;
 		for(Parameter param : paramList) {
 			if(param.isSystemInputParameter) {
 				//システムが入力するパラメータならチェックする必要なし
+				if(param.childLabel.equals("警告")) {
+					warningParam = param;
+				}
 				continue;
 			}
 			String inputString = checkMap.get(param.parentLabel).get(param.childLabel);
@@ -57,11 +61,14 @@ public class ParameterManager {
 					continue;
 			}
 		}
+
 		if(ErrorTime>0) {
 			return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 		}else if(WarnTime>0) {
+			warningParam.setValue(Warnings.toString());
 			return "要検証 : "+WarnTime +"件\n"+ Warnings.toString();
 		}else {
+			warningParam.setValue("");
 			return null;
 		}
 	}
@@ -89,6 +96,21 @@ public class ParameterManager {
 		}
 	}
 
+	/*
+	 * 追加するParameterインスタンスを指定する
+	 * */
+	public void addParameter(Parameter parameter) {
+		this.paramList.add(parameter);
+	}
+
+	/*
+	 * システムが入力するパラメータへの値のセットの仕方や、
+	 * Simulater子クラス自身のフィールドへの値のセットの仕方を記述したrunnableを指定する
+	 * */
+	public void setRunnable(Runnable runnable) {
+		this.runnable = runnable;
+	}
+
 
 	/*
 	 * 各パラメータがもつvalueを指定されたディレクトリに作成したプロパティファイルに書き込む
@@ -96,7 +118,7 @@ public class ParameterManager {
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
 	public void writeProperty_on(File choosedDirectory) throws IOException{
-		simulater.calculateAndSetParameterValue(getInputParamMap(false));
+		this.runnable.run();
 		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーションパラメータ.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止
