@@ -1,4 +1,4 @@
-package icg.frame;
+package simulation.frame;
 
 import java.awt.Font;
 import java.awt.GridBagConstraints;

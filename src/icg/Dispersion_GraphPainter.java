@@ -10,7 +10,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageOutputStream;
 
-import icg.frame.GraphLabel;
+import simulation.frame.GraphLabel;
 
 public class Dispersion_GraphPainter extends GraphPainter {
 	protected Point scaleP1,scaleP2,launchP;

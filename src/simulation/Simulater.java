@@ -16,7 +16,7 @@ import java.util.List;
 import javax.swing.ProgressMonitor;
 import javax.swing.SwingWorker;
 
-import icg.frame.DataInputFrame;
+import simulation.frame.DataInputFrame;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
 

@@ -1,6 +1,6 @@
 package icgtest;
 
-import icg.frame.DataInputFrame;
+import simulation.frame.DataInputFrame;
 
 public class DataInputFrameTest {
 	public static void main(String args[]) {

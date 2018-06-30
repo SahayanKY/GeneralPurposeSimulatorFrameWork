@@ -8,7 +8,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
-import icg.frame.GraphLabel;
+import simulation.frame.GraphLabel;
 
 public abstract class GraphPainter {
 	protected BufferedImage saveImage;

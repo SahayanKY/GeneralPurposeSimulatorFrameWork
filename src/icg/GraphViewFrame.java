@@ -16,7 +16,7 @@ import javax.swing.JTextField;
 
 import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
-import icg.frame.GraphLabel;
+import simulation.frame.GraphLabel;
 
 /*
  *

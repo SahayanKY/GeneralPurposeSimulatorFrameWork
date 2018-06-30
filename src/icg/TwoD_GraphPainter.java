@@ -5,7 +5,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
-import icg.frame.GraphLabel;
+import simulation.frame.GraphLabel;
 
 public class TwoD_GraphPainter extends GraphPainter {
 	int i=0;
