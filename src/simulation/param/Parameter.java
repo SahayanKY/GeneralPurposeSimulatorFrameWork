@@ -28,13 +28,13 @@ public class Parameter {
 	}
 
 	//プログラムが入力するパラメータについてのコンストラクタ
-	public Parameter(String parentLabel, String childLabel, String propertyLabel) {
-		if(parentLabel == null || childLabel == null || propertyLabel == null) {
+	public Parameter(String parentLabel, String childLabel) {
+		if(parentLabel == null || childLabel == null) {
 			throw new IllegalArgumentException();
 		}
 		this.parentLabel = parentLabel;
 		this.childLabel = childLabel;
-		this.propertyLabel = propertyLabel;
+		this.propertyLabel = childLabel;
 		this.maxValue = null;
 		this.minValue = null;
 		this.checker = null;
