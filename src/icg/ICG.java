@@ -161,6 +161,7 @@ public class ICG extends Simulater{
 
 			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
 				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust;
+				boolean launcherCleared;
 				if(j < thrustListSize) {
 					if(thrustList.get(j)[1]<=0) {
 						continue;
@@ -181,24 +182,37 @@ public class ICG extends Simulater{
 				}else {
 					thrust = 0;
 				}
+
+				if(ZCG < Math.sin(Math.toRadians(fireAngle))*launcherL && Vz >=0) {
+					launcherCleared = false;
+				}else {
+					launcherCleared = true;
+				}
+
 				ω2 = ω - (staticMoment +dampingMoment)/pitchyawI*dt;
 				windAngle = Math.atan2(Vz, Vx+windSpeed);
 				θ2 = θ + (ω+ω2)/2*dt;
-				attackAngle = (ZCG < Math.sin(Math.toRadians(fireAngle))*launcherL && Vz >=0)? 0:θ2-windAngle;
+				attackAngle = (!launcherCleared)? 0:θ2-windAngle;
 				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
 				N_ρ = atomosP/(2.87*(temperature+273.15));
-				drag = (ZCG < Math.sin(Math.toRadians(fireAngle)) && Vz >=0)? 0: CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+				drag = (!launcherCleared)? 0: CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
 				diffCGCP = rocketCP -N_RocketCG;
 				windSpeed = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
-				Vx2 = Vx +(Math.cos(θ2)*thrust -Math.cos(windAngle)*drag)/N_RocketM *dt;
-				Vz2 = Vz +((Math.sin(θ2)*thrust-Math.sin(windAngle)*drag)/N_RocketM -g) *dt;
+				if(launcherCleared) {
+					Vx2 = Vx +(thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM *dt;
+					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g) *dt;
+				}else{
+					//抗力を一時的に考慮していない（後で要修正）
+					Vx2 = Vx +((thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM -g*Math.sin(θ2)*Math.cos(θ2)) *dt;
+					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g*Math.pow(Math.sin(θ2), 2)) *dt;
+				}
 				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
 				relativeVelocityToAir = Math.sqrt(Math.pow(Vx2+windSpeed,2)+Vz2*Vz2);
 				XCG2 = XCG +(Vx+Vx2)/2*dt;
 				ZCG2 = ZCG +(Vz+Vz2)/2*dt;
 				temperature = 20 -0.0065*ZCG2;
 				atomosP = 1013 *Math.pow((1-(0.0065*ZCG2)/(20+273.15)),0.5257);
-				normalForce = (ZCG2<Math.sin(Math.toRadians(fireAngle)) && Vz2>0)? 0:rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
+				normalForce = (!launcherCleared)? 0:rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
 				staticMoment = normalForce *diffCGCP;
 				dampingMoment = N_ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
 
