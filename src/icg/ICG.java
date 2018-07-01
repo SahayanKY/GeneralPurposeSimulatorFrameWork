@@ -199,7 +199,7 @@ public class ICG extends Simulater{
 				//進行方向の軸からx軸正の向きへの回転方向が正
 				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
 				N_ρ = atomosP/(2.87*(temperature+273.15));
-				drag = (!launcherCleared)? 0: CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+				drag = /*(!launcherCleared)? 0: */CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
 				diffCGCP = rocketCP -N_RocketCG;
 				windVelocity = -1*anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
 				//windVelocity<0のとき向かい風
@@ -207,9 +207,8 @@ public class ICG extends Simulater{
 					Vx2 = Vx +(thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM *dt;
 					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g) *dt;
 				}else{
-					//抗力を一時的に考慮していない（後で要修正）
-					Vx2 = Vx +((thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM -g*Math.sin(θ2)*Math.cos(θ2)) *dt;
-					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g*Math.pow(Math.sin(θ2), 2)) *dt;
+					Vx2 = Vx +((thrust*Math.cos(θ2) -drag*Math.cos(θ2-windAngle)*Math.cos(θ2))/N_RocketM -g*Math.sin(θ2)*Math.cos(θ2)) *dt;
+					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.cos(θ2-windAngle)*Math.sin(θ2))/N_RocketM -g*Math.pow(Math.sin(θ2), 2)) *dt;
 				}
 				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
 				relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
