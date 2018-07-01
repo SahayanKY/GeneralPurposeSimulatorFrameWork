@@ -191,12 +191,9 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	@Override
 	protected void done() {
 		inputFrame.dispose();
-		System.out.println("done()");
-		System.out.println("done():currentProgressRate:"+currentProgressRate);
 		try {
 			this.resultWriter.flush();
 		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}finally {
 			try {
@@ -204,7 +201,6 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 					this.resultWriter.close();
 				}
 			} catch (IOException e) {
-				// TODO 自動生成された catch ブロック
 				e.printStackTrace();
 			}
 		}

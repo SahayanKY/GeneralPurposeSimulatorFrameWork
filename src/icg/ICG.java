@@ -115,7 +115,6 @@ public class ICG extends Simulater{
 	protected void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map) {
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
 			publish("start");
-
 			ArrayList<double[]> thrustList = new ArrayList<>();
 			String st;
 			for(int i=0;(st = reader.readLine()) != null;i++) {
@@ -137,7 +136,7 @@ public class ICG extends Simulater{
 					N_ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
 					crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
 					anemometerV = 1,
-					windSpeed = 0, //風速!$D$4*(Xn-1/風速!$D$5)^(1/風速!$B$8)
+					windVelocity = 0, //x軸正の向きが正
 					windAngle = 0,
 					attackAngle = 0,
 					diffCGCP = rocketCP-N_RocketCG,
@@ -157,7 +156,7 @@ public class ICG extends Simulater{
 			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad");
 
 			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
-			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, N_CD, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
+			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, N_CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
 
 			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
 				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust;
@@ -190,14 +189,20 @@ public class ICG extends Simulater{
 				}
 
 				ω2 = ω - (staticMoment +dampingMoment)/pitchyawI*dt;
-				windAngle = Math.atan2(Vz, Vx+windSpeed);
+				windAngle = Math.atan2(Vz, Vx-windVelocity);
+				//機体から見てどの方向から風が吹いているか
+				//機体から見た風の相対速度の逆ベクトル
+				//x軸正の向きが0rad、反時計回りが正
 				θ2 = θ + (ω+ω2)/2*dt;
-				attackAngle = (!launcherCleared)? 0:θ2-windAngle;
+				attackAngle = (!launcherCleared)? 0:θ2 - windAngle;
+				//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
+				//進行方向の軸からx軸正の向きへの回転方向が正
 				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
 				N_ρ = atomosP/(2.87*(temperature+273.15));
 				drag = (!launcherCleared)? 0: CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
 				diffCGCP = rocketCP -N_RocketCG;
-				windSpeed = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
+				windVelocity = -1*anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
+				//windVelocity<0のとき向かい風
 				if(launcherCleared) {
 					Vx2 = Vx +(thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM *dt;
 					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g) *dt;
@@ -207,7 +212,7 @@ public class ICG extends Simulater{
 					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g*Math.pow(Math.sin(θ2), 2)) *dt;
 				}
 				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
-				relativeVelocityToAir = Math.sqrt(Math.pow(Vx2+windSpeed,2)+Vz2*Vz2);
+				relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
 				XCG2 = XCG +(Vx+Vx2)/2*dt;
 				ZCG2 = ZCG +(Vz+Vz2)/2*dt;
 				temperature = 20 -0.0065*ZCG2;
@@ -217,7 +222,7 @@ public class ICG extends Simulater{
 				dampingMoment = N_ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
 
 				//得られた次のステップを出力する
-				publish(String.format(format, time+dt, thrust, N_RocketM, N_RocketCG, CD2, N_ρ, windSpeed, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2));
+				publish(String.format(format, time+dt, thrust, N_RocketM, N_RocketCG, CD2, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2));
 
 				//ループの更新処理
 				ω = ω2;
