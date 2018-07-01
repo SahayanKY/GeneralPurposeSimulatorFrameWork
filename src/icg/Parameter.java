@@ -23,6 +23,7 @@ import simulation.param.checker.ThrustDataChecker;
 import simulation.param.checker.WhiteSpaceChecker;
 
 /*
+ * 非推奨。現在はsimulation.param.Parameterとsimulation.param.ParameterManagerが代わっている。
  * 入力データの保持及び保存を担うクラス
  * */
 public enum Parameter{

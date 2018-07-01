@@ -14,6 +14,7 @@ import java.util.Hashtable;
 import java.util.Properties;
 
 /*
+ * 非推奨。コミットId3f3d0d8現在使用無し
  * Propertiesの順番通りに出力してくれない、パス入力の面倒な仕様、既存のコメント削除仕様の改善
  * */
 public class ExProperties extends Properties{
