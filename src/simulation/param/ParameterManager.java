@@ -48,14 +48,14 @@ public class ParameterManager {
 				continue;
 			}
 			String inputString = checkMap.get(param.parentLabel).get(param.childLabel);
-			switch(param.checkFormatOf(inputString)) {
-				case 0:
+			switch(param.setAndCheckFormatOf(inputString)) {
+				case Parameter.inputformat_NoProblem:
 					continue;
-				case 1:
+				case Parameter.inputformat_Warning:
 					Warnings.add(param.parentLabel+"."+param.childLabel);
 					WarnTime++;
 					continue;
-				case 2:
+				case Parameter.inputformat_Error:
 					Errors.add(param.parentLabel+"."+param.childLabel);
 					ErrorTime++;
 					continue;

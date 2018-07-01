@@ -1,7 +1,5 @@
 package simulation.param;
 
-import java.util.ArrayList;
-
 import simulation.param.checker.ParameterChecker;
 
 public class Parameter {
@@ -9,7 +7,13 @@ public class Parameter {
 	public final ParameterChecker checker;
 	public final boolean isSystemInputParameter;
 
-	private static ArrayList<Parameter> needInputButtonParams = new ArrayList<>();
+	public static final int
+		inputformat_NoProblem = 0,
+		inputformat_Warning = 1,
+		inputformat_Error = 2;
+
+
+	private boolean needInputButton = false;
 
 	private String valueStr;
 
@@ -43,16 +47,16 @@ public class Parameter {
 
 
 	/*
-	 * パラメータのチェック。同時にその値をvalueに格納。
+	 * パラメータのチェック。同時にその値をvalueに格納する。
 	 * @param input 入力値のString表現
-	 * @return 0の場合は異常なし、1の場合は警告、2の場合はエラーで計算続行不可
+	 * @return クラス定数
+	 * inputformat_NoProblemの場合は異常なし、
+	 * inputformat_Warningの場合は警告
+	 * inputformat_Errorの場合はエラーで計算続行不可を意味する。
 	 */
-	public int checkFormatOf(String input) {
-		int message = checker.checkFormatOf(input, maxValue, minValue);
-		if(message == 0 || message == 1) {
-			valueStr = input;
-		}
-		return message;
+	public int setAndCheckFormatOf(String input) {
+		valueStr = input;
+		return checker.checkFormatOf(this);
 	}
 
 	/*
@@ -75,25 +79,20 @@ public class Parameter {
 
 
 	/*
-	 * このパラメータの値のセットにボタンを使用したい場合用いる。
+	 * このパラメータの値のセットにボタンを使用したい場合trueを指定する。
+	 * デフォルト値はfalse。
+	 * @param need ボタンを使う場合はtrue
 	 * */
-	public void setNeedInputButtonParameter() {
-		needInputButtonParams.add(this);
+	public void setNeedInputButton(boolean need) {
+		this.needInputButton = need;
 	}
 
 	/*
-	 * このパラメータが値のセットにボタンを使うものかどうかを判断する。
+	 * このパラメータが値のセットにボタンを要するものかをどうかを返す。
 	 * @return このパラメータがボタンを使うものであればtrue,そうでなければfalse
 	 * */
-	public boolean isNeedInputButtonParameter() {
-		boolean isNeed = false;
-		for(Parameter p:needInputButtonParams) {
-			isNeed= (this == p);
-			if(isNeed) {
-				break;
-			}
-		}
-		return isNeed;
+	public boolean isNeedInputButton() {
+		return this.needInputButton;
 	}
 
 }
