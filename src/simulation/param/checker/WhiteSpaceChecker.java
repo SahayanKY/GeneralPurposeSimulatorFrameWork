@@ -1,5 +1,7 @@
 package simulation.param.checker;
 
+import simulation.param.Parameter;
+
 public class WhiteSpaceChecker implements ParameterChecker {
 
 	/*
@@ -9,11 +11,12 @@ public class WhiteSpaceChecker implements ParameterChecker {
 	 * @return 0の場合異常なし、2の場合異常あり
 	 * */
 	@Override
-	public int checkFormatOf(String input, String maxValue, String minValue) {
+	public int checkFormatOf(Parameter parameter) {
+		String input = parameter.getValue();
 		if(input.matches("[ 　]+") | input.equals("")) {
-			return 2;
+			return Parameter.inputformat_Error;
 		}else {
-			return 0;
+			return Parameter.inputformat_NoProblem;
 		}
 	}
 

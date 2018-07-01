@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
+import simulation.param.Parameter;
+
 public class ThrustDataChecker implements ParameterChecker {
 
 	//データファイルを読み込み、それが燃焼データのフォーマットに即していない場合はエラー
@@ -14,11 +16,11 @@ public class ThrustDataChecker implements ParameterChecker {
 	 * @return 0の場合は燃焼データファイルであることを意味する。2の場合は燃焼データではないことを意味する。
 	 * */
 	@Override
-	public int checkFormatOf(String input, String maxValue, String minValue) {
-		if(isThrustDataFile(input)) {
-			return 0;
+	public int checkFormatOf(Parameter parameter) {
+		if(isThrustDataFile(parameter.getValue())) {
+			return Parameter.inputformat_NoProblem;
 		}else {
-			return 2;
+			return Parameter.inputformat_Error;
 		}
 	}
 
