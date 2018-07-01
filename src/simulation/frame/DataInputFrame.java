@@ -147,7 +147,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 				card.add(text);
 				TextFieldMap.put(parameterName, text);
 
-				if(map.get(Name).get(parameterName).isNeedInputButtonParameter()) {
+				if(map.get(Name).get(parameterName).isNeedInputButton()) {
 					JButton selectFileButton = new JButton("選択");
 					selectFileButton.addActionListener(new ActionListener() {
 						@Override

@@ -199,7 +199,7 @@ public class ICG extends Simulater{
 				//進行方向の軸からx軸正の向きへの回転方向が正
 				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
 				N_ρ = atomosP/(2.87*(temperature+273.15));
-				drag = /*(!launcherCleared)? 0: */CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+				drag = CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
 				diffCGCP = rocketCP -N_RocketCG;
 				windVelocity = -1*anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
 				//windVelocity<0のとき向かい風
@@ -348,7 +348,7 @@ public class ICG extends Simulater{
 			ピッチヨー慣性モーメント = new Parameter(合成パラメータ, "慣性モーメント(ピッチ・ヨー)"),
 			ロール慣性モーメント = new Parameter(合成パラメータ, "慣性モーメント");
 
-		thrustFileParam.setNeedInputButtonParameter();
+		thrustFileParam.setNeedInputButton(true);
 
 		paraMan.addParameter(警告);
 		paraMan.addParameter(シミュレーション年月日時分秒);
