@@ -2,6 +2,7 @@ package icgtest;
 
 import static org.junit.Assert.*;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.experimental.theories.DataPoints;
@@ -23,17 +24,38 @@ public class PhysicalQuantityTest {
 			{" 1  kg m2"},
 			{"1"},
 			{"0.53 "},
+			{" 0.53  "},
 			{"/m"},
 			{"m /s"},
-			{"kg"},
 		};
 
 		@Test
 		@Theory
 		public void testConstructor(Object[] p){
-			PhysicalQuantity pq = new PhysicalQuantity((String)p[0]);
+			new PhysicalQuantity((String)p[0]);
 		}
 
+	}
+
+	@RunWith(Theories.class)
+	public static class failInitializeTest{
+		@DataPoints
+		public static Object[][] param = {
+			{"a"},
+			{" 1 kgm"}
+		};
+
+		@Test
+		@Theory
+		public void testFailConstructor(Object[] p) {
+			Exception e = null;
+			try {
+				new PhysicalQuantity((String)p[0]);
+			}catch (Exception exc) {
+				e = exc;
+			}
+			Assert.assertNotNull(e);
+		}
 	}
 
 	@RunWith(Theories.class)
