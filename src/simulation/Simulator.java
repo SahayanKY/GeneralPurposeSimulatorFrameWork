@@ -20,21 +20,21 @@ import simulation.frame.DataInputFrame;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
 
-public abstract class Simulater extends SwingWorker<Object,String>{
+public abstract class Simulator extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
 	protected BufferedWriter resultWriter;
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
-	protected ParameterManager paraMan;
+	protected final ParameterManager paraMan = new ParameterManager(this);
 	protected File resultStoreDirectory;
 	private double startTime,currentProgressRate;
 
 
-	public Simulater(){
+	public Simulator(){
 		addPropertyChangeListener(new PropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent e) {
-				ProgressMonitor monitor = Simulater.this.monitor;
+				ProgressMonitor monitor = Simulator.this.monitor;
 				if(monitor == null) {
 					return;
 				}
@@ -91,7 +91,7 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		try {
 			//指定したディレクトリにパラメータを保存させる
 			paraMan.writeProperty_on(resultStoreDirectory);
-			executeSimulation(paraMan.getInputParamMap(false));
+			executeSimulation();
 
 		}catch(Exception e) {
 			try {
@@ -109,10 +109,10 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 	}
 
 	/*
-	 * シミュレーション本体の実装部分。Simulaterの子クラスはこのメソッドをオーバーライドし、
+	 * シミュレーション本体の実装部分。Simulatorの子クラスはこのメソッドをオーバーライドし、
 	 * 計算を行うようにすること。また、計算の各段階で適切にupdateProgress(double)とpublish(String)を使うこと。
 	 * */
-	protected abstract void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map);
+	protected abstract void executeSimulation();
 
 	/*
 	 * シミュレーションの計算進捗率を指定する。もし、シミュレーションを中断する
@@ -139,6 +139,14 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		return true;
 	}
 
+	/*
+	 * シミュレーション実行結果を外部ファイルへ出力する。このメソッドは直接呼ぶものではない。
+	 * 必ずpublish(String)を介して呼ぶこと。また、publish(String)で指定する文字列は以下に従うこと。
+	 *　・"start"を最初に指定すること。これにより外部ファイルへ出力するWriterが生成される。
+	 *　・"restart"を指定することで出力先のファイルを新しく設定することができる。例えば、一つのファイルにシミュレーション実行結果を出力しきれない
+	 *	場合などに使うこと。
+	 *　・結果を指定する場合はCSVファイルのフォーマットに従うこと。また、一行単位で指定すること。
+	 * */
 	@Override
 	protected void process(List<String> list) {
 		for(String strline:list) {
@@ -177,17 +185,42 @@ public abstract class Simulater extends SwingWorker<Object,String>{
 		}
 	}
 
-	public abstract void createParameters();
+	/*
+	 * このシミュレーションが使用するParameterをParameterManagerに登録する。
+	 * オーバーライドするときはSimulatorクラスのcreateParameter()を呼び出す。
+	 * */
+	public void createParameters(){
+		final Parameter 警告 = new Parameter("シミュレーション", "警告"),
+				シミュレーション年月日時分秒 = new Parameter("シミュレーション", "シミュレーション年月日時分秒");
 
+		paraMan.addParameter(警告);
+		paraMan.addParameter(シミュレーション年月日時分秒);
+		paraMan.addRunnable(()->{
+			シミュレーション年月日時分秒.setValue(this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")));
+		});
+	}
+
+	/*
+	 * このSimulatorインスタンスが保持するParameterManagerを返す。
+	 * */
 	public ParameterManager getParameterManager() {
 		return this.paraMan;
 	}
 
+	/*
+	 * このSimulatorがシミュレーションを実行するのに必要とするパラメータを入力するためのDataInputFrameを展開する。
+	 * @param
+	 * width 展開するDataInputFrameの幅
+	 * height 展開するDataInputFrameの縦幅
+	 * */
 	public void openDataInputFrame(int width, int height) {
 		inputFrame = new DataInputFrame(this,width,height);
 		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
 	}
 
+	/*
+	 * このSimulatorがシミュレーション実行終了後に行う処理を規定する。
+	 * */
 	@Override
 	protected void done() {
 		inputFrame.dispose();
