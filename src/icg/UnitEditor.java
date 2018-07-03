@@ -27,49 +27,13 @@ public class UnitEditor {
 			return 0;
 		}
 	}
-//	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)( +(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| +/ *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
 
 	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +|/)+)$");
 	private static Pattern numberPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?) *$");
 	private static Pattern unitsPattern = Pattern.compile("^((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +|/)+)$");
 	private static Pattern oneUnitPattern = Pattern.compile("^((?:[μmcdhkM]|da)?)([mgsA])((?:-?[0-9]+)?)$");
 
-	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
 
-
-	/*
-	 * 指定された文字列が物理量(または数値)であるかどうかを調べる。物理量であればtrueを、
-	 * どちらでもないものであればfalseを返す。なお、先頭と後端の余分な半角スペースがあってもよい。
-	 * @param target 調べる文字列
-	 * @boolean
-	 * true:物理量または数値
-	 * false：どちらでもない文字列
-	 * */
-	/*private static boolean isPhysicalQuantity_OrNumberOnly(String target){
-		Matcher physicalM = physicalQuantityOrNumberPattern.matcher(target);
-		if(physicalM.find()) {
-			return true;
-		}else{
-			return false;
-		}
-	}*/
-
-
-	/*
-	 * 指定された文字列が適切な組立単位かどうかを判定する。
-	 * @param target 調べる文字列
-	 * @return
-	 * true:単位,
-	 * false:単位ではない
-	 * */
-	private static boolean isUnit(String target){
-		Matcher m = unitsPattern.matcher(target);
-		if(!m.find()) {
-			return false;
-		}else {
-			return true;
-		}
-	}
 
 	/*
 	 * 指定された物理量、数値または単位の次元解析を行う。
