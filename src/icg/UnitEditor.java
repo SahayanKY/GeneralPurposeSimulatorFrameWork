@@ -29,9 +29,10 @@ public class UnitEditor {
 	}
 //	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)( +(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| +/ *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
 
-	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?) *( (?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+/?(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)*| / *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +)+)?$");
-	private static Pattern unitsPattern = Pattern.compile("^ *((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)? */? *(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)? +)*(?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?)) *$");
-	private static Pattern oneUnitPattern = Pattern.compile("((?:[μmcdhkM]|da)?)([mgsA])((?:-?[0-9]+)?)");
+	private static Pattern physicalQuantityPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?)((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +|/)+)$");
+	private static Pattern numberPattern = Pattern.compile("^ *(\\-?[0-9]*\\.?[0-9]+(?:E-?[0-9]+)?) *$");
+	private static Pattern unitsPattern = Pattern.compile("^((?:(?:[μmcdhkM]|da)?[mgsA](?:-?[0-9]+)?| +|/)+)$");
+	private static Pattern oneUnitPattern = Pattern.compile("^((?:[μmcdhkM]|da)?)([mgsA])((?:-?[0-9]+)?)$");
 
 	private static String doubleRegex = "-?[0-9]*\\.?[0-9]+(E-?[0-9]+)?";
 
@@ -44,14 +45,14 @@ public class UnitEditor {
 	 * true:物理量または数値
 	 * false：どちらでもない文字列
 	 * */
-	private static boolean isPhysicalQuantity_OrNumberOnly(String target){
-		Matcher physicalM = physicalQuantityPattern.matcher(target);
+	/*private static boolean isPhysicalQuantity_OrNumberOnly(String target){
+		Matcher physicalM = physicalQuantityOrNumberPattern.matcher(target);
 		if(physicalM.find()) {
 			return true;
 		}else{
 			return false;
 		}
-	}
+	}*/
 
 
 	/*
@@ -83,28 +84,40 @@ public class UnitEditor {
 		}
 		HashMap<String,Number> unitMap = new HashMap<String,Number>();
 		Matcher matcher;
-		String[] UnitLineSlashSplit;
+		String[] UnitLineSlashSplit = null;
 
-		if(isPhysicalQuantity_OrNumberOnly(quantity)){
-			//物理量または無次元量、数値に関する条件分岐
-			matcher = physicalQuantityPattern.matcher(quantity);
-			matcher.find();
+		String message = null;
+
+		matcher = numberPattern.matcher(quantity);
+		if(matcher.find()) {
+			//次元解析するまでもなくただの数値だった場合
 			unitMap.put("Number", Double.parseDouble(matcher.group(1)));
-
-			String unitLine = matcher.group(2);
-			if(unitLine == null){
-				//単位が全くない指定だった場合
-				return unitMap;
-			}
-			UnitLineSlashSplit = unitLine.split("/");
-		}else if(isUnit(quantity)){
-			//単位単体に関する条件分岐
+			return unitMap;
+		}else {
 			matcher = unitsPattern.matcher(quantity);
-			matcher.find();
-			UnitLineSlashSplit = matcher.group(1).split("/");
-		}else{
-			throw new IllegalArgumentException("UnitEditor.dimensionAnalysis:指定された文字列は物理量でも数値でも単位でもありません");
+			if(matcher.find()) {
+				//単位単体だった場合
+				UnitLineSlashSplit = matcher.group(1).split("/");
+			}else {
+				matcher = physicalQuantityPattern.matcher(quantity);
+				if(matcher.find()) {
+					unitMap.put("Number", Double.parseDouble(matcher.group(1)));
+					UnitLineSlashSplit = matcher.group(2).split("/");
+				}else {
+					message = "指定された文字列は数値でも単位でも物理量でもありません。";
+				}
+			}
 		}
+
+
+		if(message == null && UnitLineSlashSplit.length > 2) {
+			message = "指定された文字列は過剰に\"/\"を含んでいます。";
+		}
+
+		if(message != null) {
+			throw new IllegalArgumentException(message);
+		}
+
 
 		String[][] units;
 		if(UnitLineSlashSplit.length == 2) {
@@ -127,7 +140,10 @@ public class UnitEditor {
 				posinega = 1-2*i; //初期化
 
 				Matcher oneUnitMatcher = oneUnitPattern.matcher(u);
-				oneUnitMatcher.find();
+				if(!oneUnitMatcher.find()) {
+					throw new IllegalArgumentException("指定された文字列の単位を認識できません。");
+				}
+
 				String prefixStr = oneUnitMatcher.group(1);
 				String standardUnit = oneUnitMatcher.group(2);
 				String degreeStr = oneUnitMatcher.group(3);
