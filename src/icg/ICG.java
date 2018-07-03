@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.function.Function;
 
-import simulation.Simulater;
+import simulation.Simulator;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
 import simulation.param.checker.BeforeAfterParamChecker;
@@ -20,7 +20,7 @@ import simulation.param.checker.ParameterChecker;
 import simulation.param.checker.ThrustDataChecker;
 import simulation.param.checker.WhiteSpaceChecker;
 
-public class ICG extends Simulater{
+public class ICG extends Simulator{
 	private ArrayList<Parameter> paramList = new ArrayList<>();
 	private File thrustFile;
 	private double
@@ -111,8 +111,11 @@ public class ICG extends Simulater{
 		icg.openDataInputFrame(340,450);
 	}
 
+	/*
+	 * ICGのシミュレーション本体の実装部分。このメソッド内でループ処理などを行う。
+	 * */
 	@Override
-	protected void executeSimulation(LinkedHashMap<String,LinkedHashMap<String,Parameter>> map) {
+	protected void executeSimulation() {
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
 			publish("start");
 			ArrayList<double[]> thrustList = new ArrayList<>();
@@ -239,10 +242,14 @@ public class ICG extends Simulater{
 
 	}
 
+
+	/*
+	 * ICGが使用するパラメータに対応するParameterインスタンスの生成と、シミュレーション実行前のパラメータの設定式を規定する。
+	 * */
 	@Override
 	public void createParameters() {
-		this.paraMan = new ParameterManager(this);
-
+		super.createParameters();
+		
 		final ParameterChecker def = new DefaultParameterChecker(), befAft = new BeforeAfterParamChecker();
 		final String
 			一般 = "一般",
@@ -259,10 +266,7 @@ public class ICG extends Simulater{
 
 
 
-		final Parameter
-			警告 = new Parameter("シミュレーション", "警告"),
-			シミュレーション年月日時分秒 = new Parameter("シミュレーション", "シミュレーション年月日時分秒"),
-
+		final Parameter			
 			機体バージョン = new Parameter(一般, "機体バージョン", "機体バージョン", null, null, new WhiteSpaceChecker()),
 			使用燃焼データ年月 = new Parameter(一般, "燃焼データ年月20XX/YY", "使用燃焼データ年月20XX/YY", null, null, new DateFormatChecker()),
 			thrustFileParam = new Parameter(一般, "燃焼データファイル", "燃焼データファイル", null, null, new ThrustDataChecker()),
@@ -350,9 +354,6 @@ public class ICG extends Simulater{
 
 		thrustFileParam.setNeedInputButton(true);
 
-		paraMan.addParameter(警告);
-		paraMan.addParameter(シミュレーション年月日時分秒);
-
 		paraMan.addParameter(機体バージョン);
 		paraMan.addParameter(使用燃焼データ年月);
 		paraMan.addParameter(thrustFileParam);
@@ -438,10 +439,10 @@ public class ICG extends Simulater{
 		paraMan.addParameter(ピッチヨー慣性モーメント);
 		paraMan.addParameter(ロール慣性モーメント);
 
-		paraMan.setRunnable(()->{
+		
+		paraMan.addRunnable(()->{
 			Function<Parameter,Double> getDoubleValue = (parameter) -> new PhysicalQuantity(parameter.getValue()).Number;
 
-			シミュレーション年月日時分秒.setValue(this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")));
 			thrustFile = new File(thrustFileParam.getValue());
 			ρ = getDoubleValue.apply(空気密度);
 			Vmax = getDoubleValue.apply(最大飛行速度);
@@ -576,8 +577,8 @@ public class ICG extends Simulater{
 				+(grainAftM+injectorM+tankAftM)*injectorOuterDiameter*injectorOuterDiameter/4
 				+finM*(Math.pow(rocketOuterDiameter/2+finH,3)-Math.pow(rocketOuterDiameter, 3)/8)/finH;
 
-			ピッチヨー慣性モーメント.setValue(String.valueOf(pitchyawI));
-			ロール慣性モーメント.setValue(String.valueOf(rollI));
+			ピッチヨー慣性モーメント.setValue(String.valueOf(pitchyawI)+" kg m2");
+			ロール慣性モーメント.setValue(String.valueOf(rollI)+" kg m2");
 		});
 
 		/*

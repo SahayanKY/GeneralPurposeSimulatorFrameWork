@@ -14,14 +14,14 @@ import java.util.Properties;
 import java.util.StringJoiner;
 
 import icg.DoubleBackSlashReader;
-import simulation.Simulater;
+import simulation.Simulator;
 
 public class ParameterManager {
-	private final Simulater simulater;
+	private final Simulator simulater;
 	private ArrayList<Parameter> paramList = new ArrayList<>();
-	private Runnable runnable;
+	private ArrayList<Runnable> runnableList = new ArrayList<>();
 
-	public ParameterManager(Simulater simulater){
+	public ParameterManager(Simulator simulater){
 		this.simulater = simulater;
 	}
 
@@ -37,7 +37,7 @@ public class ParameterManager {
 	public String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
 		Parameter warningParam=null;
 		//入力値のチェック
-		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n");
+		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n"),WarningsForProperty = new StringJoiner(", ");
 		int ErrorTime=0,WarnTime=0;
 		for(Parameter param : paramList) {
 			if(param.isSystemInputParameter) {
@@ -53,6 +53,7 @@ public class ParameterManager {
 					continue;
 				case Parameter.inputformat_Warning:
 					Warnings.add(param.parentLabel+"."+param.childLabel);
+					WarningsForProperty.add(param.parentLabel+"."+param.childLabel);
 					WarnTime++;
 					continue;
 				case Parameter.inputformat_Error:
@@ -61,11 +62,11 @@ public class ParameterManager {
 					continue;
 			}
 		}
-
+		
 		if(ErrorTime>0) {
 			return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 		}else if(WarnTime>0) {
-			warningParam.setValue(Warnings.toString());
+			warningParam.setValue(WarningsForProperty.toString());
 			return "要検証 : "+WarnTime +"件\n"+ Warnings.toString();
 		}else {
 			warningParam.setValue("");
@@ -105,10 +106,10 @@ public class ParameterManager {
 
 	/*
 	 * システムが入力するパラメータへの値のセットの仕方や、
-	 * Simulater子クラス自身のフィールドへの値のセットの仕方を記述したrunnableを指定する
+	 * Simulator子クラス自身のフィールドへの値のセットの仕方を記述したrunnableを指定する
 	 * */
-	public void setRunnable(Runnable runnable) {
-		this.runnable = runnable;
+	public void addRunnable(Runnable runnable) {
+		this.runnableList.add(runnable);
 	}
 
 
@@ -118,7 +119,9 @@ public class ParameterManager {
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
 	public void writeProperty_on(File choosedDirectory) throws IOException{
-		this.runnable.run();
+		for(Runnable runner : runnableList){
+			runner.run();
+		}
 		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーションパラメータ.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止

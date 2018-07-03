@@ -24,12 +24,12 @@ import icg.ChooseFileDialog;
 import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
 import icg.ComponentSetter;
-import simulation.Simulater;
+import simulation.Simulator;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
 
 public class DataInputFrame extends JFrame implements ActionListener,FocusListener{
-	private Simulater simulater;
+	private Simulator simulater;
 	private ParameterManager paramManager;
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
@@ -43,7 +43,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			ChangeTextFieldColor = "ChangeTextFieldColor",
 			SetExistingInputData = "SetInputData";
 
-	public DataInputFrame(Simulater simulater, int width, int height){
+	public DataInputFrame(Simulator simulater, int width, int height){
 		this.simulater = simulater;
 		this.paramManager = simulater.getParameterManager();
 		//フレームの設定
