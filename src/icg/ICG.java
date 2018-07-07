@@ -4,14 +4,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.function.Function;
 
 import simulation.Simulator;
 import simulation.param.Parameter;
-import simulation.param.ParameterManager;
 import simulation.param.checker.BeforeAfterParamChecker;
 import simulation.param.checker.DateFormatChecker;
 import simulation.param.checker.DefaultParameterChecker;
@@ -129,11 +126,12 @@ public class ICG extends Simulator{
 			double time=0,
 					dt=0,
 					g=9.8,
+					lastLagX=rocketL-launchLagLastCG,//ランチャー方向の座標における最後端のラグの位置
 					N_grainContentsM = grainContentsM,
 					N_tankContentsM = tankContentsM,
 					N_RocketM = rocketAftM+N_grainContentsM+N_tankContentsM,
 					N_RocketCG = (rocketAftM*rocketAftCG+grainContentsM*grainCG+tankContentsM*tankCG)/(rocketAftM+grainContentsM+tankContentsM),
-					N_CD = rocketCD,
+					CD = rocketCD,
 					atomosP = 1013, //hPa単位なので注意
 					temperature = 20, //℃単位なので注意
 					N_ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
@@ -156,14 +154,14 @@ public class ICG extends Simulator{
 					staticMoment = 0,
 					dampingMoment = 0,
 					dampingMomentCoefficient = 0;
+			boolean secondLastLagCleared = false,lastLagCleared = false;
 			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad");
 
 			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f";
-			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, N_CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
+			publish(String.format(format, time, thrustList.get(0)[1], N_RocketM, N_RocketCG, CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ));
 
 			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
-				double ω2,θ2,CD2,Vx2,Vz2,XCG2,ZCG2,thrust;
-				boolean launcherCleared;
+				double ω2,θ2,Vx2,Vz2,XCG2,ZCG2,thrust,forceX,forceZ,torqueY,lastLagX2;
 				if(j < thrustListSize) {
 					if(thrustList.get(j)[1]<=0) {
 						continue;
@@ -185,51 +183,102 @@ public class ICG extends Simulator{
 					thrust = 0;
 				}
 
-				if(ZCG < Math.sin(Math.toRadians(fireAngle))*launcherL && Vz >=0) {
-					launcherCleared = false;
+
+				if(lastLagX>=launcherL) {
+					//一番最後のランチラグがクリアしたとき
+					lastLagCleared = true;
+					secondLastLagCleared = true;
 				}else {
-					launcherCleared = true;
+					lastLagCleared = false;
+					if(lastLagX+launchLagLastCG-launchLagSecondLastCG >= launcherL) {
+						//最後から2番目のラグがクリアしたとき
+						secondLastLagCleared = true;
+					}else {
+						secondLastLagCleared = false;
+					}
 				}
 
-				ω2 = ω - (staticMoment +dampingMoment)/pitchyawI*dt;
-				windAngle = Math.atan2(Vz, Vx-windVelocity);
-				//機体から見てどの方向から風が吹いているか
-				//機体から見た風の相対速度の逆ベクトル
-				//x軸正の向きが0rad、反時計回りが正
-				θ2 = θ + (ω+ω2)/2*dt;
-				attackAngle = (!launcherCleared)? 0:θ2 - windAngle;
-				//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
-				//進行方向の軸からx軸正の向きへの回転方向が正
-				CD2 = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
+
+
+				temperature = 20 -0.0065*ZCG;
+				atomosP = 1013 *Math.pow((1-(0.0065*ZCG)/(20+273.15)),0.5257);
 				N_ρ = atomosP/(2.87*(temperature+273.15));
-				drag = CD2*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+
 				diffCGCP = rocketCP -N_RocketCG;
 				windVelocity = -1*anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
 				//windVelocity<0のとき向かい風
-				if(launcherCleared) {
-					Vx2 = Vx +(thrust*Math.cos(θ2) -drag*Math.cos(windAngle))/N_RocketM *dt;
-					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.sin(windAngle))/N_RocketM -g) *dt;
-				}else{
-					Vx2 = Vx +((thrust*Math.cos(θ2) -drag*Math.cos(θ2-windAngle)*Math.cos(θ2))/N_RocketM -g*Math.sin(θ2)*Math.cos(θ2)) *dt;
-					Vz2 = Vz +((thrust*Math.sin(θ2)-drag*Math.cos(θ2-windAngle)*Math.sin(θ2))/N_RocketM -g*Math.pow(Math.sin(θ2), 2)) *dt;
-				}
-				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
-				relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
-				XCG2 = XCG +(Vx+Vx2)/2*dt;
-				ZCG2 = ZCG +(Vz+Vz2)/2*dt;
-				temperature = 20 -0.0065*ZCG2;
-				atomosP = 1013 *Math.pow((1-(0.0065*ZCG2)/(20+273.15)),0.5257);
-				normalForce = (!launcherCleared)? 0:rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
+
+				CD = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
+				drag = CD*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+				normalForce = rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
 				staticMoment = normalForce *diffCGCP;
 				dampingMoment = N_ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
+				torqueY = -staticMoment -dampingMoment;
+
+
+				if(lastLagCleared) {
+					//完全にランチャーからクリアした後の計算
+					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
+					forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) -N_RocketM*g;
+					Vx2 = Vx +forceX/N_RocketM *dt;
+					Vz2 = Vz +forceZ/N_RocketM *dt;
+
+					Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
+					relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
+					XCG2 = XCG +(Vx+Vx2)/2*dt;
+					ZCG2 = ZCG +(Vz+Vz2)/2*dt;
+
+					windAngle = Math.atan2(Vz, Vx-windVelocity);
+					//機体から見てどの方向から風が吹いているか
+					//機体から見た風の相対速度の逆ベクトル
+					//x軸正の向きが0rad、反時計回りが正
+					ω2 = ω +torqueY/pitchyawI*dt;
+					θ2 = θ + (ω+ω2)/2*dt;
+					attackAngle = (!secondLastLagCleared)? 0:θ2 - windAngle;
+					//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
+					//進行方向の軸からx軸正の向きへの回転方向が正
+
+
+				}else if(secondLastLagCleared) {
+					//まだ最後の1つのラグがクリアしていないときの計算
+					//ここではランチャー方向の座標で一旦計算していることに注意
+
+					//仮
+					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
+					forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) -N_RocketM*g;
+					Vx2 = Vx +forceX/N_RocketM *dt;
+					Vz2 = Vz +forceZ/N_RocketM *dt;
+
+					//導出した計算式をここに入力
+
+					lastLagX = XCG/Math.cos(Math.toRadians(fireAngle));
+				}else {
+					//2つ以上のラグが残っているときの計算
+					forceX = thrust*Math.cos(θ) -drag*Math.cos(θ-windAngle)*Math.cos(θ) -N_RocketM *g *Math.sin(θ)*Math.cos(θ);
+					forceZ = thrust*Math.sin(θ) -drag*Math.cos(θ-windAngle)*Math.cos(θ) -N_RocketM *g *Math.pow(Math.sin(θ), 2);
+					Vx2 = Vx +forceX/N_RocketM *dt;
+					Vz2 = Vz +forceZ/N_RocketM *dt;
+
+					Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
+					relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
+					XCG2 = XCG +(Vx+Vx2)/2*dt;
+					ZCG2 = ZCG +(Vz+Vz2)/2*dt;
+
+					windAngle = Math.atan2(Vz, Vx-windVelocity);
+					ω2 = 0;
+					θ2 = θ;
+					attackAngle = (!secondLastLagCleared)? 0:θ2 - windAngle;
+
+
+					lastLagX = XCG/Math.cos(Math.toRadians(fireAngle));
+				}
 
 				//得られた次のステップを出力する
-				publish(String.format(format, time+dt, thrust, N_RocketM, N_RocketCG, CD2, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2));
+				publish(String.format(format, time+dt, thrust, N_RocketM, N_RocketCG, CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2));
 
 				//ループの更新処理
 				ω = ω2;
 				θ = θ2;
-				N_CD = CD2;
 				Vx = Vx2;
 				Vz = Vz2;
 				XCG = XCG2;
@@ -249,7 +298,7 @@ public class ICG extends Simulator{
 	@Override
 	public void createParameters() {
 		super.createParameters();
-		
+
 		final ParameterChecker def = new DefaultParameterChecker(), befAft = new BeforeAfterParamChecker();
 		final String
 			一般 = "一般",
@@ -266,7 +315,7 @@ public class ICG extends Simulator{
 
 
 
-		final Parameter			
+		final Parameter
 			機体バージョン = new Parameter(一般, "機体バージョン", "機体バージョン", null, null, new WhiteSpaceChecker()),
 			使用燃焼データ年月 = new Parameter(一般, "燃焼データ年月20XX/YY", "使用燃焼データ年月20XX/YY", null, null, new DateFormatChecker()),
 			thrustFileParam = new Parameter(一般, "燃焼データファイル", "燃焼データファイル", null, null, new ThrustDataChecker()),
@@ -439,7 +488,7 @@ public class ICG extends Simulator{
 		paraMan.addParameter(ピッチヨー慣性モーメント);
 		paraMan.addParameter(ロール慣性モーメント);
 
-		
+
 		paraMan.addRunnable(()->{
 			Function<Parameter,Double> getDoubleValue = (parameter) -> new PhysicalQuantity(parameter.getValue()).Number;
 
