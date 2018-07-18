@@ -1,4 +1,4 @@
-package openGL;
+package model3d;
 
 import java.util.ArrayList;
 

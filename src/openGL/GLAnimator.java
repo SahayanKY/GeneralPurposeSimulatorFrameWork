@@ -17,6 +17,10 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.util.FPSAnimator;
 
+import model3d.Model;
+import model3d.ModelHandler;
+import model3d.Triangle;
+
 public class GLAnimator implements GLEventListener {
 	private final GLU glu = new GLU();
 	private float r=0;
