@@ -17,9 +17,11 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.util.FPSAnimator;
 
-import model3d.Model;
-import model3d.ModelHandler;
-import model3d.Triangle;
+import simulation.model3d.Model;
+import simulation.model3d.ModelHandler;
+import simulation.model3d.ModelProperties;
+import simulation.model3d.Triangle;
+
 
 public class GLAnimator implements GLEventListener {
 	private final GLU glu = new GLU();
@@ -53,6 +55,16 @@ public class GLAnimator implements GLEventListener {
 
 	public void setPolygon(String filePath,String extension) throws SAXException, IOException, ParserConfigurationException {
 		modelList = ModelHandler.loadModelFile(filePath,extension);
+		for(Model model:modelList) {
+			System.out.println("red:"+model.red);
+			System.out.println("green:"+model.green);
+			System.out.println("blue:"+model.blue);
+			System.out.println("triangle:"+model.triangleMeshes.size());
+			System.out.println("volume/m3:"+ModelProperties.calcTotalVolume(model));
+			double G[] = ModelProperties.calcGravityCenter(model);
+			System.out.println("CG:x:"+G[0]+",y:"+G[1]+",z:"+G[2]);
+			System.out.println("-------------------------------------");
+		}
 	}
 
 	@Override
@@ -91,19 +103,19 @@ public class GLAnimator implements GLEventListener {
 		gl2.glBegin(GL_LINES);
 			gl2.glColor3f(1.0f, 0, 0);
 			gl2.glVertex3fv(new float[]{-5,0,0},0);
-			gl2.glVertex3fv(new float[] {5,0,0},0);
+			gl2.glVertex3fv(new float[] {25,0,0},0);
 		gl2.glEnd();
 
 		gl2.glBegin(GL_LINES);
 			gl2.glColor3f(0, 1.0f, 0);
 			gl2.glVertex3fv(new float[]{0,-5,0},0);
-			gl2.glVertex3fv(new float[] {0,5,0},0);
+			gl2.glVertex3fv(new float[] {0,25,0},0);
 		gl2.glEnd();
 
 		gl2.glBegin(GL_LINES);
 			gl2.glColor3f(0, 0, 1.0f);
 			gl2.glVertex3fv(new float[]{0,0,-5},0);
-			gl2.glVertex3fv(new float[] {0,0,5},0);
+			gl2.glVertex3fv(new float[] {0,0,25},0);
 		gl2.glEnd();
 
 		gl2.glBegin(GL_LINES);
@@ -119,33 +131,26 @@ public class GLAnimator implements GLEventListener {
 		}else {
 
 			// 図形の回転
-			gl2.glRotatef(r, 1.0f, 1.0f, 0.3f);
+			//gl2.glRotatef(r, 1.0f, 1.0f, 0.3f);
 
 
 			gl2.glBegin(GL_TRIANGLES);
 				for(Model model:modelList) {
 					// 図形の描画
-					if(f) {
-						System.out.println(model.red +":"+model.green +":"+model.blue);
-					}
 					gl2.glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[] {model.red,model.green,model.blue,1}, 0);
 					gl2.glMaterialfv(GL_FRONT, GL_SPECULAR, new float[] {model.red,model.green,model.blue,1},0);
 					gl2.glMaterialfv(GL_FRONT, GL_AMBIENT, new float[] {0.0215f, 0.0245f, 0.0215f,1}, 0);
 					gl2.glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {76.8f},0);
 
 
-					for(Triangle triangle:model.mesh) {
+					for(Triangle triangle:model.triangleMeshes) {
 						gl2.glNormal3fv(triangle.normal,0);
 						for(int nodeIndex=0;nodeIndex<3;nodeIndex++) {
 							gl2.glVertex3fv(triangle.vertexs[nodeIndex],0);
 						}
 					}
-					if(f) {
-						System.out.println("--------------------------------------------------------");
-					}
 				}
 			gl2.glEnd();
-			f=false;
 
 			if(r++ >= 720.0f) {
 				r = 0;
@@ -153,8 +158,6 @@ public class GLAnimator implements GLEventListener {
 		}
 
 	}
-
-	boolean f = true;
 
 	@Override
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {

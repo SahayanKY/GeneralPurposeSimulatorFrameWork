@@ -11,7 +11,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import model3d.ModelHandler;
+import simulation.model3d.ModelHandler;
+
 
 public abstract class AMFLoader {
 	public static void main(String args[]) {
