@@ -1,16 +1,17 @@
-package model3d;
+package simulation.model3d;
 
 import java.util.ArrayList;
 
 public class Model {
-	public float density=0;
+	public float specificGravity=0;
 	public float red=0,green=0,blue=0;
-	public ArrayList<Triangle> mesh = new ArrayList<>();
+	public float mPrefix=0;
+	public final ArrayList<Triangle> triangleMeshes = new ArrayList<>();
 
 	public Model() {}
 
 	public void addTriangle(Triangle triangle) {
-		mesh.add(triangle);
+		triangleMeshes.add(triangle);
 	}
 
 	public void setColor(float red, float green, float blue) {
@@ -20,6 +21,6 @@ public class Model {
 	}
 
 	public void setMaterialDencity(float density) {
-		this.density = density;
+		this.specificGravity = density;
 	}
 }
