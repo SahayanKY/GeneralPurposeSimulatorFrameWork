@@ -1,4 +1,4 @@
-package model3d;
+package simulation.model3d;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,28 +28,22 @@ public class ModelHandler {
 		}
 
 		return modelList;
-
-		/*
-		 * for(Element ele:AMFLoader.loadAMFFile("D:\\アセンブリ.AMF")) {
-				System.out.println("materialid:"+ele.getAttribute("materialid"));
-				NodeList eleChildList = ele.getChildNodes();
-				for(int i=0;i<eleChildList.getLength();i++) {
-					Node child1 = eleChildList.item(i);
-					if(child1.getNodeType() != Node.ELEMENT_NODE) {
-						continue;
-					}
-					if(child1.getNodeName().equals("mesh")) {
-
-					}
-				}
-			}
-		 * */
 	}
 
 	private static ArrayList<Model> createFromAMF(String filePath) throws SAXException, IOException, ParserConfigurationException{
 		ArrayList<Model> modelList = new ArrayList<>();
 
 		Element root = AMFLoader.loadAMFFile(filePath);
+
+		//単位を取得
+		float mPrefix;
+		String unit = root.getAttribute("unit");
+		if(unit.equals("millimeter")) {
+			mPrefix = 0.001f;
+		}else {
+			throw new IllegalArgumentException("ModelHandler.createFromAMF(String):単位が対応しているものではありません");
+		}
+
 		NodeList rootChildren = root.getChildNodes();
 		ArrayList<Element> objectList = new ArrayList<>();
 		HashMap<String,Element> materialMap = new HashMap<>();
@@ -144,14 +138,13 @@ public class ModelHandler {
 				}
 				//materialの取得
 				Element materialElement = materialMap.get(materialId);
-
+				NodeList materialChildren = materialElement.getChildNodes();
 
 				Element finalColorElement=null;
 				if(colorElement == null) {
 					//materialで色の指定があればそれを適用する
 					//まずはその指定があるかを検索
 
-					NodeList materialChildren = materialElement.getChildNodes();
 					for(int mat=0;mat<materialChildren.getLength();mat++) {
 						Node colorN = materialChildren.item(mat);
 						if(colorN.getNodeName().equals("color")) {
@@ -185,6 +178,22 @@ public class ModelHandler {
 						}
 					}
 				}
+
+				//比重を設定する
+				String materialMetadataStr = null;
+				for(int mat=0;mat<materialChildren.getLength();mat++) {
+					Node materialChild = materialChildren.item(mat);
+					if(materialChild.getNodeName().equals("metadata")) {
+						materialMetadataStr = materialChild.getTextContent();
+					}
+				}
+				if(materialMetadataStr != null) {
+					model.specificGravity = ModelHandler.getMaterialSpecificGravity(materialMetadataStr);
+				}
+
+				//各頂点の単位を設定する
+				model.mPrefix = mPrefix;
+
 				modelList.add(model);
 			}
 
@@ -192,5 +201,16 @@ public class ModelHandler {
 
 
 		return modelList;
+	}
+
+	public static float getMaterialSpecificGravity(String materialStr) {
+		switch(materialStr) {
+			case "ｱｸﾘﾙ (中-上級の耐衝撃性)":
+				return 1.19f;
+			case "ﾀﾞｸﾀｲﾙ鋳鉄":
+				return 7.3f;
+			default:
+				return 0;
+		}
 	}
 }
