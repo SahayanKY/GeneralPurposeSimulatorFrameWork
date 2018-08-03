@@ -140,8 +140,8 @@ public class ICG extends Simulator{
 					temperature = 20, //℃単位なので注意
 					N_ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
 					crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
-					anemometerV = 1,
-					windVelocity = 0, //x軸正の向きが正
+					anemometerV = 7, //x軸正の向きが正
+					windVelocity = 0, 
 					windAngle = 0,
 					attackAngle = 0,
 					diffCGCP = rocketCP-rocketCG,
@@ -150,8 +150,16 @@ public class ICG extends Simulator{
 					Vx = 0,
 					Vz = 0,
 					Velocity = 0,
-					XCG = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
-					ZCG = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
+					//修正後
+					//XCG = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
+					//修正前
+					XCG = 0,
+					//
+					//修正後
+					//ZCG = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
+					//修正前
+					ZCG = 0,
+					//
 					relativeVelocityToAir = 0,
 					normalForce = 0,
 					drag = 0,
@@ -187,8 +195,12 @@ public class ICG extends Simulator{
 					thrust = 0;
 				}
 
-
+				//修正後ランチクリア判定
+				/*
 				if(lastLagX>=launcherL) {
+				*/
+				//修正前ランチクリア判定
+				if(XCG > launcherL*Math.cos(θ)){
 					//一番最後のランチラグがクリアしたとき
 					lastLagCleared = true;
 					secondLastLagCleared = true;
@@ -209,7 +221,7 @@ public class ICG extends Simulator{
 				N_ρ = atomosP/(2.87*(temperature+273.15));
 
 				diffCGCP = rocketCP -rocketCG2;
-				windVelocity = -1*anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
+				windVelocity = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
 				//windVelocity<0のとき向かい風
 
 				CD = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
@@ -227,11 +239,13 @@ public class ICG extends Simulator{
 				//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
 				//進行方向の軸からx軸正の向きへの回転方向が正
 
-
+				double lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
+				lift = 0;
+				System.out.println(lift);
 				if(lastLagCleared) {
 					//完全にランチャーからクリアした後の計算
-					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
-					forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) -rocketM2*g;
+					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle) -lift*Math.sin(windAngle);
+					forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) +lift*Math.cos(windAngle) -rocketM2*g;
 					Vx2 = Vx +forceX/rocketM2 *dt;
 					Vz2 = Vz +forceZ/rocketM2 *dt;
 
@@ -302,10 +316,19 @@ public class ICG extends Simulator{
 						pitchYawI = pitchYawI2;
 				}else */{
 						//2つ以上のラグが残っているときの計算
-						double lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
+						
+						//修正後の式
+						/*
 						forceX = thrust*Math.cos(θ) -drag*Math.cos(attackAngle)*Math.cos(θ) +lift*Math.sin(attackAngle)*Math.cos(θ) -rocketM2 *g *Math.sin(θ)*Math.cos(θ);
 						forceZ = thrust*Math.sin(θ) -drag*Math.cos(attackAngle)*Math.sin(θ) +lift*Math.sin(attackAngle)*Math.sin(θ) -rocketM2 *g *Math.pow(Math.sin(θ), 2);
-
+						*/
+					
+						//修正前の式
+					
+						forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
+						forceZ = thrust*Math.sin(θ) -rocketM2*g -drag*Math.sin(windAngle);
+						
+						
 						Vx2 = Vx +forceX/rocketM2 *dt;
 						Vz2 = Vz +forceZ/rocketM2 *dt;
 
