@@ -19,7 +19,6 @@ import com.jogamp.opengl.util.FPSAnimator;
 
 import simulation.model3d.Model;
 import simulation.model3d.ModelHandler;
-import simulation.model3d.ModelProperties;
 import simulation.model3d.Triangle;
 
 
@@ -55,16 +54,6 @@ public class GLAnimator implements GLEventListener {
 
 	public void setPolygon(String filePath,String extension) throws SAXException, IOException, ParserConfigurationException {
 		modelList = ModelHandler.loadModelFile(filePath,extension);
-		for(Model model:modelList) {
-			System.out.println("red:"+model.red);
-			System.out.println("green:"+model.green);
-			System.out.println("blue:"+model.blue);
-			System.out.println("triangle:"+model.triangleMeshes.size());
-			System.out.println("volume/m3:"+ModelProperties.calcTotalVolume(model));
-			double G[] = ModelProperties.calcGravityCenter(model);
-			System.out.println("CG:x:"+G[0]+",y:"+G[1]+",z:"+G[2]);
-			System.out.println("-------------------------------------");
-		}
 	}
 
 	@Override
