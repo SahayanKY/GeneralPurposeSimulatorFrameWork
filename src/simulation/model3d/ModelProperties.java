@@ -138,4 +138,128 @@ public abstract class ModelProperties {
 
 		return result;
 	}
+
+	/*
+	 * MKSA系(m)でこのmodelの重心を返す
+	 * */
+	public static double[][] calcMomentOfInertia(Model model) {
+		int triangleN = model.triangleMeshes.size();
+		int arraySize = triangleN/100+1;
+
+		double[]
+			ar_int_xx_p = new double[arraySize],
+			ar_int_xx_n = new double[arraySize],
+			ar_int_xy_p = new double[arraySize],
+			ar_int_xy_n = new double[arraySize],
+			ar_int_yy_p = new double[arraySize],
+			ar_int_yy_n = new double[arraySize],
+			ar_int_yz_p = new double[arraySize],
+			ar_int_yz_n = new double[arraySize],
+			ar_int_zz_p = new double[arraySize],
+			ar_int_zz_n = new double[arraySize],
+			ar_int_zx_p = new double[arraySize],
+			ar_int_zx_n = new double[arraySize];
+
+		int resultSetIndex = 0;
+		for(int triIndex=0;triIndex<triangleN;triIndex++) {
+			float[]	vertex0 = model.triangleMeshes.get(triIndex).vertexs[0],
+					vertex1 = model.triangleMeshes.get(triIndex).vertexs[1],
+					vertex2 = model.triangleMeshes.get(triIndex).vertexs[2];
+
+			float 	x0 = vertex0[0], x1 = vertex1[0], x2 = vertex2[0],
+					y0 = vertex0[1], y1 = vertex1[1], y2 = vertex2[1],
+					z0 = vertex0[2], z1 = vertex1[2], z2 = vertex2[2];
+
+			double Sxp,Sxn,Syp,Syn,Szp,Szn,int_x3,int_y3,int_z3,int_xyz;
+
+			Sxp = y1 *z2 +y0 *z1 +y2 *z0;
+			Sxn = -y1 *z0 -y0 *z2 -y2 *z1;
+			Syp = z1 *x2 +z0 *x1 +z2 *x0;
+			Syn = -z1 *x0 -z0 *x2 -z2 *x1;
+			Szp = x1 *y2 +x0 *y1 +x2 *y0;
+			Szn = -x1 *y0 -x0 *y2 -x2 *y1;
+
+			int_x3 = x1*x1*(x1 +x2 +x0) +x1 *(x2*x2 +x2*x0 +x0*x0)
+					+ x2*x2*(x2 +x0) +x0*x0*(x2 +x0);
+			int_y3 = y1*y1*(y1 +y2 +y0) +y1 *(y2*y2 +y2*y0 +y0*y0)
+					+ y2*y2*(y2 +y0) +y0*y0*(y2 +y0);
+			int_z3 = z1*z1*(z1 +z2 +z0) +z1 *(z2*z2 +z2*z0 +z0*z0)
+					+ z2*z2*(z2 +z0) +z0*z0*(z2 +z0);
+			int_xyz = 6*x0*y0*z0 +2*x0*y0*z1 +2*x0*y0*z2
+					+2*x0*y1*z0 +2*x0*y1*z1 +x0*y1*z2
+					+2*x0*y2*z0 +x0*y2*z1 +2*x0*y2*z2
+					+2*x1*y0*z0 +2*x1*y0*z1 +x1*y0*z2
+					+2*x1*y1*z0 +6*x1*y1*z1 +2*x1*y1*z2
+					+x1*y2*z0 +2*x1*y2*z1 +2*x1*y2*z2
+					+2*x2*y0*z0 +x2*y0*z1 +2*x2*y0*z2
+					+x2*y1*z0 +2*x2*y1*z1 +2*x2*y1*z2
+					+2*x2*y2*z0 +2*x2*y2*z1 +6*x2*y2*z2;
+
+			ar_int_xx_p[resultSetIndex] += Sxp *int_x3;
+			ar_int_xx_n[resultSetIndex] += Sxn *int_x3;
+			ar_int_xy_p[resultSetIndex] += Szp *int_xyz;
+			ar_int_xy_n[resultSetIndex] += Szn *int_xyz;
+			ar_int_yy_p[resultSetIndex] += Syp *int_y3;
+			ar_int_yy_n[resultSetIndex] += Syn *int_y3;
+			ar_int_yz_p[resultSetIndex] += Sxp *int_xyz;
+			ar_int_yz_n[resultSetIndex] += Sxn *int_xyz;
+			ar_int_zz_p[resultSetIndex] += Szp *int_z3;
+			ar_int_zz_n[resultSetIndex] += Szn *int_z3;
+			ar_int_zx_p[resultSetIndex] += Syp *int_xyz;
+			ar_int_zx_n[resultSetIndex] += Syn *int_xyz;
+
+			resultSetIndex++;
+			if(resultSetIndex == arraySize) {
+				resultSetIndex = 0;
+			}
+		}
+
+		double
+			int_xx_p=0,	int_xx_n=0,
+			int_xy_p=0,	int_xy_n=0,
+			int_yy_p=0,int_yy_n=0,
+			int_yz_p=0,int_yz_n=0,
+			int_zz_p=0,int_zz_n=0,
+			int_zx_p=0,int_zx_n=0,
+			int_xx,int_xy,int_yy,int_yz,int_zz,int_zx;
+
+
+		for(int i=0;i<arraySize;i++) {
+			int_xx_p += ar_int_xx_p[i];
+			int_xx_n += ar_int_xx_n[i];
+			int_xy_p += ar_int_xy_p[i];
+			int_xy_n += ar_int_xy_n[i];
+			int_yy_p += ar_int_yy_p[i];
+			int_yy_n += ar_int_yy_n[i];
+			int_yz_p += ar_int_yz_p[i];
+			int_yz_n += ar_int_yz_n[i];
+			int_zz_p += ar_int_zz_p[i];
+			int_zz_n += ar_int_zz_n[i];
+			int_zx_p += ar_int_zx_p[i];
+			int_zx_n += ar_int_zx_n[i];
+		}
+
+		int_xx = (int_xx_p +int_xx_n)/60.0;
+		int_xy = (int_xy_p +int_xy_n)/120.0;
+		int_yy = (int_yy_p +int_yy_n)/60.0;
+		int_yz = (int_yz_p +int_yz_n)/120.0;
+		int_zz = (int_zz_p +int_zz_n)/60.0;
+		int_zx = (int_zx_p +int_zx_n)/120.0;
+
+		double[][] moment = new double[3][3];
+		//比重:specificGravity：g/cm3,
+		//int_xx...: mPrefix^5
+		//単位をMKSAに直す
+
+		//g/cm3 = 10^3 kg/m3
+
+		moment[0][0] = 1000*Math.pow(model.mPrefix,5) *model.specificGravity*(int_yy +int_zz);
+		moment[0][1] = moment[1][0] = -1000*Math.pow(model.mPrefix,5) *model.specificGravity *int_xy;
+		moment[0][2] = moment[2][0] = -1000*Math.pow(model.mPrefix,5) *model.specificGravity *int_zx;
+		moment[1][1] = 1000*Math.pow(model.mPrefix,5) *model.specificGravity *(int_xx +int_zz);
+		moment[1][2] = moment[2][1] = -1000*Math.pow(model.mPrefix,5) *model.specificGravity *int_yz;
+		moment[2][2] = 1000*Math.pow(model.mPrefix,5) *model.specificGravity *(int_xx +int_yy);
+
+		return moment;
+	}
 }
