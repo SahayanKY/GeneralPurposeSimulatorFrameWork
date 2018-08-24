@@ -1,17 +1,19 @@
 package simulation.model3d;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
-import openGL.AMFLoader;
 
 public class ModelHandler {
 	public static ArrayList<Model> loadModelFile(String filePath,String extension) throws SAXException, IOException, ParserConfigurationException{
@@ -24,7 +26,7 @@ public class ModelHandler {
 				modelList = createFromAMF(filePath);
 				break;
 			default:
-				throw new IllegalArgumentException("Model.loadModelFile(String,String):指定されたファイルフォーマットは非対応です。");
+				throw new IllegalArgumentException("ModelHandler.loadModelFile(String,String):指定されたファイルフォーマットは非対応です。");
 		}
 
 		return modelList;
@@ -33,7 +35,11 @@ public class ModelHandler {
 	private static ArrayList<Model> createFromAMF(String filePath) throws SAXException, IOException, ParserConfigurationException{
 		ArrayList<Model> modelList = new ArrayList<>();
 
-		Element root = AMFLoader.loadAMFFile(filePath);
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder documentBuilder = factory.newDocumentBuilder();
+		Document document = documentBuilder.parse(new File(filePath));
+
+		Element root = document.getDocumentElement();
 
 		//単位を取得
 		float mPrefix;

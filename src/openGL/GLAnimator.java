@@ -166,7 +166,6 @@ public class GLAnimator implements GLEventListener {
 		glu.gluPerspective(30.0, (double)width / (double)height, 1.0, 300.0);
 
 		gl2.glMatrixMode(GL_MODELVIEW);
-
 	}
 
 	@Override

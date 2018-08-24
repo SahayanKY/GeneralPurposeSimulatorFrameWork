@@ -21,7 +21,7 @@ public class GLViewFrame extends JFrame{
 
 	public GLViewFrame(String title) {
 		super(title);
-		GLAnimator painter = new GLAnimator();
+		GLAnimator animator = new GLAnimator();
 
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setLocation(300,300);
@@ -42,7 +42,7 @@ public class GLViewFrame extends JFrame{
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				painter.changeStateAnimation();
+				animator.changeStateAnimation();
 			}
 
 		});
@@ -63,12 +63,12 @@ public class GLViewFrame extends JFrame{
 
 				GLCanvas canvas = new GLCanvas(caps);
 				canvas.setPreferredSize(new Dimension(300,300));
-				canvas.addGLEventListener(painter);
+				canvas.addGLEventListener(animator);
 				//canvas.addMouseListener(this);
 
-				painter.setPolygon("D:\\アセンブリ.AMF", "amf");
-				painter.setAnimationConfigure(canvas,60,true);
-				painter.startAnimation();
+				animator.setPolygon("D:\\アセンブリ.AMF", "amf");
+				animator.setAnimationConfigure(canvas,60,true);
+				animator.startAnimation();
 
 
 				canvasPanel.remove(lb);
