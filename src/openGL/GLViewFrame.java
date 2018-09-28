@@ -14,6 +14,8 @@ import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLProfile;
 import com.jogamp.opengl.awt.GLCanvas;
 
+import simulation.model3d.ModelHandler;
+
 public class GLViewFrame extends JFrame{
 	public static void main(String args[]) {
 		new GLViewFrame("Hello, OpenGL!!");
@@ -66,7 +68,7 @@ public class GLViewFrame extends JFrame{
 				canvas.addGLEventListener(animator);
 				//canvas.addMouseListener(this);
 
-				animator.setPolygon("D:\\アセンブリ.AMF", "amf");
+				animator.setModelList(ModelHandler.loadModelFile("D:\\アセンブリ.AMF", "amf"));
 				animator.setAnimationConfigure(canvas,60,true);
 				animator.startAnimation();
 

@@ -4,12 +4,7 @@ import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.fixedfunc.GLLightingFunc.*;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
 
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -18,8 +13,6 @@ import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.util.FPSAnimator;
 
 import simulation.model3d.Model;
-import simulation.model3d.ModelHandler;
-import simulation.model3d.Triangle;
 
 
 public class GLAnimator implements GLEventListener {
@@ -52,8 +45,8 @@ public class GLAnimator implements GLEventListener {
 		}
 	}
 
-	public void setPolygon(String filePath,String extension) throws SAXException, IOException, ParserConfigurationException {
-		modelList = ModelHandler.loadModelFile(filePath,extension);
+	public void setModelList(ArrayList<Model> modelList){
+		this.modelList = modelList;
 	}
 
 	@Override
@@ -123,23 +116,9 @@ public class GLAnimator implements GLEventListener {
 			//gl2.glRotatef(r, 1.0f, 1.0f, 0.3f);
 
 
-			gl2.glBegin(GL_TRIANGLES);
-				for(Model model:modelList) {
-					// 図形の描画
-					gl2.glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[] {model.red,model.green,model.blue,1}, 0);
-					gl2.glMaterialfv(GL_FRONT, GL_SPECULAR, new float[] {model.red,model.green,model.blue,1},0);
-					gl2.glMaterialfv(GL_FRONT, GL_AMBIENT, new float[] {0.0215f, 0.0245f, 0.0215f,1}, 0);
-					gl2.glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {76.8f},0);
-
-
-					for(Triangle triangle:model.triangleMeshes) {
-						gl2.glNormal3fv(triangle.normal,0);
-						for(int nodeIndex=0;nodeIndex<3;nodeIndex++) {
-							gl2.glVertex3fv(triangle.vertexs[nodeIndex],0);
-						}
-					}
-				}
-			gl2.glEnd();
+			for(Model model:modelList) {
+				model.paint(gl2);
+			}
 
 			if(r++ >= 720.0f) {
 				r = 0;
