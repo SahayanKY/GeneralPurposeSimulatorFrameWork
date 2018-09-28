@@ -1,18 +1,11 @@
 package simulation.model3d;
 
-import java.util.ArrayList;
+import com.jogamp.opengl.GL2;
 
-public class Model {
+public abstract class Model {
 	public float specificGravity=0;
 	public float red=0,green=0,blue=0;
-	public float mPrefix=0;
-	public final ArrayList<Triangle> triangleMeshes = new ArrayList<>();
-
-	public Model() {}
-
-	public void addTriangle(Triangle triangle) {
-		triangleMeshes.add(triangle);
-	}
+	public float mPrefix=1;
 
 	public void setColor(float red, float green, float blue) {
 		this.red = red;
@@ -23,4 +16,6 @@ public class Model {
 	public void setMaterialDencity(float density) {
 		this.specificGravity = density;
 	}
+
+	public abstract void paint(GL2 gl2);
 }
