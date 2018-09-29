@@ -117,7 +117,7 @@ public class GLAnimator implements GLEventListener {
 
 
 			for(Model model:modelList) {
-				model.paint(gl2);
+				painter.paint(gl2,model);
 			}
 
 			if(r++ >= 720.0f) {
@@ -125,7 +125,17 @@ public class GLAnimator implements GLEventListener {
 			}
 		}
 
+		gl2.glDisable(GL_LIGHTING);
+		gl2.glBegin(GL_LINES);
+			gl2.glColor3f(1.0f,1.0f,0.0f);
+			gl2.glVertex3fv(new float[] {0,0,20},0);
+			gl2.glVertex3fv(new float[] {20,20,-10},0);
+		gl2.glEnd();
+		gl2.glEnable(GL_LIGHTING);
+
 	}
+
+	ModelPainter painter = new AMFPainter();
 
 	@Override
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
