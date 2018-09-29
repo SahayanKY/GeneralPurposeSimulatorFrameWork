@@ -25,7 +25,12 @@ public class AMFPainter implements ModelPainter{
 
 		gl2.glBegin(GL_TRIANGLES);
 		for(Triangle triangle:m.triangleMeshes) {
+			//法線を指定することで光の反射などによる実際の色の計算が行われる
 			gl2.glNormal3fv(triangle.normal,0);
+
+			//このコマンドは実際の結果に影響しなかった
+			//→上でglMaterialfv()で指定しているのがきいているのか？
+			//gl2.glColor3fv(new float[] {0.8f,0.8f,0.8f}, 0);
 			for(int nodeIndex=0;nodeIndex<3;nodeIndex++) {
 				gl2.glVertex3fv(triangle.vertexs[nodeIndex],0);
 			}
