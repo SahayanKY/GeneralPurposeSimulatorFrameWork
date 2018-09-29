@@ -1,7 +1,5 @@
 package simulation.model3d;
 
-import com.jogamp.opengl.GL2;
-
 public class NURBSModel extends Model{
 	public final double[] uknots, vknots;
 	public final double[][][] ctrls;
@@ -61,9 +59,5 @@ public class NURBSModel extends Model{
 	}
 
 
-	@Override
-	public void paint(GL2 gl2) {
-
-	}
 
 }
