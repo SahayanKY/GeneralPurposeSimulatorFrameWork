@@ -109,7 +109,7 @@ public class ModelHandler {
 				Element volumeElement = (Element) meshChildren.item(i);
 
 				//Modelインスタンスを作っていく
-				Model model = new Model();
+				AMFModel model = new AMFModel();
 				NodeList triangleList = volumeElement.getChildNodes();
 				for(int j=0;j<triangleList.getLength();j++) {
 					//三角形毎の処理

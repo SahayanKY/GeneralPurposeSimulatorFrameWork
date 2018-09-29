@@ -4,14 +4,14 @@ public abstract class ModelProperties {
 	/*
 	 * MKSA系(kg)でこのmodelの質量を返す
 	 * */
-	public static double calcTotalMass(Model model) {
+	public static double calcTotalMass(AMFModel model) {
 		return model.specificGravity *1000 *calcTotalVolume(model);
 	}
 
 	/*
 	 * MKSA系(m3)でこのmodelの体積を返す
 	 * */
-	public static double calcTotalVolume(Model model) {
+	public static double calcTotalVolume(AMFModel model) {
 		//Gaussの定理を利用しているのは下と同じ
 		//正になるものと負になるものを分けて足し合わせていき、最後にその2つを足す
 
@@ -88,7 +88,7 @@ public abstract class ModelProperties {
 	/*
 	 * MKSA系(m)でこのmodelの重心を返す
 	 * */
-	public static double[] calcGravityCenter(Model model) {
+	public static double[] calcGravityCenter(AMFModel model) {
 		double volume = calcTotalVolume(model);
 		double result[] = new double[3];
 
@@ -142,7 +142,7 @@ public abstract class ModelProperties {
 	/*
 	 * MKSA系(m)でこのmodelの重心を返す
 	 * */
-	public static double[][] calcMomentOfInertia(Model model) {
+	public static double[][] calcMomentOfInertia(AMFModel model) {
 		int triangleN = model.triangleMeshes.size();
 		int arraySize = triangleN/100+1;
 

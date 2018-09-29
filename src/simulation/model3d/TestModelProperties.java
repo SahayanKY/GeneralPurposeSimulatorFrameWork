@@ -16,22 +16,26 @@ public class TestModelProperties {
 			//modelList = cubeModelGetter(10,50,30);
 
 			for(Model model:modelList) {
-				System.out.println("red:"+model.red);
-				System.out.println("green:"+model.green);
-				System.out.println("blue:"+model.blue);
-				System.out.println("triangle:"+model.triangleMeshes.size());
-				System.out.println("volume/m3:"+ModelProperties.calcTotalVolume(model));
-				double G[] = ModelProperties.calcGravityCenter(model);
-				System.out.println("CG:x:"+G[0]+",y:"+G[1]+",z:"+G[2]);
-				double inertia[][] = ModelProperties.calcMomentOfInertia(model);
-				System.out.println("Ixx"+inertia[0][0]);
-				System.out.println("Ixy"+inertia[0][1]);
-				System.out.println("Iyy"+inertia[1][1]);
-				System.out.println("Iyz"+inertia[1][2]);
-				System.out.println("Izz"+inertia[2][2]);
-				System.out.println("Izx"+inertia[2][0]);
+				if(model instanceof AMFModel) {
+					AMFModel mod = (AMFModel) model;
+					System.out.println("red:"+mod.red);
+					System.out.println("green:"+mod.green);
+					System.out.println("blue:"+mod.blue);
+					System.out.println("triangle:"+mod.triangleMeshes.size());
+					System.out.println("volume/m3:"+ModelProperties.calcTotalVolume(mod));
+					double G[] = ModelProperties.calcGravityCenter(mod);
+					System.out.println("CG:x:"+G[0]+",y:"+G[1]+",z:"+G[2]);
+					double inertia[][] = ModelProperties.calcMomentOfInertia(mod);
+					System.out.println("Ixx"+inertia[0][0]);
+					System.out.println("Ixy"+inertia[0][1]);
+					System.out.println("Iyy"+inertia[1][1]);
+					System.out.println("Iyz"+inertia[1][2]);
+					System.out.println("Izz"+inertia[2][2]);
+					System.out.println("Izx"+inertia[2][0]);
 
-				System.out.println("-------------------------------------");
+					System.out.println("-------------------------------------");
+				}
+
 			}
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -44,7 +48,7 @@ public class TestModelProperties {
 
 	public static ArrayList<Model> cubeModelGetter(int a, int b, int c){
 		ArrayList<Model> cubeList = new ArrayList<>();
-		Model cube = new Model();
+		AMFModel cube = new AMFModel();
 		cubeList.add(cube);
 
 		float[][] v
