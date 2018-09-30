@@ -21,8 +21,8 @@ public class NURBSSurfacePainter implements ModelPainter {
 		}
 
 		//色の設定
-		gl2.glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[] {m.red,m.green,m.blue,1}, 0);
-		gl2.glMaterialfv(GL_FRONT, GL_SPECULAR, new float[] {m.red,m.green,m.blue,1},0);
+		gl2.glMaterialfv(GL_FRONT, GL_DIFFUSE, new float[] {0.2f,0.8f,0,1}, 0);
+		gl2.glMaterialfv(GL_FRONT, GL_SPECULAR, new float[] {0.2f,0.8f,0,1},0);
 		gl2.glMaterialfv(GL_FRONT, GL_AMBIENT, new float[] {0.0215f, 0.0245f, 0.0215f,1}, 0);
 		gl2.glMaterialfv(GL_FRONT, GL_SHININESS, new float[] {76.8f},0);
 
@@ -35,11 +35,15 @@ public class NURBSSurfacePainter implements ModelPainter {
 		float memory[][] = new float[vN+1][];
 
 
+		gl2.glDisable(GL_CULL_FACE);
+
 		//(u,v)の頂点に対して、
 		//(0,0),(1,0),(0,1),(1,1),...,(1,0),(2,0),(1,1),(2,1)と進めていく
 		//重複する頂点はmemoryに保持しておく
 		for(int i=0;i<uN;i++) {
 			gl2.glBegin(GL_TRIANGLE_STRIP);
+			gl2.glNormal3fv(new float[] {0,0,-1},0);
+
 			for(int j=0;j<=vN;j++) {
 				if(i == 0) {
 					//一番最初のループでは(0,v)の点の座標を先に計算する必要がある
@@ -61,6 +65,8 @@ public class NURBSSurfacePainter implements ModelPainter {
 			}
 			gl2.glEnd();
 		}
+
+		gl2.glEnable(GL_CULL_FACE);
 
 	}
 }
