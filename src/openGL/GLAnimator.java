@@ -12,7 +12,9 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.util.FPSAnimator;
 
+import simulation.model3d.AMFModel;
 import simulation.model3d.Model;
+import simulation.model3d.NURBSModel;
 
 
 public class GLAnimator implements GLEventListener {
@@ -20,6 +22,7 @@ public class GLAnimator implements GLEventListener {
 	private float r=0;
 	private FPSAnimator animator;
 	private ArrayList<Model> modelList = null;
+	private ArrayList<ModelPainter> painterList = null;
 
 	public void setAnimationConfigure(GLAutoDrawable drawable, int fps, boolean scheduleAtFixedRate) {
 		animator = new FPSAnimator(drawable, fps, scheduleAtFixedRate);
@@ -46,7 +49,33 @@ public class GLAnimator implements GLEventListener {
 	}
 
 	public void setModelList(ArrayList<Model> modelList){
-		this.modelList = modelList;
+		//this.modelList = modelList;
+
+		double[] uknot = {0,0,1,1},vknot = {0,0,0.5,1,1};
+		int p = 1,q = 1;
+		double[][][] ctrl=
+			{
+					{{1,0,0,0},{1,15,-15,0},{1,30,0,0}},
+					{{1,0,30,0},{1,15,45,0},{1,30,30,0}}
+			};
+		try {
+			NURBSModel nmodel = new NURBSModel(p, uknot, q, vknot, ctrl);
+			this.modelList = new ArrayList<>();
+			this.modelList.add(nmodel);
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+
+
+
+		this.painterList = new ArrayList<>();
+		for(Model model:this.modelList) {
+			if(model instanceof AMFModel) {
+				painterList.add(new AMFPainter());
+			}else if(model instanceof NURBSModel) {
+				painterList.add(new NURBSSurfacePainter());
+			}
+		}
 	}
 
 	@Override
@@ -115,9 +144,10 @@ public class GLAnimator implements GLEventListener {
 			// 図形の回転
 			//gl2.glRotatef(r, 1.0f, 1.0f, 0.3f);
 
+			int max = modelList.size();
 
-			for(Model model:modelList) {
-				painter.paint(gl2,model);
+			for(int i=0;i<max;i++) {
+				painterList.get(i).paint(gl2, modelList.get(i));
 			}
 
 			if(r++ >= 720.0f) {
@@ -135,7 +165,6 @@ public class GLAnimator implements GLEventListener {
 
 	}
 
-	ModelPainter painter = new AMFPainter();
 
 	@Override
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
