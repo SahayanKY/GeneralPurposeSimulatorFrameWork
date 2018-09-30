@@ -60,7 +60,7 @@ public class NURBSModel extends Model{
 
 	public double[] func(double u, double v) {
 		if(u < uknot[0] || uknot[uknot.length-1] < u || v < vknot[0] || vknot[vknot.length-1] < v) {
-			throw new IllegalArgumentException("u,vの指定がノットの範囲に対して異常です");
+			throw new IllegalArgumentException("u,vの指定がノットの範囲に対して異常です:(u,v)=("+u+","+v+")");
 		}
 
 		int k=0,h=0; //u_k <= u < u_k+1 , v_h <= v < v_h+1
