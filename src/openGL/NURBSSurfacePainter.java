@@ -40,26 +40,33 @@ public class NURBSSurfacePainter implements ModelPainter {
 		//(u,v)の頂点に対して、
 		//(0,0),(1,0),(0,1),(1,1),...,(1,0),(2,0),(1,1),(2,1)と進めていく
 		//重複する頂点はmemoryに保持しておく
+		for(int j=0;j<=vN;j++) {
+			//一番最初のループでは(0,v)の点の座標を先に計算する必要がある
+			//v0は上の例で言うところの1,3,5...番目の頂点
+
+			//計算誤差によりfunc()にIllegalArgumentExceptionをスローされるため
+			double v = (j == vN)? vMax : vMin +(vMax -vMin)/vN*j;
+
+			double[] vertex0 = m.func(uMin, v);
+			memory[j] = new float[]{(float)vertex0[0],(float)vertex0[1],(float)vertex0[2]};
+		}
+
 		for(int i=0;i<uN;i++) {
 			gl2.glBegin(GL_TRIANGLE_STRIP);
 			gl2.glNormal3fv(new float[] {0,0,-1},0);
 
 			for(int j=0;j<=vN;j++) {
-				if(i == 0) {
-					//一番最初のループでは(0,v)の点の座標を先に計算する必要がある
-					//v0は上の例で言うところの1,3,5...番目の頂点
-					double[] v0 = m.func(uMin, vMin +(vMax -vMin)/vN*j);
-					memory[j] = new float[]{(float)v0[0],(float)v0[1],(float)v0[2]};
-				}
-
 				//以降のループでは前回既に計算済みの頂点座標を使うので、memoryを参照する
 				//memory[j]がv0に対応する
 				gl2.glVertex3fv(memory[j],0);
 
+				//計算誤差によりfunc()にIllegalArgumentExceptionをスローされるため
+				double u = (i == uN-1)? uMax : uMin +(uMax -uMin)/uN*(i+1),
+						v = (j == vN)? vMax : vMin +(vMax -vMin)/vN*j;
 
 				//v1は2,4,6,...番目の頂点に対応する
-				double[] v1 = m.func(uMin +(uMax -uMin)/uN*(i+1), vMin +(vMax -vMin)/vN*j);
-				float[] fv1 = {(float)v1[0],(float)v1[1],(float)v1[2]};
+				double[] vertex1 = m.func(u, v);
+				float[] fv1 = {(float)vertex1[0],(float)vertex1[1],(float)vertex1[2]};
 				gl2.glVertex3fv(fv1,0);
 				memory[j] = fv1;
 			}
@@ -67,6 +74,47 @@ public class NURBSSurfacePainter implements ModelPainter {
 		}
 
 		gl2.glEnable(GL_CULL_FACE);
+
+		gl2.glDisable(GL_LIGHTING);
+
+		gl2.glLineWidth(3.0f);
+		//u方向のノットを結ぶ線を引く(u方向に垂直)
+		for(int i=0;i<m.uknot.length;i++) {
+			//多重ノットは処理してもしょうがないので次のループへ
+			if(i > 0 && m.uknot[i] == m.uknot[i-1]) {
+				continue;
+			}
+			gl2.glBegin(GL_LINE_STRIP);
+			for(int j=0;j<=vN;j++) {
+				double u = m.uknot[i],
+						v = (j == vN)? vMax : vMin +(vMax-vMin)/vN*j;
+
+				double[] vertex = m.func(u, v);
+				gl2.glVertex3fv(new float[] {(float)vertex[0],(float)vertex[1],(float)vertex[2]},0);
+			}
+			gl2.glEnd();
+		}
+
+		//v方向のノットを結ぶ線を引く(v方向に垂直)
+		for(int j=0;j<m.vknot.length;j++) {
+			//多重ノットは処理してもしょうがないので次のループへ
+			if(j > 0 && m.vknot[j] == m.vknot[j-1]) {
+				continue;
+			}
+			gl2.glBegin(GL_LINE_STRIP);
+			for(int i=0;i<=uN;i++) {
+				double u = (i == uN)? uMax : uMin +(uMax -uMin)/uN*i,
+						v = m.vknot[j];
+
+				double[] vertex = m.func(u, v);
+				gl2.glVertex3fv(new float[] {(float)vertex[0],(float)vertex[1],(float)vertex[2]},0);
+			}
+			gl2.glEnd();
+		}
+
+		gl2.glEnable(GL_LIGHTING);
+
+		gl2.glLineWidth(1);
 
 	}
 }
