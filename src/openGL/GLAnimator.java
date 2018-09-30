@@ -51,12 +51,33 @@ public class GLAnimator implements GLEventListener {
 	public void setModelList(ArrayList<Model> modelList){
 		//this.modelList = modelList;
 
-		double[] uknot = {0,0,1,1},vknot = {0,0,0.5,1,1};
-		int p = 1,q = 1;
+		double[] uknot = {0,0,1,1},vknot = {0,0,0,1,1,2,2,3,3,4,4,4};
+		int p = 1,q = 2;
+		double a = Math.sqrt(0.5);
 		double[][][] ctrl=
 			{
-					{{1,0,0,0},{1,15,-15,0},{1,30,0,0}},
-					{{1,0,30,0},{1,15,45,0},{1,30,30,0}}
+				{
+					{1,20,0,-30},
+					{a,20,30,-30},
+					{1,20,30,0},
+					{a,20,30,30},
+					{1,20,0,30},
+					{a,20,-30,30},
+					{1,20,-30,0},
+					{a,20,-30,-30},
+					{1,20,0,-30}
+				},
+				{
+					{1,-5,0,-30},
+					{a,-5,30,-30},
+					{1,-5,30,0},
+					{a,-5,30,30},
+					{1,-5,0,30},
+					{a,-5,-30,30},
+					{1,-5,-30,0},
+					{a,-5,-30,-30},
+					{1,-5,0,-30}
+				}
 			};
 		try {
 			NURBSModel nmodel = new NURBSModel(p, uknot, q, vknot, ctrl);
@@ -131,8 +152,8 @@ public class GLAnimator implements GLEventListener {
 
 		gl2.glBegin(GL_LINES);
 			gl2.glColor3f(1.0f, 1.0f, 1.0f);
-			gl2.glVertex3fv(new float[]{-10,-10,-3},0);
-			gl2.glVertex3fv(new float[] {10,10,3},0);
+			gl2.glVertex3fv(new float[]{-30,-30,-3},0);
+			gl2.glVertex3fv(new float[] {30,30,3},0);
 		gl2.glEnd();
 		gl2.glEnable(GL_LIGHTING);
 
@@ -159,7 +180,7 @@ public class GLAnimator implements GLEventListener {
 		gl2.glBegin(GL_LINES);
 			gl2.glColor3f(1.0f,1.0f,0.0f);
 			gl2.glVertex3fv(new float[] {0,0,20},0);
-			gl2.glVertex3fv(new float[] {20,20,-10},0);
+			gl2.glVertex3fv(new float[] {20,20,-30},0);
 		gl2.glEnd();
 		gl2.glEnable(GL_LIGHTING);
 
