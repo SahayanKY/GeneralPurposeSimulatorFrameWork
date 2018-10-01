@@ -14,7 +14,7 @@ import com.jogamp.opengl.util.FPSAnimator;
 
 import simulation.model3d.AMFModel;
 import simulation.model3d.Model;
-import simulation.model3d.NURBSModel;
+import simulation.model3d.NURBSSurfaceModel;
 
 
 public class GLAnimator implements GLEventListener {
@@ -80,7 +80,7 @@ public class GLAnimator implements GLEventListener {
 				}
 			};
 		try {
-			NURBSModel nmodel = new NURBSModel(p, uknot, q, vknot, ctrl);
+			NURBSSurfaceModel nmodel = new NURBSSurfaceModel(p, uknot, q, vknot, ctrl);
 			this.modelList = new ArrayList<>();
 			this.modelList.add(nmodel);
 		}catch(Exception e) {
@@ -93,7 +93,7 @@ public class GLAnimator implements GLEventListener {
 		for(Model model:this.modelList) {
 			if(model instanceof AMFModel) {
 				painterList.add(new AMFPainter());
-			}else if(model instanceof NURBSModel) {
+			}else if(model instanceof NURBSSurfaceModel) {
 				painterList.add(new NURBSSurfacePainter());
 			}
 		}

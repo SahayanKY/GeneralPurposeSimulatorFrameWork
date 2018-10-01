@@ -6,16 +6,16 @@ import static com.jogamp.opengl.fixedfunc.GLLightingFunc.*;
 import com.jogamp.opengl.GL2;
 
 import simulation.model3d.Model;
-import simulation.model3d.NURBSModel;
+import simulation.model3d.NURBSSurfaceModel;
 
 public class NURBSSurfacePainter implements ModelPainter {
 	int uN = 100,vN = 100; //u方向、v方向の分割数
 
 
 	public void paint(GL2 gl2, Model model) {
-		NURBSModel m = null;
-		if(model instanceof NURBSModel) {
-			m = (NURBSModel) model;
+		NURBSSurfaceModel m = null;
+		if(model instanceof NURBSSurfaceModel) {
+			m = (NURBSSurfaceModel) model;
 		}else {
 			throw new IllegalArgumentException("指定されたインスタンスはNURBSModelインスタンスでありません");
 		}

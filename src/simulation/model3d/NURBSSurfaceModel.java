@@ -1,6 +1,6 @@
 package simulation.model3d;
 
-public class NURBSModel extends Model{
+public class NURBSSurfaceModel extends Model{
 	public final double[] uknot, vknot;
 	public final double[][][] ctrl;
 	public final int p,q;
@@ -11,7 +11,7 @@ public class NURBSModel extends Model{
 	 * p,qは多項式の次数
 	 * コントロールポイントは(重み、x座標、y座標、z座標)の順に指定する
 	 * */
-	public NURBSModel(int p, double[] uknot, int q, double[] vknot, double[][][] ctrl){
+	public NURBSSurfaceModel(int p, double[] uknot, int q, double[] vknot, double[][][] ctrl){
 		//次数が負数になっていないか
 		if(p < 0 || q < 0) {
 			throw new IllegalArgumentException("次数が不正です");
@@ -58,6 +58,9 @@ public class NURBSModel extends Model{
 		this.ctrl = ctrl;
 	}
 
+	/*
+	 * u,vを指定し、この3次元曲面モデルの点の座標を与える
+	 * */
 	public double[] func(double u, double v) {
 		if(u < uknot[0] || uknot[uknot.length-1] < u || v < vknot[0] || vknot[vknot.length-1] < v) {
 			throw new IllegalArgumentException("u,vの指定がノットの範囲に対して異常です:(u,v)=("+u+","+v+")");
@@ -131,6 +134,7 @@ public class NURBSModel extends Model{
 
 		/*
 
+		以下、曲線の時のdeBoor実装
 
 		double[][] tempCtrls = new double[p+1][dimension+1];
 
@@ -170,7 +174,7 @@ public class NURBSModel extends Model{
 					{{1,0,10,0},{1,10,10,0}}
 			};
 
-		NURBSModel model = new NURBSModel(p, uknot, q, vknot, ctrl);
+		NURBSSurfaceModel model = new NURBSSurfaceModel(p, uknot, q, vknot, ctrl);
 
 		for(int i=0;i<=10;i++) {
 			for(int j=0;j<=10;j++) {
