@@ -63,7 +63,7 @@ public class ICG extends Simulator{
 
 		grainBefM,
 		grainAftM,
-		grainContentsBefM,
+		grainConsumptionM,
 		grainTop,
 		grainL,
 		grainCG,
@@ -76,7 +76,7 @@ public class ICG extends Simulator{
 
 		tankBefM,
 		tankAftM,
-		tankContentsBefM,
+		tankConsumptionM,
 		tankTop,
 		tankL,
 		tankCG,
@@ -99,6 +99,8 @@ public class ICG extends Simulator{
 		finCNαb,
 		CA,
 		CR,
+		AftRollI,
+		AftPitchyawI,
 		BefRollI,
 		BefPitchyawI;
 
@@ -126,22 +128,23 @@ public class ICG extends Simulator{
 			double time=0,
 					dt=0,
 					g=9.8,
-					lastLagX=rocketL-launchLagLastCG,//ランチャー方向の座標における最後端のラグの位置
+					lastLagX=rocketL-launchLagLastCG,//ランチャー上での最後端のラグの位置
+						//これが0のとき、ラグの重心はランチャーの付け根にあり、ランチャー長さに等しい時ランチクリア
 					lastLagV=0,//ランチャー方向の座標における最後端ラグの速度
-					grainContentsM = grainContentsBefM,
-					tankContentsM = tankContentsBefM,
+					grainContentsM = grainConsumptionM,
+					tankContentsM = tankConsumptionM,
 					rocketM = rocketAftM+grainContentsM+tankContentsM,
-					rocketBefCG = (rocketAftM*rocketAftCG+grainContentsBefM*grainCG+tankContentsBefM*tankCG)/(rocketAftM+grainContentsBefM+tankContentsBefM),
+					rocketBefCG = (rocketAftM*rocketAftCG+grainConsumptionM*grainCG+tankConsumptionM*tankCG)/(rocketAftM+grainConsumptionM+tankConsumptionM),
 					rocketCG = rocketBefCG,
 					Δξ = 0,
-					pitchYawI = BefPitchyawI,
+					pitchYawI = AftPitchyawI,
 					CD = rocketCD,
 					atomosP = 1013, //hPa単位なので注意
 					temperature = 20, //℃単位なので注意
-					N_ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
+					ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
 					crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
 					anemometerV = 7, //x軸正の向きが正
-					windVelocity = 0, 
+					windVelocity = 0,
 					windAngle = 0,
 					attackAngle = 0,
 					diffCGCP = rocketCP-rocketCG,
@@ -151,15 +154,15 @@ public class ICG extends Simulator{
 					Vz = 0,
 					Velocity = 0,
 					//修正後
-					//XCG = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
-					//修正前
-					XCG = 0,
-					//
+					XCG = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
+						//修正前
+						//XCG = 0,
+						//
 					//修正後
-					//ZCG = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
-					//修正前
-					ZCG = 0,
-					//
+					ZCG = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
+						//修正前
+						//ZCG = 0,
+						//
 					relativeVelocityToAir = 0,
 					normalForce = 0,
 					drag = 0,
@@ -170,7 +173,7 @@ public class ICG extends Simulator{
 			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,ランチクリア");
 
 			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%b";
-			publish(String.format(format, time, thrustList.get(0)[1], rocketM, rocketCG, CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ,false));
+			publish(String.format(format, time, thrustList.get(0)[1], rocketM, rocketCG, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ,false));
 
 			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
 				double ω2,θ2,Vx2,Vz2,XCG2,ZCG2,thrust,forceX,forceZ,torqueY,lastLagX2,rocketM2=rocketM,rocketCG2=rocketCG,grainContentsM2=grainContentsM,tankContentsM2=tankContentsM;
@@ -179,8 +182,8 @@ public class ICG extends Simulator{
 						continue;
 					}
 					//推力が出ていた場合(Bn>0)
-					grainContentsM2 = grainContentsBefM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
-					tankContentsM2 = tankContentsBefM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
+					grainContentsM2 = grainConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
+					tankContentsM2 = tankConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
 					rocketM2 = rocketAftM +grainContentsM2 +tankContentsM2;
 					rocketCG2 = (rocketAftM*rocketAftCG+grainContentsM2*grainCG+tankContentsM2*tankCG)/(rocketAftM+grainContentsM2+tankContentsM2);
 
@@ -188,6 +191,8 @@ public class ICG extends Simulator{
 						dt = thrustList.get(j+1)[0] -thrustList.get(j)[0];
 						thrust = thrustList.get(j+1)[1];
 					}else {
+						//次のステップでは推力データが無い場合
+						//dtは前回のステップに合わせる
 						thrust = 0;
 					}
 
@@ -196,11 +201,11 @@ public class ICG extends Simulator{
 				}
 
 				//修正後ランチクリア判定
-				/*
 				if(lastLagX>=launcherL) {
-				*/
-				//修正前ランチクリア判定
-				if(XCG > launcherL*Math.cos(θ)){
+					//修正前ランチクリア判定
+					/*
+					if(XCG > launcherL*Math.cos(θ)){
+					 */
 					//一番最後のランチラグがクリアしたとき
 					lastLagCleared = true;
 					secondLastLagCleared = true;
@@ -218,17 +223,17 @@ public class ICG extends Simulator{
 
 				temperature = 20 -0.0065*ZCG;
 				atomosP = 1013 *Math.pow((1-(0.0065*ZCG)/(20+273.15)),0.5257);
-				N_ρ = atomosP/(2.87*(temperature+273.15));
+				ρ = atomosP/(2.87*(temperature+273.15));
 
 				diffCGCP = rocketCP -rocketCG2;
 				windVelocity = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
 				//windVelocity<0のとき向かい風
 
 				CD = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
-				drag = CD*N_ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
-				normalForce = rocketCNα *N_ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
+				drag = CD*ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+				normalForce = rocketCNα *ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
 				staticMoment = normalForce *diffCGCP;
-				dampingMoment = N_ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
+				dampingMoment = ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
 				torqueY = -staticMoment -dampingMoment;
 
 				windAngle = Math.atan2(Vz, Vx-windVelocity);
@@ -240,8 +245,6 @@ public class ICG extends Simulator{
 				//進行方向の軸からx軸正の向きへの回転方向が正
 
 				double lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
-				lift = 0;
-				System.out.println(lift);
 				if(lastLagCleared) {
 					//完全にランチャーからクリアした後の計算
 					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle) -lift*Math.sin(windAngle);
@@ -316,19 +319,19 @@ public class ICG extends Simulator{
 						pitchYawI = pitchYawI2;
 				}else */{
 						//2つ以上のラグが残っているときの計算
-						
+
 						//修正後の式
-						/*
+						//ランチャー上にあるため、力はランチャー方向の成分のみが有効
 						forceX = thrust*Math.cos(θ) -drag*Math.cos(attackAngle)*Math.cos(θ) +lift*Math.sin(attackAngle)*Math.cos(θ) -rocketM2 *g *Math.sin(θ)*Math.cos(θ);
 						forceZ = thrust*Math.sin(θ) -drag*Math.cos(attackAngle)*Math.sin(θ) +lift*Math.sin(attackAngle)*Math.sin(θ) -rocketM2 *g *Math.pow(Math.sin(θ), 2);
-						*/
-					
+
+
 						//修正前の式
-					
+						/*
 						forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
 						forceZ = thrust*Math.sin(θ) -rocketM2*g -drag*Math.sin(windAngle);
-						
-						
+						*/
+
 						Vx2 = Vx +forceX/rocketM2 *dt;
 						Vz2 = Vz +forceZ/rocketM2 *dt;
 
@@ -341,14 +344,13 @@ public class ICG extends Simulator{
 						ω2 = 0;
 						θ2 = θ;
 
-
 						lastLagX = XCG/Math.cos(Math.toRadians(fireAngle))+rocketCG2-launchLagLastCG;
 						lastLagV = Vx2/Math.cos(Math.toRadians(fireAngle));
 				}
 
 
 				//得られた次のステップを出力する
-				publish(String.format(format, time+dt, thrust, rocketM2, rocketCG2, CD, N_ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2, lastLagCleared));
+				publish(String.format(format, time+dt, thrust, rocketM2, rocketCG2, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2, lastLagCleared));
 
 				//ループの更新処理
 				rocketM = rocketM2;
@@ -469,107 +471,87 @@ public class ICG extends Simulator{
 			フィン重心位置 = new Parameter(フィン, "重心位置", "フィン重心位置", "500 mm", "2500 mm", def),
 			フィン質量 = new Parameter(フィン, "質量", "フィン質量", "10 g", "1000 g", def),
 			フィン圧力中心位置 = new Parameter(フィン, "圧力中心位置", "フィン圧力中心位置", "500 mm", "2500 mm", def),
-			フィン法線力係数CNαf = new Parameter(フィン, "法線力係数", "フィン法線力係数CNαf", null, null, def),
-
-			干渉係数Kfb = new Parameter(合成パラメータ, "干渉係数Kfb"),
-			干渉込みフィン法線力係数CNαfb = new Parameter(合成パラメータ, "干渉込みフィン法線力係数CNαfb"),
-			合計法線力係数CNα = new Parameter(合成パラメータ, "合計法線力係数CNα"),
-			復元モーメント係数C1 = new Parameter(合成パラメータ, "復元モーメント係数C1"),
-			燃焼前空力減衰モーメントCA = new Parameter(合成パラメータ, "空力減衰モーメントCA(燃焼前)"),
-			燃焼前ジェット減衰モーメントCR = new Parameter(合成パラメータ, "ジェット減衰モーメントCR(燃焼前)"),
-			燃焼前減衰モーメント係数C2 = new Parameter(合成パラメータ, "減衰モーメント係数C2(燃焼前)"),
-			ピッチヨー慣性モーメント = new Parameter(合成パラメータ, "慣性モーメント(ピッチ・ヨー)"),
-			ロール慣性モーメント = new Parameter(合成パラメータ, "慣性モーメント");
+			フィン法線力係数CNαf = new Parameter(フィン, "法線力係数", "フィン法線力係数CNαf", null, null, def);
 
 		thrustFileParam.setNeedInputButton(true);
 
-		paraMan.addParameter(機体バージョン);
-		paraMan.addParameter(使用燃焼データ年月);
-		paraMan.addParameter(thrustFileParam);
-		paraMan.addParameter(空気密度);
-		paraMan.addParameter(最大飛行速度);
-		paraMan.addParameter(比推力);
-		paraMan.addParameter(燃焼持続時間);
-		paraMan.addParameter(ランチャー長さ);
-		paraMan.addParameter(方位角);
-		paraMan.addParameter(射角);
-		paraMan.addParameter(風速計高さ);
+		paraMana.addParameter(機体バージョン);
+		paraMana.addParameter(使用燃焼データ年月);
+		paraMana.addParameter(thrustFileParam);
+		paraMana.addParameter(空気密度);
+		paraMana.addParameter(最大飛行速度);
+		paraMana.addParameter(比推力);
+		paraMana.addParameter(燃焼持続時間);
+		paraMana.addParameter(ランチャー長さ);
+		paraMana.addParameter(方位角);
+		paraMana.addParameter(射角);
+		paraMana.addParameter(風速計高さ);
 
-		paraMan.addParameter(ロケット外径);
-		paraMan.addParameter(ロケット内径);
-		paraMan.addParameter(全体圧力中心位置);
-		paraMan.addParameter(全体重心位置);
-		paraMan.addParameter(ロケット全長);
-		paraMan.addParameter(ロケット質量);
-		paraMan.addParameter(ロケット抗力係数CD);
-		paraMan.addParameter(最後のラグ重心位置);
-		paraMan.addParameter(最後から2番目のラグ重心位置);
+		paraMana.addParameter(ロケット外径);
+		paraMana.addParameter(ロケット内径);
+		paraMana.addParameter(全体圧力中心位置);
+		paraMana.addParameter(全体重心位置);
+		paraMana.addParameter(ロケット全長);
+		paraMana.addParameter(ロケット質量);
+		paraMana.addParameter(ロケット抗力係数CD);
+		paraMana.addParameter(最後のラグ重心位置);
+		paraMana.addParameter(最後から2番目のラグ重心位置);
 
-		paraMan.addParameter(ノーズコーン長さ);
-		paraMan.addParameter(ノーズコーン質量);
-		paraMan.addParameter(ノーズコーン重心位置);
-		paraMan.addParameter(ノーズコーン圧力中心位置);
-		paraMan.addParameter(ノーズコーン法線力係数CNαn);
+		paraMana.addParameter(ノーズコーン長さ);
+		paraMana.addParameter(ノーズコーン質量);
+		paraMana.addParameter(ノーズコーン重心位置);
+		paraMana.addParameter(ノーズコーン圧力中心位置);
+		paraMana.addParameter(ノーズコーン法線力係数CNαn);
 
-		paraMan.addParameter(分離機構長さ);
-		paraMan.addParameter(分離機構質量);
-		paraMan.addParameter(分離機構先端位置);
-		paraMan.addParameter(分離機構外径);
+		paraMana.addParameter(分離機構長さ);
+		paraMana.addParameter(分離機構質量);
+		paraMana.addParameter(分離機構先端位置);
+		paraMana.addParameter(分離機構外径);
 
-		paraMan.addParameter(チューブ1長さ);
-		paraMan.addParameter(チューブ2長さ);
-		paraMan.addParameter(チューブ3長さ);
-		paraMan.addParameter(チューブ1質量);
-		paraMan.addParameter(チューブ2質量);
-		paraMan.addParameter(チューブ3質量);
-		paraMan.addParameter(チューブ1重心位置);
-		paraMan.addParameter(チューブ2重心位置);
-		paraMan.addParameter(チューブ3重心位置);
+		paraMana.addParameter(チューブ1長さ);
+		paraMana.addParameter(チューブ2長さ);
+		paraMana.addParameter(チューブ3長さ);
+		paraMana.addParameter(チューブ1質量);
+		paraMana.addParameter(チューブ2質量);
+		paraMana.addParameter(チューブ3質量);
+		paraMana.addParameter(チューブ1重心位置);
+		paraMana.addParameter(チューブ2重心位置);
+		paraMana.addParameter(チューブ3重心位置);
 
-		paraMan.addParameter(エンジンを抑えるプレート質量);
-		paraMan.addParameter(エンジンを抑えるプレート先端位置);
-		paraMan.addParameter(エンジンを抑えるプレート長さ);
+		paraMana.addParameter(エンジンを抑えるプレート質量);
+		paraMana.addParameter(エンジンを抑えるプレート先端位置);
+		paraMana.addParameter(エンジンを抑えるプレート長さ);
 
-		paraMan.addParameter(燃焼前グレイン質量);
-		paraMan.addParameter(燃焼後グレイン質量);
-		paraMan.addParameter(グレイン先端位置);
-		paraMan.addParameter(グレイン長さ);
-		paraMan.addParameter(グレイン外径);
+		paraMana.addParameter(燃焼前グレイン質量);
+		paraMana.addParameter(燃焼後グレイン質量);
+		paraMana.addParameter(グレイン先端位置);
+		paraMana.addParameter(グレイン長さ);
+		paraMana.addParameter(グレイン外径);
 
-		paraMan.addParameter(インジェクターベル質量);
-		paraMan.addParameter(インジェクターベル先端位置);
-		paraMan.addParameter(インジェクターベル長さ);
-		paraMan.addParameter(インジェクターベル外径);
+		paraMana.addParameter(インジェクターベル質量);
+		paraMana.addParameter(インジェクターベル先端位置);
+		paraMana.addParameter(インジェクターベル長さ);
+		paraMana.addParameter(インジェクターベル外径);
 
-		paraMan.addParameter(燃焼前酸化剤タンク質量);
-		paraMan.addParameter(燃焼後酸化剤タンク質量);
-		paraMan.addParameter(酸化剤タンク先端位置);
-		paraMan.addParameter(酸化剤タンク長さ);
-		paraMan.addParameter(酸化剤タンク外径);
+		paraMana.addParameter(燃焼前酸化剤タンク質量);
+		paraMana.addParameter(燃焼後酸化剤タンク質量);
+		paraMana.addParameter(酸化剤タンク先端位置);
+		paraMana.addParameter(酸化剤タンク長さ);
+		paraMana.addParameter(酸化剤タンク外径);
 
-		paraMan.addParameter(フィン枚数);
-		paraMan.addParameter(フィン高さ);
-		paraMan.addParameter(フィン根本長さ);
-		paraMan.addParameter(フィン端部長さ);
-		paraMan.addParameter(フィン後退長さ);
-		paraMan.addParameter(フィン先端位置);
-		paraMan.addParameter(フィン重心位置);
-		paraMan.addParameter(フィン質量);
-		paraMan.addParameter(フィン圧力中心位置);
-		paraMan.addParameter(フィン法線力係数CNαf);
+		paraMana.addParameter(フィン枚数);
+		paraMana.addParameter(フィン高さ);
+		paraMana.addParameter(フィン根本長さ);
+		paraMana.addParameter(フィン端部長さ);
+		paraMana.addParameter(フィン後退長さ);
+		paraMana.addParameter(フィン先端位置);
+		paraMana.addParameter(フィン重心位置);
+		paraMana.addParameter(フィン質量);
+		paraMana.addParameter(フィン圧力中心位置);
+		paraMana.addParameter(フィン法線力係数CNαf);
 
-		paraMan.addParameter(干渉係数Kfb);
-		paraMan.addParameter(干渉込みフィン法線力係数CNαfb);
-		paraMan.addParameter(合計法線力係数CNα);
-		paraMan.addParameter(復元モーメント係数C1);
-		paraMan.addParameter(燃焼前空力減衰モーメントCA);
-		paraMan.addParameter(燃焼前ジェット減衰モーメントCR);
-		paraMan.addParameter(燃焼前減衰モーメント係数C2);
-		paraMan.addParameter(ピッチヨー慣性モーメント);
-		paraMan.addParameter(ロール慣性モーメント);
-
-
-		paraMan.addRunnable(()->{
+		this.addParameterSetterFunc(()->{
+			ArrayList<String> result = new ArrayList<>();
 			Function<Parameter,Double> getDoubleValue = (parameter) -> new PhysicalQuantity(parameter.getValue()).Number;
 
 			thrustFile = new File(thrustFileParam.getValue());
@@ -619,7 +601,7 @@ public class ICG extends Simulator{
 
 			grainBefM = getDoubleValue.apply(燃焼前グレイン質量);
 			grainAftM = getDoubleValue.apply(燃焼後グレイン質量);
-			grainContentsBefM = grainBefM -grainAftM;
+			grainConsumptionM = grainBefM -grainAftM;
 			grainTop = getDoubleValue.apply(グレイン先端位置);
 			grainL = getDoubleValue.apply(グレイン長さ);
 			grainCG = grainTop +grainL/2;
@@ -632,7 +614,7 @@ public class ICG extends Simulator{
 
 			tankBefM = getDoubleValue.apply(燃焼前酸化剤タンク質量);
 			tankAftM = getDoubleValue.apply(燃焼後酸化剤タンク質量);
-			tankContentsBefM = tankBefM -tankAftM;
+			tankConsumptionM = tankBefM -tankAftM;
 			tankTop = getDoubleValue.apply(酸化剤タンク先端位置);
 			tankL = getDoubleValue.apply(酸化剤タンク長さ);
 			tankCG = tankTop +tankL/2;
@@ -649,46 +631,72 @@ public class ICG extends Simulator{
 			finCP = getDoubleValue.apply(フィン圧力中心位置);
 			finCNα = getDoubleValue.apply(フィン法線力係数CNαf);
 
+			double rocketBefM,rocketBefCG,rocketDryM,rocketDryCG;
 
 			String st;
 			st = ロケット質量.getValue();
 			rocketAftM = new PhysicalQuantity(st.substring(0,st.length()-1)).Number;
 			if(st.endsWith("b")) {
+				//燃焼前(Bef)が入力された場合
+				rocketBefM = rocketAftM;
+
 				//燃焼後(乾燥時)の質量に直す
-				rocketAftM -= (tankContentsBefM +grainContentsBefM);
+				rocketAftM = rocketBefM - (tankConsumptionM +grainConsumptionM);
+
+				//燃焼後(Aft)の計算値を戻り値の配列に含める
+				result.add("燃焼後ロケット質量="+rocketAftM+" kg");
+			}else {
+				//燃焼後(Aft)が入力された場合
+				//燃焼前(Bef)の計算値を戻り値に
+				rocketBefM = rocketAftM +tankConsumptionM +grainConsumptionM;
+				result.add("燃焼前ロケット質量="+rocketBefM+" kg");
 			}
+			rocketDryM = rocketAftM +grainConsumptionM;
+			result.add("乾燥時ロケット質量="+rocketDryM+" kg");
+
 
 			st = 全体重心位置.getValue();
 			rocketAftCG = new PhysicalQuantity(st.substring(0,st.length()-1)).Number;
 			if(st.endsWith("b")) {
 				//同様
-				//右辺のrocketAftCGは燃焼前重心
-				rocketAftCG = (1+(grainContentsBefM+tankContentsBefM)/rocketAftM)*rocketAftCG -(grainContentsBefM*grainCG+tankContentsBefM*tankCG)/rocketAftM;
+				rocketBefCG = rocketAftCG;
+
+				rocketAftCG = (1+(grainConsumptionM+tankConsumptionM)/rocketAftM)*rocketBefCG -(grainConsumptionM*grainCG+tankConsumptionM*tankCG)/rocketAftM;
+
+				result.add("燃焼後ロケット重心位置="+rocketAftCG +" m");
+			}else {
+				rocketBefCG = (rocketAftM*rocketAftCG +grainConsumptionM*grainCG +tankConsumptionM*tankCG)/rocketBefM;
+				result.add("燃焼前ロケット重心位置="+rocketBefCG+" m");
 			}
+			rocketDryCG = (rocketAftM*rocketAftCG +grainConsumptionM*grainCG)/rocketDryM;
+			result.add("乾燥時ロケット重心位置="+rocketDryCG+" m");
 
 
 			Kfb = 1+rocketOuterDiameter/(2*finH+rocketOuterDiameter);
 			finCNαb = Kfb*finCNα;
 			rocketCNα = noseCNα +finCNαb;
-			干渉係数Kfb.setValue(String.valueOf(Kfb));
-			干渉込みフィン法線力係数CNαfb.setValue(String.valueOf(finCNαb));
-			合計法線力係数CNα.setValue(String.valueOf(rocketCNα));
+
+			result.add("干渉係数Kfb="+Kfb);
+			result.add("干渉込みフィン法線力係数CNαfb="+finCNαb);
+			result.add("合計法線力係数CNα="+rocketCNα);
+
+
 
 
 			CA = ρ*Vmax*rocketOuterDiameter*rocketOuterDiameter/4*(noseCNα*Math.pow(noseCP-rocketAftCG,2)+finCNαb*Math.pow(finCP-rocketAftCG,2));
-			CR = grainContentsBefM*Math.pow(rocketL-rocketAftCG,2)/tb;
+			CR = grainConsumptionM*Math.pow(rocketL-rocketAftCG,2)/tb;
 
-
-			復元モーメント係数C1.setValue(String.valueOf(ρ*(noseCNα+finCNαb)*Math.pow(rocketOuterDiameter/2*Vmax,2)*(rocketCP-rocketAftCG))+" kg m2/s2");
-			燃焼前空力減衰モーメントCA.setValue(String.valueOf(CA)+" kg m2/s");
+			result.add("復元モーメント係数C1="+ρ*(noseCNα+finCNαb)*Math.pow(rocketOuterDiameter/2*Vmax,2)*(rocketCP-rocketAftCG)+" kg m2/s2");
+			result.add("空力減衰モーメントCA(燃焼前)="+CA+" kg m2/s");
 		//一時的に機体の重心を燃焼後(乾燥)で出している
 		//ジェット減衰モーメントは燃焼前の状態で出しているのだが
 		//後で要確認
-			燃焼前ジェット減衰モーメントCR.setValue(String.valueOf(CR)+" kg m2/s");
-			燃焼前減衰モーメント係数C2.setValue(String.valueOf(CA+CR)+" kg m2/s");
+			result.add("ジェット減衰モーメントCR(燃焼前)="+CR+" kg m2/s");
+			result.add("減衰モーメント係数C2(燃焼前)="+CA+CR+" kg m2/s");
 
 
-			BefPitchyawI
+
+			AftPitchyawI
 				=noseM*Math.pow(noseCG-rocketAftCG,2)
 				+separaterM*(Math.pow(separaterTop+separaterL/2-rocketAftCG,2)+separaterOuterDiameter*separaterOuterDiameter/16+separaterL*separaterL/12)
 				+tubeM*(Math.pow(tubeCG-rocketAftCG,2)+(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/16+tubeL*tubeL/12)
@@ -698,7 +706,7 @@ public class ICG extends Simulator{
 				+tankAftM*(Math.pow(tankTop+tankL/2-rocketAftCG,2)+tankOuterDiameter*tankOuterDiameter/16+tankL*tankL/12)
 				+finM*Math.pow(finCG-rocketAftCG,2);
 
-			BefRollI
+			AftRollI
 				=noseM*rocketOuterDiameter*rocketOuterDiameter/16
 				+separaterM*separaterOuterDiameter*separaterOuterDiameter/4
 				+tubeM*(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/4
@@ -706,8 +714,53 @@ public class ICG extends Simulator{
 				+(grainAftM+injectorM+tankAftM)*injectorOuterDiameter*injectorOuterDiameter/4
 				+finM*(Math.pow(rocketOuterDiameter/2+finH,3)-Math.pow(rocketOuterDiameter, 3)/8)/finH;
 
-			ピッチヨー慣性モーメント.setValue(String.valueOf(BefPitchyawI)+" kg m2");
-			ロール慣性モーメント.setValue(String.valueOf(BefRollI)+" kg m2");
+			BefPitchyawI
+				=noseM*Math.pow(noseCG-rocketBefCG,2)
+				+separaterM*(Math.pow(separaterTop+separaterL/2-rocketBefCG,2)+separaterOuterDiameter*separaterOuterDiameter/16+separaterL*separaterL/12)
+				+tubeM*(Math.pow(tubeCG-rocketBefCG,2)+(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/16+tubeL*tubeL/12)
+				+aluminumPlateM*(Math.pow(aluminumPlateTop+aluminumPlateL/2-rocketBefCG,2)+rocketInnerDiameter*rocketInnerDiameter/16+aluminumPlateL*aluminumPlateL/12)
+				+grainBefM*(Math.pow(grainTop+grainL/2-rocketBefCG,2)+grainOuterDiameter*grainOuterDiameter/16+grainL*grainL/12)
+				+injectorM*(Math.pow(injectorTop+injectorL/2-rocketBefCG,2) +injectorOuterDiameter*injectorOuterDiameter/16 +injectorL*injectorL/12)
+				+tankBefM*(Math.pow(tankTop+tankL/2-rocketBefCG,2)+tankOuterDiameter*tankOuterDiameter/16+tankL*tankL/12)
+				+finM*Math.pow(finCG-rocketBefCG,2);
+
+			BefRollI
+				=noseM*rocketOuterDiameter*rocketOuterDiameter/16
+				+separaterM*separaterOuterDiameter*separaterOuterDiameter/4
+				+tubeM*(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/4
+				+aluminumPlateM*rocketInnerDiameter*rocketInnerDiameter/4
+				+(grainBefM+injectorM+tankBefM)*injectorOuterDiameter*injectorOuterDiameter/4
+				+finM*(Math.pow(rocketOuterDiameter/2+finH,3)-Math.pow(rocketOuterDiameter, 3)/8)/finH;
+
+			double
+			DryPitchyawI
+				=noseM*Math.pow(noseCG-rocketDryCG,2)
+				+separaterM*(Math.pow(separaterTop+separaterL/2-rocketDryCG,2)+separaterOuterDiameter*separaterOuterDiameter/16+separaterL*separaterL/12)
+				+tubeM*(Math.pow(tubeCG-rocketDryCG,2)+(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/16+tubeL*tubeL/12)
+				+aluminumPlateM*(Math.pow(aluminumPlateTop+aluminumPlateL/2-rocketDryCG,2)+rocketInnerDiameter*rocketInnerDiameter/16+aluminumPlateL*aluminumPlateL/12)
+				+grainBefM*(Math.pow(grainTop+grainL/2-rocketDryCG,2)+grainOuterDiameter*grainOuterDiameter/16+grainL*grainL/12)
+				+injectorM*(Math.pow(injectorTop+injectorL/2-rocketDryCG,2) +injectorOuterDiameter*injectorOuterDiameter/16 +injectorL*injectorL/12)
+				+tankAftM*(Math.pow(tankTop+tankL/2-rocketDryCG,2)+tankOuterDiameter*tankOuterDiameter/16+tankL*tankL/12)
+				+finM*Math.pow(finCG-rocketDryCG,2),
+
+			DryRollI
+				=noseM*rocketOuterDiameter*rocketOuterDiameter/16
+				+separaterM*separaterOuterDiameter*separaterOuterDiameter/4
+				+tubeM*(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/4
+				+aluminumPlateM*rocketInnerDiameter*rocketInnerDiameter/4
+				+(grainBefM+injectorM+tankAftM)*injectorOuterDiameter*injectorOuterDiameter/4
+				+finM*(Math.pow(rocketOuterDiameter/2+finH,3)-Math.pow(rocketOuterDiameter, 3)/8)/finH;
+
+			result.add("燃焼前ピッチ・ヨー慣性モーメント="+BefPitchyawI+" kg m2");
+			result.add("燃焼後ピッチ・ヨー慣性モーメント="+AftPitchyawI+" kg m2");
+			result.add("乾燥時ピッチ・ヨー慣性モーメント="+DryPitchyawI+" kg m2");
+
+			result.add("燃焼前ロール慣性モーメント="+BefRollI+" kg m2");
+			result.add("燃焼後ロール慣性モーメント="+AftRollI+" kg m2");
+			result.add("乾燥時ロール慣性モーメント="+DryRollI+" kg m2");
+
+			return result.toArray(new String[] {});
+
 		});
 
 		/*

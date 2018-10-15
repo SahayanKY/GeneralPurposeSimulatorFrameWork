@@ -10,8 +10,9 @@ import java.io.OutputStreamWriter;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import javax.swing.ProgressMonitor;
 import javax.swing.SwingWorker;
@@ -25,10 +26,10 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	protected BufferedWriter resultWriter;
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
-	protected final ParameterManager paraMan = new ParameterManager(this);
+	protected final ParameterManager paraMana = new ParameterManager(this);
 	protected File resultStoreDirectory;
 	private double startTime,currentProgressRate;
-
+	protected final ArrayList<Supplier<String[]>> parameterSetterFuncList = new ArrayList<>();
 
 	public Simulator(){
 		addPropertyChangeListener(new PropertyChangeListener() {
@@ -76,12 +77,26 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * 計算結果の出力先のディレクトリを指定し、シミュレーションを開始する。
 	 * 同名のexecute()では正しく起動しない仕様であるので注意。
 	 * */
-	public void execute(File resultStoreDirectory) throws IOException{
+	public final void execute(File resultStoreDirectory) throws IOException{
 		//シミュレーション日時の決定
 		setSimulationStartTime();
 		this.resultStoreDirectory = resultStoreDirectory;
 		execute();
 	}
+
+	protected final void addParameterSetterFunc(Supplier<String[]> sup) {
+		this.parameterSetterFuncList.add(sup);
+	}
+
+	public final String[][] setParameter(){
+		int n = this.parameterSetterFuncList.size();
+		String[][] result = new String[n][];
+		for(int i=0;i<n;i++) {
+			result[i] = this.parameterSetterFuncList.get(i).get();
+		}
+		return result;
+	}
+
 
 	@Override
 	/*
@@ -89,8 +104,11 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * */
 	protected Object doInBackground() {
 		try {
-			//指定したディレクトリにパラメータを保存させる
-			paraMan.writeProperty_on(resultStoreDirectory);
+			//シミュレーションに必要なパラメータをセットする
+			String result[][] = this.setParameter();
+
+			//ディレクトリを指定して、パラメータやその合成量をファイルとして記録させる
+			paraMana.writePropertyOn(resultStoreDirectory,result);
 			executeSimulation();
 
 		}catch(Exception e) {
@@ -190,13 +208,11 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * オーバーライドするときはSimulatorクラスのcreateParameter()を呼び出す。
 	 * */
 	public void createParameters(){
-		final Parameter 警告 = new Parameter("シミュレーション", "警告"),
-				シミュレーション年月日時分秒 = new Parameter("シミュレーション", "シミュレーション年月日時分秒");
+		final Parameter 警告 = new Parameter("シミュレーション", "警告");
 
-		paraMan.addParameter(警告);
-		paraMan.addParameter(シミュレーション年月日時分秒);
-		paraMan.addRunnable(()->{
-			シミュレーション年月日時分秒.setValue(this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")));
+		paraMana.addParameter(警告);
+		this.parameterSetterFuncList.add(()->{
+			return new String[] {"シミュレーション年月日時分秒="+this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS"))};
 		});
 	}
 
@@ -204,7 +220,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * このSimulatorインスタンスが保持するParameterManagerを返す。
 	 * */
 	public ParameterManager getParameterManager() {
-		return this.paraMan;
+		return this.paraMana;
 	}
 
 	/*
