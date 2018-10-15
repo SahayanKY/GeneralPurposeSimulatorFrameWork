@@ -16,10 +16,12 @@ import java.util.StringJoiner;
 import icg.DoubleBackSlashReader;
 import simulation.Simulator;
 
+/*
+ * 各種パラメータのリストであり、状態を一括でチェックしたり、パラメータ値を設定するクラス
+ * */
 public class ParameterManager {
 	private final Simulator simulater;
 	private ArrayList<Parameter> paramList = new ArrayList<>();
-	private ArrayList<Runnable> runnableList = new ArrayList<>();
 
 	public ParameterManager(Simulator simulater){
 		this.simulater = simulater;
@@ -62,7 +64,7 @@ public class ParameterManager {
 					continue;
 			}
 		}
-		
+
 		if(ErrorTime>0) {
 			return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 		}else if(WarnTime>0) {
@@ -104,24 +106,15 @@ public class ParameterManager {
 		this.paramList.add(parameter);
 	}
 
-	/*
-	 * システムが入力するパラメータへの値のセットの仕方や、
-	 * Simulator子クラス自身のフィールドへの値のセットの仕方を記述したrunnableを指定する
-	 * */
-	public void addRunnable(Runnable runnable) {
-		this.runnableList.add(runnable);
-	}
-
 
 	/*
 	 * 各パラメータがもつvalueを指定されたディレクトリに作成したプロパティファイルに書き込む
 	 * @param choosedDirectory 保存先ディレクトリ
+	 * @param result パラメータに関連した値を同時に書き込む際に指定する
+	 * 		各文字列は"="を1つだけ含まなければならない。
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
-	public void writeProperty_on(File choosedDirectory) throws IOException{
-		for(Runnable runner : runnableList){
-			runner.run();
-		}
+	public void writePropertyOn(File choosedDirectory,String result[][]) throws IOException{
 		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーションパラメータ.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止
@@ -132,6 +125,23 @@ public class ParameterManager {
 		){
 			writer.write("#シミュレーション条件記録ファイル");
 			writer.newLine();
+
+			int simutimeIndex=-1;
+			for(int i=0;i<result.length;i++) {
+				if(result[i][0].startsWith("シミュレーション年月日時分秒")) {
+					simutimeIndex = i;
+				}
+			}
+			if(simutimeIndex != -1) {
+				writer.write(result[simutimeIndex][0]);
+				writer.newLine();
+			}
+	//-----------------------------------------------------------------------------
+			/*
+			 * 各クラス毎に分けられないのか
+			 * （その方が見やすい）
+			 * */
+
 			writer.newLine();
 			writer.write("#各項目の想定Min値から想定Max値の間に無いものには警告が出ます");
 			for(Parameter p:paramList) {
