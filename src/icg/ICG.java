@@ -18,7 +18,6 @@ import simulation.param.checker.ThrustDataChecker;
 import simulation.param.checker.WhiteSpaceChecker;
 
 public class ICG extends Simulator{
-	private ArrayList<Parameter> paramList = new ArrayList<>();
 	private File thrustFile;
 	private double
 		ρ,
@@ -107,7 +106,7 @@ public class ICG extends Simulator{
 	public static void main(String args[]) {
 		ICG icg = new ICG();
 		icg.createParameters();
-		icg.openDataInputFrame(340,450);
+		icg.openDataInputFrame(340,480);
 	}
 
 	/*
@@ -762,17 +761,6 @@ public class ICG extends Simulator{
 			return result.toArray(new String[] {});
 
 		});
-
-		/*
-		 * propertyLabelのかぶりがないかの確認テスト
-		HashMap<String, Integer> map = new HashMap<>();
-		for(int i=0;i< paramList.size();i++) {
-			if(map.put(paramList.get(i).propertyLabel, i) != null) {
-				Parameter p = paramList.get(i);
-				System.out.println(p.parentLabel+":"+p.childLabel+":"+p.propertyLabel);
-			}
-		}*/
-
 
 	}
 

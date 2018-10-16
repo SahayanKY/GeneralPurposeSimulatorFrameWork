@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import java.util.StringJoiner;
+import java.util.function.Predicate;
 
 import icg.DoubleBackSlashReader;
 import simulation.Simulator;
@@ -22,6 +23,7 @@ import simulation.Simulator;
 public class ParameterManager {
 	private final Simulator simulater;
 	private ArrayList<Parameter> paramList = new ArrayList<>();
+	private String warningMessage = "";
 
 	public ParameterManager(Simulator simulater){
 		this.simulater = simulater;
@@ -37,16 +39,15 @@ public class ParameterManager {
 	 * 特に何も無かった場合nullを返す。
 	 * */
 	public String checkAllInputDataFormat(LinkedHashMap<String,LinkedHashMap<String,String>> checkMap){
-		Parameter warningParam=null;
 		//入力値のチェック
-		StringJoiner Errors = new StringJoiner("\n"), Warnings = new StringJoiner("\n"),WarningsForProperty = new StringJoiner(", ");
+		StringJoiner Errors = new StringJoiner(System.getProperty("line.separator")),
+				Warnings = new StringJoiner(System.getProperty("line.separator")),
+				WarningsForProperty = new StringJoiner(", ");
 		int ErrorTime=0,WarnTime=0;
 		for(Parameter param : paramList) {
 			if(param.isSystemInputParameter) {
 				//システムが入力するパラメータならチェックする必要なし
-				if(param.childLabel.equals("警告")) {
-					warningParam = param;
-				}
+
 				continue;
 			}
 			String inputString = checkMap.get(param.parentLabel).get(param.childLabel);
@@ -68,10 +69,10 @@ public class ParameterManager {
 		if(ErrorTime>0) {
 			return "エラー : "+ErrorTime +"件\n"+ Errors.toString();
 		}else if(WarnTime>0) {
-			warningParam.setValue(WarningsForProperty.toString());
+			warningMessage = WarningsForProperty.toString();
 			return "要検証 : "+WarnTime +"件\n"+ Warnings.toString();
 		}else {
-			warningParam.setValue("");
+			warningMessage = "";
 			return null;
 		}
 	}
@@ -114,7 +115,7 @@ public class ParameterManager {
 	 * 		各文字列は"="を1つだけ含まなければならない。
 	 * @throws IOException ファイル保存の際に発生した何らかの不具合を表す例外
 	 * */
-	public void writePropertyOn(File choosedDirectory,String result[][]) throws IOException{
+	public void writePropertyOn(File choosedDirectory,String propertyLine[][]) throws IOException{
 		File storeFile = new File(choosedDirectory.toString()+"\\"+simulater.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒")) +"シミュレーションパラメータ.properties");
 		if(storeFile.exists()) {
 			//既に同名のファイルが存在する場合処理を停止
@@ -125,25 +126,49 @@ public class ParameterManager {
 		){
 			writer.write("#シミュレーション条件記録ファイル");
 			writer.newLine();
+			writer.write("#各項目の想定Min値から想定Max値の間に無いものには警告が出ます");
+			writer.newLine();
+			writer.newLine();
+			writer.write("警告="+ warningMessage);
+			writer.newLine();
 
-			int simutimeIndex=-1;
-			for(int i=0;i<result.length;i++) {
-				if(result[i][0].startsWith("シミュレーション年月日時分秒")) {
-					simutimeIndex = i;
+			//プロパティファイルのフォーマットに反していないかを判別する関数
+			Predicate<String> formatMatcher =  str -> {
+				boolean result;
+				if(str.startsWith("#")) {
+					result = true;
+				}else {
+					int
+						index = str.indexOf("="),
+						lastindex = str.lastIndexOf("=");
+
+					if(index == -1) {
+						//そもそも"="を含まない場合
+						result = false;
+					}else if(index != lastindex){
+						//"="が複数個存在する場合
+						result = false;
+					}else if(index == 0 || lastindex == str.length() -1) {
+						//"="で文字列が始まっていたり、終わっていたりする場合
+						result = false;
+					}else {
+						result = true;
+					}
 				}
-			}
-			if(simutimeIndex != -1) {
-				writer.write(result[simutimeIndex][0]);
+				return result;
+			};
+
+
+			//Simulatorクラスで希望した出力値を出力
+			for(String line : propertyLine[0]) {
+				if(!formatMatcher.test(line)) {
+					line = "#"+ line;
+				}
+				writer.write(line);
 				writer.newLine();
 			}
-	//-----------------------------------------------------------------------------
-			/*
-			 * 各クラス毎に分けられないのか
-			 * （その方が見やすい）
-			 * */
 
-			writer.newLine();
-			writer.write("#各項目の想定Min値から想定Max値の間に無いものには警告が出ます");
+
 			for(Parameter p:paramList) {
 				writer.newLine();
 				writer.write(p.propertyLabel +"="+ p.getValue());
@@ -156,8 +181,20 @@ public class ParameterManager {
 					writer.write("Min"+p.propertyLabel +"="+ p.minValue);
 				}
 				writer.newLine();
-
 			}
+
+
+			//Simulator子クラスで希望した出力値を出力
+			for(int i=1;i<propertyLine.length;i++) {
+				for(String line : propertyLine[i]) {
+					if(!formatMatcher.test(line)) {
+						line = "#"+ line;
+					}
+					writer.write(line);
+					writer.newLine();
+				}
+			}
+
 			writer.flush();
 		}catch(IOException e) {
 			throw e;

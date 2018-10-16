@@ -20,6 +20,7 @@ import javax.swing.SwingWorker;
 import simulation.frame.DataInputFrame;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
+import simulation.param.checker.WhiteSpaceChecker;
 
 public abstract class Simulator extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
@@ -92,6 +93,8 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		int n = this.parameterSetterFuncList.size();
 		String[][] result = new String[n][];
 		for(int i=0;i<n;i++) {
+			//シミュレーションのパラメータ値をメンバ変数に代入し、
+			//プロパティファイルに出力したい文字列をresultに与える
 			result[i] = this.parameterSetterFuncList.get(i).get();
 		}
 		return result;
@@ -205,12 +208,14 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 
 	/*
 	 * このシミュレーションが使用するParameterをParameterManagerに登録する。
-	 * オーバーライドするときはSimulatorクラスのcreateParameter()を呼び出す。
+	 * オーバーライドするときはSimulatorクラスのcreateParameter()を一番最初に呼び出すようにしてください。
 	 * */
 	public void createParameters(){
-		final Parameter 警告 = new Parameter("シミュレーション", "警告");
+		final Parameter
+			シミュ実行者 = new Parameter("一般", "シミュ実行者", "シミュ実行者", null, null, new WhiteSpaceChecker());
 
-		paraMana.addParameter(警告);
+		paraMana.addParameter(シミュ実行者);
+
 		this.parameterSetterFuncList.add(()->{
 			return new String[] {"シミュレーション年月日時分秒="+this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS"))};
 		});
