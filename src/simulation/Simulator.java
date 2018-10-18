@@ -122,14 +122,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 			executeSimulation();
 
 		}catch(Exception e) {
-			for(BufferedWriter writer:writermap.values()) {
-				try {
-					if(writer != null) {
-						writer.close();
-					}
-				} catch (IOException e1) {
-				}
-			}
+
 			e.printStackTrace();
 		}
 
@@ -202,15 +195,22 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 						//例外をトレースした後、マッピングから外す
 						//フラッシュし、クローズする
 						new IOException("指定されたファイルは既に存在します").printStackTrace();
+						BufferedWriter writer = writermap.remove(filename);
 						try {
-							BufferedWriter writer = writermap.remove(filename);
 							writer.flush();
-							writer.close();
 						}catch(IOException e) {
+							e.printStackTrace();
+						}finally {
+							try {
+								writer.close();
+							}catch(IOException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 
 					//writerを生成する
+					//マッピングにはfilenameのvalueはremoveされているので大丈夫
 					File storeFile = new File(resultStoreDirectory.toString()+"\\"+filename);
 					writermap.put(filename,
 							new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"))
@@ -223,17 +223,28 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 				//ファイルへの出力を停止する分岐
 
 				final String filename = strline.substring(10);
-				if(!writermap.containsKey(filename)) {
-					//対応するwriterが存在しない場合
+
+				if(writermap.containsKey(filename)) {
+					//対応したwriterが存在しない場合
 					continue;
 				}
+				BufferedWriter writer = writermap.get(filename);
 
+
+				//writerをフラッシュし、クローズする
+				//その後、マッピングから外す
 				try {
-					//writerをフラッシュし、クローズする
-					BufferedWriter writer = writermap.get(filename);
 					writer.flush();
-					writer.close();
 				}catch(IOException e) {
+					e.printStackTrace();
+				}finally {
+					try {
+						writer.close();
+					}catch(IOException e) {
+						e.printStackTrace();
+					}finally {
+						writermap.remove(filename);
+					}
 				}
 
 			}else if(strline.startsWith("log:")) {
@@ -244,6 +255,10 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 				//[0]=log
 				//[1]=xxx.yyy
 				//[2]=...... //内容
+				if(writermap.containsKey(strarray[1])) {
+					//対応したwriterが存在しない場合
+					continue;
+				}
 				BufferedWriter writer = writermap.get(strarray[1]);
 
 				try {
@@ -251,6 +266,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 					writer.write(strarray[2]);
 					writer.newLine();
 				}catch(IOException e) {
+					e.printStackTrace();
 				}
 
 			}else {
@@ -300,21 +316,23 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	@Override
 	protected void done() {
 		inputFrame.dispose();
-		for(BufferedWriter writer:writerlist) {
+		for(BufferedWriter writer:writermap.values()) {
+			if(writer == null) {
+				continue;
+			}
 			try {
 				writer.flush();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}finally {
+			} finally {
 				try {
-					if(writer != null) {
-						writer.close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
+					writer.close();
+				}catch(IOException e1) {
+					e1.printStackTrace();
 				}
 			}
 		}
+		writermap.clear();
 	}
 
 }
