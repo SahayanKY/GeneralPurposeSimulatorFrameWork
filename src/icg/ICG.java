@@ -103,6 +103,18 @@ public class ICG extends Simulator{
 		BefRollI,
 		BefPitchyawI;
 
+
+	//------------------------------------------------------------------------------------------------------------------
+	//------------------------------------ここまでシミュレーション計算に使うパラメータ----------------------------------
+	//------------------------------------------------------------------------------------------------------------------
+
+	private final String simulatorName = "ICGシミュレーション";
+	private final String simulatorVersion = "0.1.1";
+
+
+
+
+
 	public static void main(String args[]) {
 		ICG icg = new ICG();
 		icg.createParameters();
@@ -115,7 +127,6 @@ public class ICG extends Simulator{
 	@Override
 	protected void executeSimulation() {
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
-			publish("start");
 			ArrayList<double[]> thrustList = new ArrayList<>();
 			String st;
 			for(int i=0;(st = reader.readLine()) != null;i++) {
@@ -169,9 +180,12 @@ public class ICG extends Simulator{
 					dampingMoment = 0,
 					dampingMomentCoefficient = 0;
 			boolean secondLastLagCleared = false,lastLagCleared = false;
-			publish("時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,ランチクリア");
+			String filename = "Simulator仕様変更テスト.csv";
 
-			String format = "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%b";
+			publish(STREAM_CREATE+":"+filename);
+			publish(STREAM_LOG+":"+filename+":時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,ランチクリア");
+
+			String format = STREAM_LOG+":"+filename+":%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%b";
 			publish(String.format(format, time, thrustList.get(0)[1], rocketM, rocketCG, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ,false));
 
 			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
@@ -367,6 +381,7 @@ public class ICG extends Simulator{
 				time += dt;
 			}
 			updateProgress(1);
+			publish(STREAM_CLOSE+":"+filename);
 		} catch (IOException e) {
 		}
 
@@ -762,6 +777,16 @@ public class ICG extends Simulator{
 
 		});
 
+	}
+
+	@Override
+	public String getThisName() {
+		return this.simulatorName;
+	}
+
+	@Override
+	public String getThisVersion() {
+		return this.simulatorVersion;
 	}
 
 }
