@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.swing.ProgressMonitor;
@@ -24,7 +26,11 @@ import simulation.param.checker.WhiteSpaceChecker;
 
 public abstract class Simulator extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
+	private Map<String,BufferedWriter> writermap = new HashMap<>();
+
+	private ArrayList<BufferedWriter> writerlist = new ArrayList<>();
 	protected BufferedWriter resultWriter;
+
 	private ProgressMonitor monitor;
 	private LocalDateTime simulationStartTime;
 	protected final ParameterManager paraMana = new ParameterManager(this);
@@ -67,6 +73,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		this.simulationStartTime = LocalDateTime.now();
 	}
 
+	//getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))
 	public final LocalDateTime getSimulationStartTime() {
 		if(simulationStartTime == null) {
 			simulationStartTime = LocalDateTime.now();
@@ -115,11 +122,13 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 			executeSimulation();
 
 		}catch(Exception e) {
-			try {
-				if(resultWriter != null) {
-					resultWriter.close();
+			for(BufferedWriter writer:writermap.values()) {
+				try {
+					if(writer != null) {
+						writer.close();
+					}
+				} catch (IOException e1) {
 				}
-			} catch (IOException e1) {
 			}
 			e.printStackTrace();
 		}
@@ -163,46 +172,92 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	/*
 	 * シミュレーション実行結果を外部ファイルへ出力する。このメソッドは直接呼ぶものではない。
 	 * 必ずpublish(String)を介して呼ぶこと。また、publish(String)で指定する文字列は以下に従うこと。
-	 *　・"start"を最初に指定すること。これにより外部ファイルへ出力するWriterが生成される。
-	 *　・"restart"を指定することで出力先のファイルを新しく設定することができる。例えば、一つのファイルにシミュレーション実行結果を出力しきれない
-	 *	場合などに使うこと。
-	 *　・結果を指定する場合はCSVファイルのフォーマットに従うこと。また、一行単位で指定すること。
+	 *　・"createstream:xxx.yyy"でxxx.yyyへの出力ストリームを生成する
+	 *	・"endstream:xxx.yyy"でxxx.yyyへの出力をやめる
+	 * 	・"log:xxx.yyy:...."でxxx.yyyへ"...."を入力し、改行する
 	 * */
 	@Override
 	protected void process(List<String> list) {
 		for(String strline:list) {
-			if(strline.equals("restart") || strline.equals("start")) {
-				for(int i=0;i<5;i++) {
-					try {
-						if(strline.equals("restart")) {
-							this.setSimulationStartTime();
-						}
-						File storeFile = new File(resultStoreDirectory.toString()+"\\"+getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))+"result.csv");
-						if(storeFile.exists()) {
-							//同名のファイルが存在する場合
-							continue;
-						}
+			if(strline.startsWith("createstream:")) {
+				//writerを生成する分岐
 
-						if(this.resultWriter != null) {
-							this.resultWriter.flush();
-							this.resultWriter.close();
+				try {
+					/*
+					//ファイル名が被っていた時の処理
+					int dotIndex = strline.lastIndexOf(".");
+					//拡張子を除く、最初に指定されたファイル名
+					final String filefirstname = strline.substring(13, dotIndex);
+					//指定された拡張子（.含む）
+					final String fileextension = strline.substring(dotIndex);
+
+					String filename = filefirstname + fileextension;
+					for(int i=0;writermap.containsKey(filename);i++) {
+						filename =  filefirstname +"_"+ i +fileextension;
+					}
+					*/
+					String filename = strline.substring(13);
+					if(writermap.containsKey(filename)) {
+						//既に指定されたファイルに対応したwriterが存在する場合、
+						//例外をトレースした後、マッピングから外す
+						//フラッシュし、クローズする
+						new IOException("指定されたファイルは既に存在します").printStackTrace();
+						try {
+							BufferedWriter writer = writermap.remove(filename);
+							writer.flush();
+							writer.close();
+						}catch(IOException e) {
 						}
-						this.resultWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
-						break;
-					} catch (IOException e) {
 					}
-					if(i==4) {
-						throw new Error("保存ファイル作成に5回失敗しました。");
-					}
+
+					//writerを生成する
+					File storeFile = new File(resultStoreDirectory.toString()+"\\"+filename);
+					writermap.put(filename,
+							new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"))
+					);
+				}catch(Exception e) {
+					e.printStackTrace();
 				}
-				continue;
+
+			}else if(strline.startsWith("endstream:")){
+				//ファイルへの出力を停止する分岐
+
+				final String filename = strline.substring(10);
+				if(!writermap.containsKey(filename)) {
+					//対応するwriterが存在しない場合
+					continue;
+				}
+
+				try {
+					//writerをフラッシュし、クローズする
+					BufferedWriter writer = writermap.get(filename);
+					writer.flush();
+					writer.close();
+				}catch(IOException e) {
+				}
+
+			}else if(strline.startsWith("log:")) {
+				//ファイルへの出力をする分岐
+
+				//ファイル名を取得し、writerを取得
+				String strarray[] = strline.split(":",3);
+				//[0]=log
+				//[1]=xxx.yyy
+				//[2]=...... //内容
+				BufferedWriter writer = writermap.get(strarray[1]);
+
+				try {
+					//内容を出力する
+					writer.write(strarray[2]);
+					writer.newLine();
+				}catch(IOException e) {
+				}
+
+			}else {
+				//想定外の処理
+				new IllegalArgumentException("想定されていないコマンドです:"+strline).printStackTrace();
 			}
-			try {
-				this.resultWriter.write(strline);
-				this.resultWriter.newLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+
 		}
 	}
 
@@ -245,17 +300,19 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	@Override
 	protected void done() {
 		inputFrame.dispose();
-		try {
-			this.resultWriter.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}finally {
+		for(BufferedWriter writer:writerlist) {
 			try {
-				if(resultWriter != null) {
-					this.resultWriter.close();
-				}
+				writer.flush();
 			} catch (IOException e) {
 				e.printStackTrace();
+			}finally {
+				try {
+					if(writer != null) {
+						writer.close();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
