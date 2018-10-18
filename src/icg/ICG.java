@@ -28,7 +28,7 @@ public class ICG extends Simulator{
 		launcherAzimuth,
 		anemometerH,
 		fireAngle,
-
+		powerlaw_n,
 
 		rocketOuterDiameter,
 		rocketInnerDiameter,
@@ -118,7 +118,7 @@ public class ICG extends Simulator{
 	public static void main(String args[]) {
 		ICG icg = new ICG();
 		icg.createParameters();
-		icg.openDataInputFrame(340,480);
+		icg.openDataInputFrame(340,490);
 	}
 
 	/*
@@ -126,270 +126,289 @@ public class ICG extends Simulator{
 	 * */
 	@Override
 	protected void executeSimulation() {
+		ArrayList<double[]> thrustList = new ArrayList<>();
+
+		//推力履歴をthrustListに加えていく
 		try(BufferedReader reader = new BufferedReader(new FileReader(thrustFile));) {
-			ArrayList<double[]> thrustList = new ArrayList<>();
 			String st;
-			for(int i=0;(st = reader.readLine()) != null;i++) {
+			while((st = reader.readLine()) != null) {
 				String[] dataSet = st.split(" +|	+|,{1}");
 				thrustList.add(new double[] {Double.parseDouble(dataSet[0]),Double.parseDouble(dataSet[1])});
 			}
-			int thrustListSize = thrustList.size();
-			double progressRate = 0;
-			double time=0,
-					dt=0,
-					g=9.8,
-					lastLagX=rocketL-launchLagLastCG,//ランチャー上での最後端のラグの位置
-						//これが0のとき、ラグの重心はランチャーの付け根にあり、ランチャー長さに等しい時ランチクリア
-					lastLagV=0,//ランチャー方向の座標における最後端ラグの速度
-					grainContentsM = grainConsumptionM,
-					tankContentsM = tankConsumptionM,
-					rocketM = rocketAftM+grainContentsM+tankContentsM,
-					rocketBefCG = (rocketAftM*rocketAftCG+grainConsumptionM*grainCG+tankConsumptionM*tankCG)/(rocketAftM+grainConsumptionM+tankConsumptionM),
-					rocketCG = rocketBefCG,
-					Δξ = 0,
-					pitchYawI = AftPitchyawI,
-					CD = rocketCD,
-					atomosP = 1013, //hPa単位なので注意
-					temperature = 20, //℃単位なので注意
-					ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
-					crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
-					anemometerV = 7, //x軸正の向きが正
-					windVelocity = 0,
-					windAngle = 0,
-					attackAngle = 0,
-					diffCGCP = rocketCP-rocketCG,
-					ω = 0,
-					θ = Math.toRadians(fireAngle),
-					Vx = 0,
-					Vz = 0,
-					Velocity = 0,
-					//修正後
-					XCG = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
-						//修正前
-						//XCG = 0,
-						//
-					//修正後
-					ZCG = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
-						//修正前
-						//ZCG = 0,
-						//
-					relativeVelocityToAir = 0,
-					normalForce = 0,
-					drag = 0,
-					staticMoment = 0,
-					dampingMoment = 0,
-					dampingMomentCoefficient = 0;
-			boolean secondLastLagCleared = false,lastLagCleared = false;
-			String filename = "Simulator仕様変更テスト.csv";
+		}catch(IOException e) {
+			e.printStackTrace();
+			return;
+		}
+		int thrustListSize = thrustList.size();
+		double progressRate = 0;
+		double time=0,
+				dt=0,
+				g=9.8,
+				lastLagX=rocketL-launchLagLastCG,//ランチャー上での最後端のラグの位置
+					//これが0のとき、ラグの重心はランチャーの付け根にある。また、ランチャー長さに等しい時ランチクリア
+				lastLagV=0,//ランチャー方向の座標における最後端ラグの速度
+				grainContentsM = grainConsumptionM,
+				tankContentsM = tankConsumptionM,
+				rocketM = rocketAftM+grainContentsM+tankContentsM,
+				rocketBefCG = (rocketAftM*rocketAftCG+grainConsumptionM*grainCG+tankConsumptionM*tankCG)/(rocketAftM+grainConsumptionM+tankConsumptionM),
+				rocketCG = rocketBefCG,
+				Δξ = 0,
+				pitchYawI = AftPitchyawI,
+				CD = rocketCD,
+				atomosP = 1013, //hPa単位なので注意
+				temperature = 20, //℃単位なので注意
+				ρ = atomosP/(2.87*(temperature+273.15)),//H2=Q2/(2.87*(R2+273.15))
+				crossA = rocketOuterDiameter*rocketOuterDiameter/4*Math.PI,
+				anemometerV = 7, //x軸正の向きが正
+				windVelocity = 0,
+				windAngle = 0,
+				attackAngle = 0,
+				diffCGCP = rocketCP-rocketCG,
+				ω = 0,
+				θ = Math.toRadians(fireAngle),
+				Vx = 0,
+				Vz = 0,
+				Velocity = 0,
+				//修正後
+				XCG0 = rocketOuterDiameter/2*Math.sin(θ)+(rocketL-rocketBefCG)*Math.cos(θ),
+					//修正前
+					//XCG = 0,
+					//
+				//修正後
+				ZCG0 = -rocketOuterDiameter/2*Math.cos(θ)+(rocketL-rocketBefCG)*Math.sin(θ),
+					//修正前
+					//ZCG = 0,
+					//
+				XCG = XCG0,
+				ZCG = ZCG0,
+				relativeVelocityToAir = 0,
+				normalForce = 0,
+				drag = 0,
+				staticMoment = 0,
+				dampingMoment = 0,
+				dampingMomentCoefficient = 0;
+		boolean secondLastLagCleared = false,lastLagCleared = false;
+		String filename = "Simulator仕様変更テスト.csv";
 
-			publish(STREAM_CREATE+":"+filename);
-			publish(STREAM_LOG+":"+filename+":時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,ランチクリア");
+		publish(STREAM_CREATE+":"+filename);
+		publish(STREAM_LOG+":"+filename+":時間/s,推力/N,質量/kg,重心/m,抗力係数,空気密度/kg m-3,風速/m s-1,風方向角/rad,迎え角/rad,CP-CG/m,気圧/hPa,気温/℃,重心Vx/m s-1,重心Vz/m s-1,重心X,重心Z,対気流速度/m s-1,法線力/N,抗力/N,ω/rad s-1,θ/rad,ランチクリア");
 
-			String format = STREAM_LOG+":"+filename+":%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%b";
-			publish(String.format(format, time, thrustList.get(0)[1], rocketM, rocketCG, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG, ZCG, relativeVelocityToAir, normalForce, drag, ω, θ,false));
+		String format = STREAM_LOG+":"+filename+":%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%b";
+		publish(String.format(format, time, thrustList.get(0)[1], rocketM, rocketCG, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx, Vz, XCG0, ZCG0, relativeVelocityToAir, normalForce, drag, ω, θ,false));
 
-			for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
-				double ω2,θ2,Vx2,Vz2,XCG2,ZCG2,thrust,forceX,forceZ,torqueY,lastLagX2,rocketM2=rocketM,rocketCG2=rocketCG,grainContentsM2=grainContentsM,tankContentsM2=tankContentsM;
-				if(j < thrustListSize) {
-					if(thrustList.get(j)[1]<=0) {
-						continue;
-					}
-					//推力が出ていた場合(Bn>0)
-					grainContentsM2 = grainConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
-					tankContentsM2 = tankConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
-					rocketM2 = rocketAftM +grainContentsM2 +tankContentsM2;
-					rocketCG2 = (rocketAftM*rocketAftCG+grainContentsM2*grainCG+tankContentsM2*tankCG)/(rocketAftM+grainContentsM2+tankContentsM2);
+		for(int j=0;updateProgress(0.5) && ZCG>=0 ;j++) {
+			double ω2,θ2,Vx2,Vz2,XCG2,ZCG2,thrust,forceX,forceZ,torqueY,lastLagX2,rocketM2=rocketM,rocketCG2=rocketCG,grainContentsM2=grainContentsM,tankContentsM2=tankContentsM;
+			if(j < thrustListSize) {
+				if(thrustList.get(j)[1]<=0) {
+					continue;
+				}
+				//推力が出ていた場合(Bn>0)
+				grainContentsM2 = grainConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
+				tankContentsM2 = tankConsumptionM*(thrustList.get(thrustListSize-1)[0]-thrustList.get(j)[0])/(thrustList.get(thrustListSize-1)[0]-thrustList.get(0)[0]);
+				rocketM2 = rocketAftM +grainContentsM2 +tankContentsM2;
+				rocketCG2 = (rocketAftM*rocketAftCG+grainContentsM2*grainCG+tankContentsM2*tankCG)/(rocketAftM+grainContentsM2+tankContentsM2);
 
-					if(j<thrustListSize-1) {
-						dt = thrustList.get(j+1)[0] -thrustList.get(j)[0];
-						thrust = thrustList.get(j+1)[1];
-					}else {
-						//次のステップでは推力データが無い場合
-						//dtは前回のステップに合わせる
-						thrust = 0;
-					}
-
+				if(j<thrustListSize-1) {
+					dt = thrustList.get(j+1)[0] -thrustList.get(j)[0];
+					thrust = thrustList.get(j+1)[1];
 				}else {
+					//次のステップでは推力データが無い場合
+					//dtは前回のステップに合わせる
 					thrust = 0;
 				}
 
-				//修正後ランチクリア判定
-				if(lastLagX>=launcherL) {
-					//修正前ランチクリア判定
-					/*
-					if(XCG > launcherL*Math.cos(θ)){
-					 */
-					//一番最後のランチラグがクリアしたとき
-					lastLagCleared = true;
+			}else {
+				thrust = 0;
+			}
+
+			//修正後ランチクリア判定
+			if(lastLagX>=launcherL) {
+				//修正前ランチクリア判定
+				/*
+				if(XCG > launcherL*Math.cos(θ)){
+				 */
+				//一番最後のランチラグがクリアしたとき
+				lastLagCleared = true;
+				secondLastLagCleared = true;
+			}else {
+				lastLagCleared = false;
+				if(lastLagX+launchLagLastCG-launchLagSecondLastCG >= launcherL) {
+					//最後から2番目のラグがクリアしたとき
 					secondLastLagCleared = true;
 				}else {
-					lastLagCleared = false;
-					if(lastLagX+launchLagLastCG-launchLagSecondLastCG >= launcherL) {
-						//最後から2番目のラグがクリアしたとき
-						secondLastLagCleared = true;
-					}else {
-						secondLastLagCleared = false;
-					}
+					secondLastLagCleared = false;
 				}
+			}
 
 
 
-				temperature = 20 -0.0065*ZCG;
-				atomosP = 1013 *Math.pow((1-(0.0065*ZCG)/(20+273.15)),0.5257);
-				ρ = atomosP/(2.87*(temperature+273.15));
+			temperature = 20 -0.0065*ZCG;
+			atomosP = 1013 *Math.pow((1-(0.0065*ZCG)/(20+273.15)),0.5257);
+			ρ = atomosP/(2.87*(temperature+273.15));
 
-				diffCGCP = rocketCP -rocketCG2;
-				windVelocity = anemometerV*Math.pow(ZCG/anemometerH,1/6.0);
-				//windVelocity<0のとき向かい風
+			diffCGCP = rocketCP -rocketCG2;
+			windVelocity = anemometerV*Math.pow(ZCG/anemometerH,1/powerlaw_n);
+			//windVelocity<0のとき向かい風
 
-				CD = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
-				drag = CD*ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
-				normalForce = rocketCNα *ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
-				staticMoment = normalForce *diffCGCP;
-				dampingMoment = ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
-				torqueY = -staticMoment -dampingMoment;
+			CD = rocketCD *((Math.abs(Math.toDegrees(attackAngle)) < 15)? (0.012*Math.pow(Math.toDegrees(attackAngle),2)+1):5);
+			drag = CD*ρ*crossA*relativeVelocityToAir*relativeVelocityToAir/2;
+			normalForce = rocketCNα *ρ *relativeVelocityToAir*relativeVelocityToAir *attackAngle *crossA/2;
+			staticMoment = normalForce *diffCGCP;
+			dampingMoment = ρ *crossA *Velocity/2 *(noseCNα*Math.pow(noseCP -rocketAftCG,2) +finCNαb *Math.pow(finCP -rocketAftCG,2))*ω;
+			torqueY = -staticMoment -dampingMoment;
 
-				windAngle = Math.atan2(Vz, Vx-windVelocity);
-				//機体から見てどの方向から風が吹いているか
-				//機体から見た風の相対速度の逆ベクトル
-				//x軸正の向きが0rad、反時計回りが正
-				attackAngle = θ - windAngle;
-				//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
-				//進行方向の軸からx軸正の向きへの回転方向が正
+			windAngle = Math.atan2(Vz, Vx-windVelocity);
+			//機体から見てどの方向から風が吹いているか
+			//機体から見た風の相対速度の逆ベクトル
+			//x軸正の向きが0rad、反時計回りが正
+			attackAngle = θ - windAngle;
+			//機体の進行方向の軸から、風の吹く方向がどれだけずれているか.
+			//進行方向の軸からx軸正の向きへの回転方向が正
 
-				double lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
-				if(lastLagCleared) {
-					//完全にランチャーからクリアした後の計算
+			double lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
+			if(lastLagCleared) {
+				//完全にランチャーからクリアした後の計算
+				forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle) -lift*Math.sin(windAngle);
+				forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) +lift*Math.cos(windAngle) -rocketM2*g;
+				Vx2 = Vx +forceX/rocketM2 *dt;
+				Vz2 = Vz +forceZ/rocketM2 *dt;
+
+				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
+				relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
+				XCG2 = XCG +(Vx+Vx2)/2*dt;
+				ZCG2 = ZCG +(Vz+Vz2)/2*dt;
+
+				ω2 = ω +torqueY/pitchYawI*dt;
+				θ2 = θ + (ω+ω2)/2*dt;
+
+
+			}else/* if(secondLastLagCleared) {
+					//まだ最後の1つのラグがクリアしていないときの計算
+					//ここではランチャー方向の座標で一旦計算していることに注意
+					θ2 = θ +ω*dt;
+
+
+					//元の座標系におけるXZ方向の力の成分分解
+					lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
 					forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle) -lift*Math.sin(windAngle);
 					forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) +lift*Math.cos(windAngle) -rocketM2*g;
-					Vx2 = Vx +forceX/rocketM2 *dt;
-					Vz2 = Vz +forceZ/rocketM2 *dt;
-
-					Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
-					relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
-					XCG2 = XCG +(Vx+Vx2)/2*dt;
-					ZCG2 = ZCG +(Vz+Vz2)/2*dt;
-
-					ω2 = ω +torqueY/pitchYawI*dt;
-					θ2 = θ + (ω+ω2)/2*dt;
 
 
-				}else/* if(secondLastLagCleared) {
-						//まだ最後の1つのラグがクリアしていないときの計算
-						//ここではランチャー方向の座標で一旦計算していることに注意
-						θ2 = θ +ω*dt;
+					double α,β,J,pitchYawI2,Δξ2,Xgo1,Xgo2,Zgo1,Zgo2,lastLagV2;
 
 
-						//元の座標系におけるXZ方向の力の成分分解
-						lift = -drag*Math.tan(attackAngle) +normalForce/Math.cos(attackAngle);
-						forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle) -lift*Math.sin(windAngle);
-						forceZ = thrust*Math.sin(θ) -drag*Math.sin(windAngle) +lift*Math.cos(windAngle) -rocketM2*g;
+					double rfA = Math.toRadians(fireAngle);
+					double cosfA = Math.cos(rfA), sinfA = Math.sin(rfA);
+					double sinφ2=Math.sin(θ2-rfA),cosφ2=Math.cos(θ2-rfA),sinφ=Math.sin(θ-rfA),cosφ=Math.cos(θ-rfA);
+
+					Δξ2 =rocketBefCG-rocketCG2;
+					Xgo1 = cosφ*(launchLagLastCG-rocketBefCG+Δξ)+sinφ*(-rocketOuterDiameter/2);
+					Xgo2 = cosφ2*(launchLagLastCG-rocketBefCG+Δξ2)+sinφ2*(-rocketOuterDiameter/2);
+
+					Zgo1 = -sinφ*(launchLagLastCG-rocketBefCG+Δξ)+cosφ*(-rocketOuterDiameter/2);
+					Zgo2 = -sinφ2*(launchLagLastCG-rocketBefCG+Δξ2)+cosφ2*(-rocketOuterDiameter/2);
+
+					pitchYawI2
+					=noseM*Math.pow(noseCG-rocketCG2,2)
+					+separaterM*(Math.pow(separaterTop+separaterL/2-rocketCG2,2)+separaterOuterDiameter*separaterOuterDiameter/16+separaterL*separaterL/12)
+					+tubeM*(Math.pow(tubeCG-rocketCG2,2)+(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/16+tubeL*tubeL/12)
+					+aluminumPlateM*(Math.pow(aluminumPlateTop+aluminumPlateL/2-rocketCG2,2)+rocketInnerDiameter*rocketInnerDiameter/16+aluminumPlateL*aluminumPlateL/12)
+					+(grainContentsM2+grainAftM)*(Math.pow(grainTop+grainL/2-rocketCG2,2)+grainOuterDiameter*grainOuterDiameter/16+grainL*grainL/12)
+					+injectorM*(Math.pow(injectorTop+injectorL/2-rocketCG2,2) +injectorOuterDiameter*injectorOuterDiameter/16 +injectorL*injectorL/12)
+					+(tankContentsM2+tankAftM)*(Math.pow(tankTop+tankL/2-rocketCG2,2)+tankOuterDiameter*tankOuterDiameter/16+tankL*tankL/12)
+					+finM*Math.pow(finCG-rocketCG2,2);
 
 
-						double α,β,J,pitchYawI2,Δξ2,Xgo1,Xgo2,Zgo1,Zgo2,lastLagV2;
+					//導出した計算式をここに入力
+					α = rocketM*lastLagV +rocketM*Zgo1*ω+dt*(forceX*cosfA +forceZ*sinfA) +(rocketM2-rocketM)*lastLagV +ω*((grainContentsM2-grainContentsM)*(-sinφ*(launchLagLastCG-grainCG)+cosφ*(-rocketOuterDiameter/2)) +(tankContentsM2-tankContentsM)*(-sinφ*(launchLagLastCG-tankCG) +cosφ*(-rocketOuterDiameter/2)));
+					β = rocketM*Zgo1*lastLagV +(pitchYawI+rocketM*(Math.pow(launchLagLastCG-rocketBefCG, 2)+rocketOuterDiameter*rocketOuterDiameter/4))*ω +dt*(torqueY +Zgo1*(forceX*cosfA+forceZ*sinfA) -Xgo1*(-forceX*sinfA +forceZ*cosfA))  +lastLagV*(rocketM2*Zgo2 -rocketM*Zgo1) -ω*((grainContentsM2-grainContentsM)*(Math.pow(launchLagLastCG-grainCG,2) +rocketOuterDiameter*rocketOuterDiameter/4) +(tankContentsM2-tankContentsM)*(Math.pow(launchLagLastCG-tankCG, 2) +rocketOuterDiameter*rocketOuterDiameter/4) );
+					J = (β -α*Zgo2)/(pitchYawI2 +rocketM2*Xgo2*Xgo2);
+
+					lastLagV2 = α/rocketM2 -Zgo2*J;
+					ω2 = J;
+					lastLagX = lastLagX + lastLagV*dt;
+
+					//重心の元の座標における速度、位置の計算
+
+					XCG2 = lastLagX*cosfA +Xgo1*cosfA -Zgo1*sinfA;
+					ZCG2 = lastLagX*sinfA +Xgo1*sinfA +Zgo1*cosfA;
+					Vx2 = lastLagV2*cosfA +ω*(Xgo1*sinfA +Zgo1*cosfA); //vg = v0 + ω×rg0
+					Vz2 = lastLagV2*sinfA -ω*(Xgo1*cosfA -Zgo1*sinfA);
+
+					Δξ = Δξ2;
+					pitchYawI = pitchYawI2;
+			}else */{
+				//2つ以上のラグが残っているときの計算
+
+				//修正後の式
+				//ランチャー上にあるため、力はランチャー方向の成分のみが有効
+				forceX = thrust*Math.cos(θ) -drag*Math.cos(attackAngle)*Math.cos(θ) +lift*Math.sin(attackAngle)*Math.cos(θ) -rocketM2 *g *Math.sin(θ)*Math.cos(θ);
+				forceZ = thrust*Math.sin(θ) -drag*Math.cos(attackAngle)*Math.sin(θ) +lift*Math.sin(attackAngle)*Math.sin(θ) -rocketM2 *g *Math.pow(Math.sin(θ), 2);
 
 
+				//修正前の式
+				/*
+				forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
+				forceZ = thrust*Math.sin(θ) -rocketM2*g -drag*Math.sin(windAngle);
+				*/
 
-						double rfA = Math.toRadians(fireAngle);
-						double cosfA = Math.cos(rfA), sinfA = Math.sin(rfA);
-						double sinφ2=Math.sin(θ2-rfA),cosφ2=Math.cos(θ2-rfA),sinφ=Math.sin(θ-rfA),cosφ=Math.cos(θ-rfA);
+				Vx2 = Vx +forceX/rocketM2 *dt;
+				Vz2 = Vz +forceZ/rocketM2 *dt;
 
-						Δξ2 =rocketBefCG-rocketCG2;
-						Xgo1 = cosφ*(launchLagLastCG-rocketBefCG+Δξ)+sinφ*(-rocketOuterDiameter/2);
-						Xgo2 = cosφ2*(launchLagLastCG-rocketBefCG+Δξ2)+sinφ2*(-rocketOuterDiameter/2);
-
-						Zgo1 = -sinφ*(launchLagLastCG-rocketBefCG+Δξ)+cosφ*(-rocketOuterDiameter/2);
-						Zgo2 = -sinφ2*(launchLagLastCG-rocketBefCG+Δξ2)+cosφ2*(-rocketOuterDiameter/2);
-
-						pitchYawI2
-						=noseM*Math.pow(noseCG-rocketCG2,2)
-						+separaterM*(Math.pow(separaterTop+separaterL/2-rocketCG2,2)+separaterOuterDiameter*separaterOuterDiameter/16+separaterL*separaterL/12)
-						+tubeM*(Math.pow(tubeCG-rocketCG2,2)+(rocketInnerDiameter*rocketInnerDiameter+rocketOuterDiameter*rocketOuterDiameter)/16+tubeL*tubeL/12)
-						+aluminumPlateM*(Math.pow(aluminumPlateTop+aluminumPlateL/2-rocketCG2,2)+rocketInnerDiameter*rocketInnerDiameter/16+aluminumPlateL*aluminumPlateL/12)
-						+(grainContentsM2+grainAftM)*(Math.pow(grainTop+grainL/2-rocketCG2,2)+grainOuterDiameter*grainOuterDiameter/16+grainL*grainL/12)
-						+injectorM*(Math.pow(injectorTop+injectorL/2-rocketCG2,2) +injectorOuterDiameter*injectorOuterDiameter/16 +injectorL*injectorL/12)
-						+(tankContentsM2+tankAftM)*(Math.pow(tankTop+tankL/2-rocketCG2,2)+tankOuterDiameter*tankOuterDiameter/16+tankL*tankL/12)
-						+finM*Math.pow(finCG-rocketCG2,2);
-
-
-						//導出した計算式をここに入力
-						α = rocketM*lastLagV +rocketM*Zgo1*ω+dt*(forceX*cosfA +forceZ*sinfA) +(rocketM2-rocketM)*lastLagV +ω*((grainContentsM2-grainContentsM)*(-sinφ*(launchLagLastCG-grainCG)+cosφ*(-rocketOuterDiameter/2)) +(tankContentsM2-tankContentsM)*(-sinφ*(launchLagLastCG-tankCG) +cosφ*(-rocketOuterDiameter/2)));
-						β = rocketM*Zgo1*lastLagV +(pitchYawI+rocketM*(Math.pow(launchLagLastCG-rocketBefCG, 2)+rocketOuterDiameter*rocketOuterDiameter/4))*ω +dt*(torqueY +Zgo1*(forceX*cosfA+forceZ*sinfA) -Xgo1*(-forceX*sinfA +forceZ*cosfA))  +lastLagV*(rocketM2*Zgo2 -rocketM*Zgo1) -ω*((grainContentsM2-grainContentsM)*(Math.pow(launchLagLastCG-grainCG,2) +rocketOuterDiameter*rocketOuterDiameter/4) +(tankContentsM2-tankContentsM)*(Math.pow(launchLagLastCG-tankCG, 2) +rocketOuterDiameter*rocketOuterDiameter/4) );
-						J = (β -α*Zgo2)/(pitchYawI2 +rocketM2*Xgo2*Xgo2);
-
-						lastLagV2 = α/rocketM2 -Zgo2*J;
-						ω2 = J;
-						lastLagX = lastLagX + lastLagV*dt;
-
-						//重心の元の座標における速度、位置の計算
-
-						XCG2 = lastLagX*cosfA +Xgo1*cosfA -Zgo1*sinfA;
-						ZCG2 = lastLagX*sinfA +Xgo1*sinfA +Zgo1*cosfA;
-						Vx2 = lastLagV2*cosfA +ω*(Xgo1*sinfA +Zgo1*cosfA); //vg = v0 + ω×rg0
-						Vz2 = lastLagV2*sinfA -ω*(Xgo1*cosfA -Zgo1*sinfA);
-
-						Δξ = Δξ2;
-						pitchYawI = pitchYawI2;
-				}else */{
-						//2つ以上のラグが残っているときの計算
-
-						//修正後の式
-						//ランチャー上にあるため、力はランチャー方向の成分のみが有効
-						forceX = thrust*Math.cos(θ) -drag*Math.cos(attackAngle)*Math.cos(θ) +lift*Math.sin(attackAngle)*Math.cos(θ) -rocketM2 *g *Math.sin(θ)*Math.cos(θ);
-						forceZ = thrust*Math.sin(θ) -drag*Math.cos(attackAngle)*Math.sin(θ) +lift*Math.sin(attackAngle)*Math.sin(θ) -rocketM2 *g *Math.pow(Math.sin(θ), 2);
-
-
-						//修正前の式
-						/*
-						forceX = thrust*Math.cos(θ) -drag*Math.cos(windAngle);
-						forceZ = thrust*Math.sin(θ) -rocketM2*g -drag*Math.sin(windAngle);
-						*/
-
-						Vx2 = Vx +forceX/rocketM2 *dt;
-						Vz2 = Vz +forceZ/rocketM2 *dt;
-
-						Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
-						relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
-						XCG2 = XCG +(Vx+Vx2)/2*dt;
-						ZCG2 = ZCG +(Vz+Vz2)/2*dt;
-
-						windAngle = Math.atan2(Vz, Vx-windVelocity);
-						ω2 = 0;
-						θ2 = θ;
-
-						lastLagX = XCG/Math.cos(Math.toRadians(fireAngle))+rocketCG2-launchLagLastCG;
-						lastLagV = Vx2/Math.cos(Math.toRadians(fireAngle));
+				if(Vz2 < 0) {
+					//まだ上昇していない場合
+					//推力が足りず、式上では落下することがある
+					//次の重心位置を今の重心位置にする
+					Vz2 = Vx2 = 0;
 				}
 
 
-				//得られた次のステップを出力する
-				publish(String.format(format, time+dt, thrust, rocketM2, rocketCG2, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2, lastLagCleared));
+				Velocity = Math.sqrt(Vx2*Vx2+Vz2*Vz2);
+				relativeVelocityToAir = Math.sqrt(Math.pow(windVelocity-Vx2,2)+Vz2*Vz2);
+				XCG2 = XCG +(Vx+Vx2)/2*dt;
+				ZCG2 = ZCG +(Vz+Vz2)/2*dt;
 
-				//ループの更新処理
-				rocketM = rocketM2;
-				rocketCG = rocketCG2;
-				if(grainContentsM != grainContentsM2) {
-					grainContentsM = grainContentsM2;
-					tankContentsM = tankContentsM2;
-				}
-				ω = ω2;
-				θ = θ2;
-				Vx = Vx2;
-				Vz = Vz2;
-				XCG = XCG2;
-				ZCG = ZCG2;
-				time += dt;
+				windAngle = Math.atan2(Vz, Vx-windVelocity);
+				ω2 = 0;
+				θ2 = θ;
+
+				//最後端のラグの位置とその速度の更新
+				lastLagX = XCG/Math.cos(Math.toRadians(fireAngle))+rocketCG2-launchLagLastCG;
+				lastLagV = Vx2/Math.cos(Math.toRadians(fireAngle));
 			}
-			updateProgress(1);
-			publish(STREAM_CLOSE+":"+filename);
-		} catch (IOException e) {
+
+
+			//得られた次のステップを出力する
+			publish(String.format(format, time+dt, thrust, rocketM2, rocketCG2, CD, ρ, windVelocity, windAngle, attackAngle, diffCGCP, atomosP, temperature, Vx2, Vz2, XCG2, ZCG2, relativeVelocityToAir, normalForce, drag, ω2, θ2, lastLagCleared));
+
+			//ループの更新処理
+			rocketM = rocketM2;
+			rocketCG = rocketCG2;
+			if(grainContentsM != grainContentsM2) {
+				grainContentsM = grainContentsM2;
+				tankContentsM = tankContentsM2;
+			}
+			ω = ω2;
+			θ = θ2;
+			Vx = Vx2;
+			Vz = Vz2;
+			XCG = XCG2;
+			ZCG = ZCG2;
+			time += dt;
 		}
+		updateProgress(1);
+		publish(STREAM_CLOSE+":"+filename);
 
 	}
 
 
 	/*
 	 * ICGが使用するパラメータに対応するParameterインスタンスの生成と、シミュレーション実行前のパラメータの設定式を規定する。
+	 *　1つのパラメータを追加する時、
+	 *　・Parameterインスタンスの生成
+	 *　・ParameterManagerへの登録
+	 *　・対応するメンバ変数への代入
+	 *　を記述する
 	 * */
 	@Override
 	public void createParameters() {
@@ -406,9 +425,7 @@ public class ICG extends Simulator{
 			グレイン = "グレイン",
 			インジェクターベル = "インジェクターベル",
 			酸化剤タンク = "酸化剤タンク",
-			フィン = "フィン",
-			合成パラメータ = "合成パラメータ";
-
+			フィン = "フィン";
 
 
 		final Parameter
@@ -423,6 +440,7 @@ public class ICG extends Simulator{
 			方位角 = new Parameter(一般, "打上げ方位角[°]", "磁東からの打上げ方位角[°]", "0", "359", def),
 			射角 = new Parameter(一般, "射角[°]", "射角[°]", "50", "90", def),
 			風速計高さ = new Parameter(一般, "風速計高さ", "風速計高さ", "0 m", "15 m", def),
+			べき法則 = new Parameter(一般, "べき法則のn", "べき法則のn", "0", "10", def),
 
 			ロケット外径 = new Parameter(ロケット全体, "外径", "ロケット外径", "70 mm", "170 mm", def),
 			ロケット内径 = new Parameter(ロケット全体, "内径", "ロケット内径", "70 mm", "170 mm", def),
@@ -500,6 +518,7 @@ public class ICG extends Simulator{
 		paraMana.addParameter(方位角);
 		paraMana.addParameter(射角);
 		paraMana.addParameter(風速計高さ);
+		paraMana.addParameter(べき法則);
 
 		paraMana.addParameter(ロケット外径);
 		paraMana.addParameter(ロケット内径);
@@ -577,6 +596,7 @@ public class ICG extends Simulator{
 			launcherAzimuth = getDoubleValue.apply(方位角);
 			fireAngle = getDoubleValue.apply(射角);
 			anemometerH = getDoubleValue.apply(風速計高さ);
+			powerlaw_n = getDoubleValue.apply(べき法則);
 
 			rocketOuterDiameter = getDoubleValue.apply(ロケット外径);
 			rocketInnerDiameter = getDoubleValue.apply(ロケット内径);
