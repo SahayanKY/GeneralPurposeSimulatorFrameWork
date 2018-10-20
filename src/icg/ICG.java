@@ -140,7 +140,14 @@ public class ICG extends Simulator{
 		}
 		int thrustListSize = thrustList.size();
 
-		double[][] highest = new double[4][7];
+		double[][] highest = new double[2][7];
+		//シミュ1、シミュ2は向かい風、追い風方向での計算なので最高点をそのまま取得するのは構わない
+		//シミュ3、シミュ4の結果をそのまま受け入れていいのか？
+		//
+		double[][][] droppoint = new double[7][4][2];
+		//[7]:風速設定
+		//[4]:0:北風、1:南風、2:東風、3:西風
+		//[2]:0:落下点x座標、1:落下点y座標
 
 
 		//シミュ1、シミュ2、シミュ3、シミュ4とループ
@@ -453,10 +460,85 @@ public class ICG extends Simulator{
 					XCG = XCG2;
 					ZCG = ZCG2;
 					time += dt;
+
+					if(i == 1 || i == 2) {
+						if(highest[i-1][v-1] < ZCG) {
+							//到達高度の更新
+							highest[i-1][v-1] = ZCG;
+						}
+					}
+					if(ZCG < 0) {
+						//落下点の記録
+						if(i == 1) {
+							//シミュ1の結果
+							droppoint[v-1][0][0] = 0;
+							droppoint[v-1][0][1] = XCG;
+						}else if(i == 2) {
+							//シミュ2の結果
+							droppoint[v-1][1][0] = 0;
+							droppoint[v-1][1][1] = XCG;
+						}else if(i == 3) {
+							//シミュ3の結果
+							//東風、西風の結果はy軸対称なので？
+							droppoint[v-1][2][0] = XCG;
+							droppoint[v-1][3][0] = -XCG;
+						}else if(i == 4) {
+							//シミュ4の結果
+							//シミュ3のときと同じような考え方
+							droppoint[v-1][2][1] = XCG;
+							droppoint[v-1][3][1] = XCG;
+						}
+					}
+
+
 				}
 				publish(STREAM_CLOSE+":"+filename);
 			}
 		}
+
+		publish(STREAM_CREATE+":シミュ結果一覧.txt");
+		publish(STREAM_LOG+":シミュ結果一覧.txt:ICGシミュレーションの結果");
+		publish(STREAM_LOG+":シミュ結果一覧.txt:ここでの「北」はロケットの前方方向を指す");
+
+		//最高点を記録した風向風速条件の取得
+		int high_i=0, high_v=0;
+		double finalhighest = 0;
+		for(int i=1;i<=2;i++) {
+			for(int v=1;v<=7;v++) {
+				if(finalhighest < highest[i-1][v-1]) {
+					finalhighest = highest[i-1][v-1];
+					high_i = i;
+					high_v = v;
+				}
+			}
+		}
+
+		String resultStr;
+		if(high_i == 1) {
+			resultStr = "北風";
+		}else {
+			resultStr = "南風";
+		}
+		publish(STREAM_LOG+":シミュ結果一覧.txt:最高到達高度:"+finalhighest+" m("+resultStr+high_v+" m/s)");
+		publish(STREAM_LOG+":シミュ結果一覧.txt:落下点記録");
+		for(int v=1;v<=7;v++) {
+			//System.getProperty("line.separator")
+			publish(STREAM_LOG+":シミュ結果一覧.txt:風速"+v+" m/s	北風	南風	東風	西風");
+			publish(STREAM_LOG+":シミュ結果一覧.txt:X	"
+					+droppoint[v-1][0][0]+"	"
+					+droppoint[v-1][1][0]+"	"
+					+droppoint[v-1][2][0]+"	"
+					+droppoint[v-1][3][0]);
+			publish(STREAM_LOG+":シミュ結果一覧.txt:Y	"
+					+droppoint[v-1][0][1]+"	"
+					+droppoint[v-1][1][1]+"	"
+					+droppoint[v-1][2][1]+"	"
+					+droppoint[v-1][3][1]);
+			publish(STREAM_LOG+":シミュ結果一覧.txt:"+"");
+		}
+		publish(STREAM_CLOSE+":シミュ結果一覧.txt");
+
+
 		updateProgress(1);
 
 	}
