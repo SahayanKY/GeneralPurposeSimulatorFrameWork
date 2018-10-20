@@ -287,7 +287,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 
 		this.parameterSetterFuncList.add(()->{
 			return new String[] {
-					"シミュレーション年月日時分秒="+this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm:ss.SSS")),
+					"シミュレーション年月日時分秒="+this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日_HH:mm:ss.SSS")),
 					"シミュレータ="+this.getThisName(),
 					"バージョン="+this.getThisVersion()
 			};
