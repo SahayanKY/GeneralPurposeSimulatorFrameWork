@@ -534,7 +534,7 @@ public class ICG extends Simulator{
 					+droppoint[v-1][1][1]+"	"
 					+droppoint[v-1][2][1]+"	"
 					+droppoint[v-1][3][1]);
-			publish(STREAM_LOG+":シミュ結果一覧.txt:"+"");
+			publish(STREAM_LOG+":シミュ結果一覧.txt:");
 		}
 		publish(STREAM_CLOSE+":シミュ結果一覧.txt");
 
@@ -647,7 +647,7 @@ public class ICG extends Simulator{
 			フィン圧力中心位置 = new Parameter(フィン, "圧力中心位置", "フィン圧力中心位置", "500 mm", "2500 mm", def),
 			フィン法線力係数CNαf = new Parameter(フィン, "法線力係数", "フィン法線力係数CNαf", null, null, def);
 
-		thrustFileParam.setNeedInputButton(true);
+		thrustFileParam.setNeedFileChooser(true);
 
 		paraMana.addParameter(機体バージョン);
 		paraMana.addParameter(使用燃焼データ年月);
