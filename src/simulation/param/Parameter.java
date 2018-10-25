@@ -5,7 +5,6 @@ import simulation.param.checker.ParameterChecker;
 public class Parameter {
 	public final String parentLabel, childLabel, propertyLabel, maxValue, minValue;
 	public final ParameterChecker checker;
-	public final boolean isSystemInputParameter;
 
 	public static final int
 		inputformat_NoProblem = 0,
@@ -13,7 +12,7 @@ public class Parameter {
 		inputformat_Error = 2;
 
 
-	private boolean needInputButton = false;
+	private boolean needFileChooser = false;
 
 	private String valueStr;
 
@@ -28,23 +27,7 @@ public class Parameter {
 		this.maxValue = maxValue;
 		this.minValue = minValue;
 		this.checker = checker;
-		this.isSystemInputParameter = false;
 	}
-
-	//プログラムが入力するパラメータについてのコンストラクタ
-	public Parameter(String parentLabel, String childLabel) {
-		if(parentLabel == null || childLabel == null) {
-			throw new IllegalArgumentException();
-		}
-		this.parentLabel = parentLabel;
-		this.childLabel = childLabel;
-		this.propertyLabel = childLabel;
-		this.maxValue = null;
-		this.minValue = null;
-		this.checker = null;
-		this.isSystemInputParameter = true;
-	}
-
 
 	/*
 	 * パラメータのチェック。同時にその値をvalueに格納する。
@@ -79,20 +62,20 @@ public class Parameter {
 
 
 	/*
-	 * このパラメータの値のセットにボタンを使用したい場合trueを指定する。
+	 * このパラメータの値のセットにファイルチューザーを使用したい場合trueを指定する。
 	 * デフォルト値はfalse。
 	 * @param need ボタンを使う場合はtrue
 	 * */
-	public void setNeedInputButton(boolean need) {
-		this.needInputButton = need;
+	public void setNeedFileChooser(boolean need) {
+		this.needFileChooser = need;
 	}
 
 	/*
 	 * このパラメータが値のセットにボタンを要するものかをどうかを返す。
 	 * @return このパラメータがボタンを使うものであればtrue,そうでなければfalse
 	 * */
-	public boolean isNeedInputButton() {
-		return this.needInputButton;
+	public boolean isNeedFileChooser() {
+		return this.needFileChooser;
 	}
 
 }
