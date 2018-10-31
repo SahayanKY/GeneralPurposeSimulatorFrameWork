@@ -17,6 +17,8 @@ import com.jogamp.opengl.awt.GLCanvas;
 import simulation.model3d.ModelHandler;
 
 public class GLViewFrame extends JFrame{
+	int size = 500;
+
 	public static void main(String args[]) {
 		new GLViewFrame("Hello, OpenGL!!");
 	}
@@ -33,7 +35,7 @@ public class GLViewFrame extends JFrame{
 		JPanel canvasPanel = new JPanel();
 		JLabel lb = new JLabel("setting.....");
 		lb.setHorizontalAlignment(JLabel.CENTER);
-		lb.setPreferredSize(new Dimension(300,300));
+		lb.setPreferredSize(new Dimension(size,size));
 		canvasPanel.add(lb);
 		parentPanel.add(canvasPanel);
 
@@ -64,7 +66,7 @@ public class GLViewFrame extends JFrame{
 				GLCapabilities caps = new GLCapabilities(GLProfile.get(GLProfile.GL2));
 
 				GLCanvas canvas = new GLCanvas(caps);
-				canvas.setPreferredSize(new Dimension(300,300));
+				canvas.setPreferredSize(new Dimension(size,size));
 				canvas.addGLEventListener(animator);
 				//canvas.addMouseListener(this);
 
