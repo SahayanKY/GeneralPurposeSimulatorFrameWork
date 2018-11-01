@@ -11,7 +11,7 @@ public class LU extends LinearEquationSolver {
 		//Lの対角成分が全て1のLUに分解する
 		for(int j=0;j<a.length;j++) {
 			//ピボット位置の取得
-			int pivot=0;
+			int pivot=j;
 			//絶対値の最も大きい位置をpivotに取得
 			double pivotValue=0;
 			for(int i=j;i<a.length;i++) {
@@ -58,6 +58,9 @@ public class LU extends LinearEquationSolver {
 				x[i] -= a[i][j]*x[j];
 			}
 			x[i] /= a[i][i];
+			if(Double.isInfinite(x[i])) {
+				throw new IllegalArgumentException("指定された係数行列は正則ではありません");
+			}
 		}
 
 		return x;
@@ -66,12 +69,14 @@ public class LU extends LinearEquationSolver {
 	public static void main(String args[]) {
 		LU solver = new LU();
 		double[][] a = {
-				{1,2,3},
-				{1,2,3},
-				{7,5,3}
+				{1,2,4,5,17},
+				{8,2,-4,-14,5},
+				{5,6,3,8,6},
+				{6,7,8,2,12},
+				{3,-4,-7,-22,-1}
 		};
 		double[] b = {
-				4,8,7
+				4,-5,0,1,5
 		};
 
 		double[] x = solver.solve(a,b);
