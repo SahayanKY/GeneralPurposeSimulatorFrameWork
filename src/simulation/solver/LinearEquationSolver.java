@@ -1,17 +1,17 @@
 package simulation.solver;
 
 public abstract class LinearEquationSolver {
-	/*trueの場合配列を変化させない*/
-	protected boolean dontChangeArray = false;
+	/*trueの場合配列を変化させる*/
+	protected boolean changeArray = true;
 
 	/*
 	 * このソルバーが計算の際に指定された配列の改変を許すかどうかを指定します。
-	 * この指定の意味は、配列変更を許した場合指定された配列上で計算処理を行うため、
-	 * メモリの節約となるためです。
-	 * @param dontChange trueの場合、配列は変化しません。falseの場合、配列は変化します。
+	 * この指定によっては、配列変更を許した場合指定された配列上で計算処理を行うため、
+	 * メモリの節約となるためです。デフォルト値はtrueです。
+	 * @param change trueの場合、配列は変化します。falseの場合、配列は変化しません。
 	 * */
-	public void set_dontChangeArray(boolean dontChange) {
-		this.dontChangeArray = dontChange;
+	public void changeArray(boolean change) {
+		this.changeArray = change;
 	}
 
 	/*
@@ -21,7 +21,7 @@ public abstract class LinearEquationSolver {
 	 * 解が返される可能性があります。その点については各子クラスのjavadocを参照
 	 * してください。
 	 * */
-	public abstract double[] solve(double[][] a, double[] b);
+	public abstract double[] solve(double[][] A, double[] B);
 
 	/*
 	 * 解析に指定された係数行列と右辺項ベクトルの行数、列数が一致しているかを
