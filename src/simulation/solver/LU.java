@@ -1,70 +1,113 @@
 package simulation.solver;
 
 public class LU extends LinearEquationSolver {
+	private boolean isreuse=false;
+	/*isreuseがtrueのとき、nullかどうかは保証されないが、
+	falseのときはnullであることが保証される。*/
+	private double[][] LU;
 
 	@Override
+	/*
+	 * 連立方程式をLU分解を利用して計算します。
+	 * 指定された係数行列が正則でなく、解が一意に求まらない場合、
+	 * IllegalArgumentExceptionがスローされます。
+	 * また、isToReuseLU(boolean)でtrueを指定した場合、
+	 * 以前計算されたLU分解結果を利用して方程式が解かれます。
+	 * このため、以前した係数行列とこれから指定する係数行列が
+	 * 異なる場合、正しい結果を返しません。その場合、resetLU()を利用してください。
+	 * また、LU分解結果を再度用いて計算する際に、Aにnullを指定しても構いません。
+	 * @param A 連立方程式の係数行列
+	 * @param B 連立方程式の右辺項ベクトル
+	 * */
 	public double[] solve(double[][] A, double[] B) {
-		if(!matrixIsNormal(A,B)) {
+		double[][] a;
+		double[] b;
+		if((LU == null && !matrixIsNormal(A,B)) || (LU != null && LU.length != B.length)) {
+			//LUがnullのとき
+			//→A,Bはどちらも正しく指定されてなければならない
+			//LUがnullでないとき
+			//→LUと指定されたBの行数が合ってなければならない
 			throw new IllegalArgumentException("指定された配列は行数、列数が一致していません");
 		}
 
-		double[][] a;
-		double[] b;
+		if(LU!=null) {
+			//LU結果があって、それを用いる場合
+			a = LU;
+			if(this.changeArray) {
+				//bを変化させてもいい場合
+				b = B;
+			}else {
+				b = new double[LU.length];
+				//初期化
+				for(int i=0;i<LU.length;i++) {
+					b[i] = B[i];
+				}
+			}
 
-		if(this.changeArray) {
-			//配列を変えていい場合
-			a = A;
-			b = B;
+//-----------bの行入れ替えを行う---------------
+
+
 		}else {
-			//このソルバーは仮引数の配列を変化させない設定の場合
-			a = new double[A.length][A.length];
-			b = new double[A.length];
-			//初期化
-			for(int i=0;i<a.length;i++) {
-				for(int j=0;j<a.length;j++) {
-					a[i][j] = A[i][j];
+			//LU結果が存在しない場合
+			if(this.changeArray) {
+				//配列を変えていい場合
+				a = A;
+				b = B;
+			}else {
+				//仮引数の配列を変化させない設定の場合
+				a = new double[A.length][A.length];
+				b = new double[A.length];
+				//初期化
+				for(int i=0;i<a.length;i++) {
+					for(int j=0;j<a.length;j++) {
+						a[i][j] = A[i][j];
+					}
+					b[i] = B[i];
 				}
-				b[i] = B[i];
 			}
+
+			//LU結果を用いないため、LU分解を行う→double[][] aに保存
+
+			//Lの対角成分が全て1のLUに分解する
+			for(int j=0;j<a.length;j++) {
+				//ピボット位置の取得
+				int pivot=j;
+				//絶対値の最も大きい位置をpivotに取得
+				double pivotValue=0;
+				for(int i=j;i<a.length;i++) {
+					if(pivotValue < Math.abs(a[i][j])) {
+						pivotValue = Math.abs(a[i][j]);
+						pivot = i;
+					}
+				}
+
+				//入れ替え
+				//ピボット位置を一時的に入れる
+				double[] tempAi = a[pivot];
+				double tempb= b[pivot];
+
+				a[pivot] = a[j];
+				b[pivot] = b[j];
+				a[j] = tempAi;
+				b[j] = tempb;
+
+				//LU小行列に分解
+				for(int i=j+1;i<a.length;i++) {
+					a[i][j] = a[i][j]/a[j][j];
+					if(Double.isNaN(a[i][j])) {
+						throw new IllegalArgumentException("指定された係数行列は正則ではない可能性があります");
+					}
+				}
+				for(int i=j+1;i<a.length;i++) {
+					for(int jj=j+1;jj<a.length;jj++) {
+						a[i][jj] = a[i][jj] -a[i][j]*a[j][jj];
+					}
+				}
+			}
+
 		}
 
 
-		//Lの対角成分が全て1のLUに分解する
-		for(int j=0;j<a.length;j++) {
-			//ピボット位置の取得
-			int pivot=j;
-			//絶対値の最も大きい位置をpivotに取得
-			double pivotValue=0;
-			for(int i=j;i<a.length;i++) {
-				if(pivotValue < Math.abs(a[i][j])) {
-					pivotValue = Math.abs(a[i][j]);
-					pivot = i;
-				}
-			}
-
-			//入れ替え
-			//ピボット位置を一時的に入れる
-			double[] tempAi = a[pivot];
-			double tempb= b[pivot];
-
-			a[pivot] = a[j];
-			b[pivot] = b[j];
-			a[j] = tempAi;
-			b[j] = tempb;
-
-			//LU小行列に分解
-			for(int i=j+1;i<a.length;i++) {
-				a[i][j] = a[i][j]/a[j][j];
-				if(Double.isNaN(a[i][j])) {
-					throw new IllegalArgumentException("指定された係数行列は正則ではない可能性があります");
-				}
-			}
-			for(int i=j+1;i<a.length;i++) {
-				for(int jj=j+1;jj<a.length;jj++) {
-					a[i][jj] = a[i][jj] -a[i][j]*a[j][jj];
-				}
-			}
-		}
 
 		//以降bは一度使った要素を二度と使わないため、解を保存するメモリとして使っていく
 		double[] x = b;
@@ -91,6 +134,29 @@ public class LU extends LinearEquationSolver {
 		}
 
 		return x;
+	}
+
+	/*
+	 * このソルバーが一度計算したLU分解結果を繰り返し使うかどうかを設定します。
+	 * これでtrueを指定した場合、前に計算したLU分解の結果を利用して
+	 * 方程式を解くため、非常に速くなります。
+	 * falseを指定し、既にLU分解結果を保持していた場合、内部でLU分解結果はクリアされます。
+	 * @param reuse trueの時、LU分解結果を利用する
+	 * */
+	public void isToReuseLU(boolean isreuse) {
+		this.isreuse = isreuse;
+		if(!this.isreuse) {
+			this.resetLU();
+		}
+	}
+
+	/*
+	 * 以前計算されたLU分解結果をクリアします。
+	 * 以前計算した連立方程式とこれから計算する連立方程式の係数行列が
+	 * 異なる場合、これを利用してください。
+	 * */
+	public void resetLU() {
+		this.LU = null;
 	}
 
 	public static void main(String args[]) {
