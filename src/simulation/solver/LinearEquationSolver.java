@@ -8,6 +8,9 @@ public abstract class LinearEquationSolver {
 	 * このソルバーが計算の際に指定された配列の改変を許すかどうかを指定します。
 	 * この指定によっては、配列変更を許した場合指定された配列上で計算処理を行うため、
 	 * メモリの節約となるためです。デフォルト値はtrueです。
+	 * trueを指定した場合、計算に指定した配列の要素を後から変更するとソルバーによっては
+	 * 以降正しく機能しない場合があります。その可能性のあるソルバーについては
+	 * 各ソルバー実装クラスのsolve(double[][],double[])のjavadocに記載しています。
 	 * @param change trueの場合、配列は変化します。falseの場合、配列は変化しません。
 	 * */
 	public void changeArray(boolean change) {
