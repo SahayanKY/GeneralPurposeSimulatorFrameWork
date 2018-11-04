@@ -5,6 +5,11 @@ public class LU extends LinearEquationSolver {
 	/*isreuseがtrueのとき、nullかどうかは保証されないが、
 	falseのときはnullであることが保証される。*/
 	private double[][] LU;
+	/*LU分解過程の行入れ替えの結果を保持しておく。
+	 *LU==nullのときはnullである
+	 *i番目の入れ替え時に、i行目とlineorder[i]行目を入れ替えた
+	 **/
+	private int[] lineorder;
 
 	@Override
 	/*
@@ -44,11 +49,21 @@ public class LU extends LinearEquationSolver {
 				}
 			}
 
-//-----------bの行入れ替えを行う---------------
+			//bの行入れ替えを行う
+			for(int i=0;i<LU.length;i++) {
+				//今i番目にある値を保管する
+				double bi = b[i];
+
+				//pivot番目=lineorder[i]番目にある値をb[i]に移動させる
+				b[i] = b[lineorder[i]];
+				b[lineorder[i]] = bi;
+			}
 
 
 		}else {
 			//LU結果が存在しない場合
+
+			//a,bの初期化
 			if(this.changeArray) {
 				//配列を変えていい場合
 				a = A;
@@ -66,7 +81,19 @@ public class LU extends LinearEquationSolver {
 				}
 			}
 
-			//LU結果を用いないため、LU分解を行う→double[][] aに保存
+			//既存のLU結果を用いないため、LU分解を行う
+			//→aに分解結果を保存
+			//	→this.isreuseならばLUにaを保存
+			//→this.isreuseならばlineorderに行入れ替えの結果を保持する
+
+			if(this.isreuse) {
+				//lineorderを初期化する
+				lineorder = new int[a.length];
+				for(int i=0;i<a.length;i++) {
+					//並び替えが全くない状態に初期化
+					lineorder[i] = i;
+				}
+			}
 
 			//Lの対角成分が全て1のLUに分解する
 			for(int j=0;j<a.length;j++) {
@@ -91,6 +118,11 @@ public class LU extends LinearEquationSolver {
 				a[j] = tempAi;
 				b[j] = tempb;
 
+				if(this.isreuse) {
+					//行入れ替えを記録
+					lineorder[j] = pivot;
+				}
+
 				//LU小行列に分解
 				for(int i=j+1;i<a.length;i++) {
 					a[i][j] = a[i][j]/a[j][j];
@@ -105,10 +137,13 @@ public class LU extends LinearEquationSolver {
 				}
 			}
 
+			//分解終了後
+			if(this.isreuse) {
+				LU = a;
+			}
 		}
 
-
-
+		//以降aはLU(Lの対角は1)に分解された結果
 		//以降bは一度使った要素を二度と使わないため、解を保存するメモリとして使っていく
 		double[] x = b;
 
@@ -141,7 +176,8 @@ public class LU extends LinearEquationSolver {
 	 * これでtrueを指定した場合、前に計算したLU分解の結果を利用して
 	 * 方程式を解くため、非常に速くなります。
 	 * falseを指定し、既にLU分解結果を保持していた場合、内部でLU分解結果はクリアされます。
-	 * @param reuse trueの時、LU分解結果を利用する
+	 * デフォルトはfalseです。
+	 * @param reuse trueの時、LU分解結果を利用する。
 	 * */
 	public void isToReuseLU(boolean isreuse) {
 		this.isreuse = isreuse;
@@ -157,6 +193,7 @@ public class LU extends LinearEquationSolver {
 	 * */
 	public void resetLU() {
 		this.LU = null;
+		this.lineorder = null;
 	}
 
 	public static void main(String args[]) {
@@ -172,11 +209,23 @@ public class LU extends LinearEquationSolver {
 				4,-5,0,1,5
 		};
 
+		solver.isToReuseLU(true);
 		solver.changeArray(true);
 		double[] x = solver.solve(a,b);
 		for(double r:x) {
 			System.out.println(r);
 		}
+
+		x = solver.solve(null,new double[] {4,-5,0,1,5});
+		for(double r:x) {
+			System.out.println(r);
+		}
+
+		x = solver.solve(null,new double[] {4,-5,0,1,5});
+		for(double r:x) {
+			System.out.println(r);
+		}
+
 	}
 
 }
