@@ -1,15 +1,31 @@
 package simulation.solver;
 
 public class LU extends LinearEquationSolver {
-	private boolean isreuse=false;
+	/*
+	 * 一回目に解を求めるためにしたLU分解結果を保持する場合はtrue
+	 * */
+	private boolean isreuse;
+
 	/*isreuseがtrueのとき、nullかどうかは保証されないが、
 	falseのときはnullであることが保証される。*/
 	private double[][] LU;
+
 	/*LU分解過程の行入れ替えの結果を保持しておく。
 	 *LU==nullのときはnullである
 	 *i番目の入れ替え時に、i行目とlineorder[i]行目を入れ替えた
+	 *という形で保持している
 	 **/
 	private int[] lineorder;
+
+	/*
+	 * このソルバーが一度計算したLU分解結果を繰り返し使うかどうかを設定します。
+	 * これでtrueを指定した場合、前に計算したLU分解の結果を利用して
+	 * 方程式を解くため、非常に速くなります。
+	 * @param isreuse trueの時、LU分解結果を利用する。
+	 * */
+	public LU(boolean isreuse) {
+		this.isreuse = isreuse;
+	}
 
 	@Override
 	/*
@@ -18,9 +34,12 @@ public class LU extends LinearEquationSolver {
 	 * IllegalArgumentExceptionがスローされます。
 	 * また、isToReuseLU(boolean)でtrueを指定した場合、
 	 * 以前計算されたLU分解結果を利用して方程式が解かれます。
-	 * このため、以前した係数行列とこれから指定する係数行列が
+	 * このため、以前指定した係数行列とこれから指定する係数行列が
 	 * 異なる場合、正しい結果を返しません。その場合、resetLU()を利用してください。
-	 * また、LU分解結果を再度用いて計算する際に、Aにnullを指定しても構いません。
+	 * また、LU分解結果を再度用いて計算する際にはAにnullを指定しても構いません。
+	 * LU分解結果を保持させ、かつ、指定した配列の変更を許す場合、その元となった
+	 * 係数行列の要素は変更しないようにしてください。LU分解結果を改竄することと
+	 * なり、正しい結果を返さなくなります。
 	 * @param A 連立方程式の係数行列
 	 * @param B 連立方程式の右辺項ベクトル
 	 * */
@@ -171,33 +190,10 @@ public class LU extends LinearEquationSolver {
 		return x;
 	}
 
-	/*
-	 * このソルバーが一度計算したLU分解結果を繰り返し使うかどうかを設定します。
-	 * これでtrueを指定した場合、前に計算したLU分解の結果を利用して
-	 * 方程式を解くため、非常に速くなります。
-	 * falseを指定し、既にLU分解結果を保持していた場合、内部でLU分解結果はクリアされます。
-	 * デフォルトはfalseです。
-	 * @param reuse trueの時、LU分解結果を利用する。
-	 * */
-	public void isToReuseLU(boolean isreuse) {
-		this.isreuse = isreuse;
-		if(!this.isreuse) {
-			this.resetLU();
-		}
-	}
 
-	/*
-	 * 以前計算されたLU分解結果をクリアします。
-	 * 以前計算した連立方程式とこれから計算する連立方程式の係数行列が
-	 * 異なる場合、これを利用してください。
-	 * */
-	public void resetLU() {
-		this.LU = null;
-		this.lineorder = null;
-	}
 
 	public static void main(String args[]) {
-		LU solver = new LU();
+		LU solver = new LU(true);
 		double[][] a = {
 				{1,2,4,5,17},
 				{8,2,-4,-14,5},
@@ -209,14 +205,13 @@ public class LU extends LinearEquationSolver {
 				4,-5,0,1,5
 		};
 
-		solver.isToReuseLU(true);
 		solver.changeArray(true);
 		double[] x = solver.solve(a,b);
 		for(double r:x) {
 			System.out.println(r);
 		}
 
-		x = solver.solve(null,new double[] {4,-5,0,1,5});
+		x = solver.solve(null,new double[] {4,-2,0,1,5});
 		for(double r:x) {
 			System.out.println(r);
 		}
