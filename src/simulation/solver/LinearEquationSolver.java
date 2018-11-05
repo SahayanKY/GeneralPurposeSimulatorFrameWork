@@ -13,8 +13,16 @@ public abstract class LinearEquationSolver {
 	 * 各ソルバー実装クラスのsolve(double[][],double[])のjavadocに記載しています。
 	 * @param change trueの場合、配列は変化します。falseの場合、配列は変化しません。
 	 * */
-	public void changeArray(boolean change) {
+	public final void changeArray(boolean change) {
 		this.changeArray = change;
+	}
+
+	/*
+	 * このソルバーが入力された配列を変化させるのかを示す値を返します。
+	 * @return trueのとき、配列を変化させます。
+	 * */
+	public final boolean isToChangeArray() {
+		return this.changeArray;
 	}
 
 	/*
@@ -23,6 +31,9 @@ public abstract class LinearEquationSolver {
 	 * 解法実装クラスによっては、解が一意に決定しなかった場合でもエラーなしに
 	 * 解が返される可能性があります。その点については各子クラスのjavadocを参照
 	 * してください。
+	 * @throws IllegalArgumentException 必要な係数行列や右辺項ベクトルが与えら
+	 * れていなかったり、それらの行数が一致していない場合。また、計算の途中で
+	 * 解が破綻した場合にスローされます。
 	 * */
 	public abstract double[] solve(double[][] A, double[] B);
 
