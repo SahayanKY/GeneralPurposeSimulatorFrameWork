@@ -1,61 +1,91 @@
 package simulation.solver;
 
 public class LU extends LinearEquationSolver {
-	/*
-	 * 一回目に解を求めるためにしたLU分解結果を保持する場合はtrue
+	/**
+	 * 前回解を求めた際のLU分解結果を保持する場合はtrue
 	 * */
 	private boolean isreuse;
 
-	/*isreuseがtrueのとき、nullかどうかは保証されないが、
+	/**
+	 * isreuseがtrueのとき、nullかどうかは保証されないが、
 	falseのときはnullであることが保証される。*/
 	private double[][] LU;
 
-	/*LU分解過程の行入れ替えの結果を保持しておく。
+	/**
+	 *LU分解過程の行入れ替えの結果を保持しておく。
 	 *LU==nullのときはnullである
 	 *i番目の入れ替え時に、i行目とlineorder[i]行目を入れ替えた
 	 *という形で保持している
 	 **/
 	private int[] lineorder;
 
-	/*
-	 * このソルバーが一度計算したLU分解結果を繰り返し使うかどうかを設定します。
+	/**
+	 * このソルバーが前回計算したLU分解結果を繰り返し使うかどうかを設定します。
 	 * これでtrueを指定した場合、前に計算したLU分解の結果を利用して
-	 * 方程式を解くため、非常に速くなります。
+	 * 方程式を解くため、非常に速くなります。つまり、係数行列が同じ方程式を
+	 * 解くことが分かっている場合、trueを指定することが推奨されます。
+	 *
 	 * @param isreuse trueの時、LU分解結果を利用する。
 	 * */
 	public LU(boolean isreuse) {
 		this.isreuse = isreuse;
 	}
 
+	/**
+	 * このソルバーが直近のLU分解結果を保持するのかを示す値を返します。
+	 * @return trueならば分解結果を保持。
+	 * */
+	public boolean isToReuseLUResult() {
+		return this.isreuse;
+	}
+
+	/**
+	 * このソルバーが今LU分解結果を持っているかどうかを返します。
+	 * @return trueならばLU分解結果を持っている
+	 * */
+	public boolean hasLUResult() {
+		return this.LU != null;
+	}
+
+
 	@Override
-	/*
+	/**
 	 * 連立方程式をLU分解を利用して計算します。
+	 *
 	 * 指定された係数行列が正則でなく、解が一意に求まらない場合、
 	 * IllegalArgumentExceptionがスローされます。
-	 * また、isToReuseLU(boolean)でtrueを指定した場合、
-	 * 以前計算されたLU分解結果を利用して方程式が解かれます。
-	 * このため、以前指定した係数行列とこれから指定する係数行列が
-	 * 異なる場合、正しい結果を返しません。その場合、resetLU()を利用してください。
-	 * また、LU分解結果を再度用いて計算する際にはAにnullを指定しても構いません。
-	 * LU分解結果を保持させ、かつ、指定した配列の変更を許す場合、その元となった
-	 * 係数行列の要素は変更しないようにしてください。LU分解結果を改竄することと
-	 * なり、正しい結果を返さなくなります。
+	 *
+	 * コンストラクタでLU分解結果を再利用すると設定し、
+	 * 前回のLU分解結果を利用する場合、Aにはnullを指定してください。
+	 * 逆に異なる係数行列を用いて方程式を解析する場合、その行列を表すdouble[][]
+	 * 配列をAには指定してください。このとき、そのとき保持されていたLU分解結果は
+	 * 破棄されるので注意してください。
+	 *
+	 * LU分解結果を保持させ、かつ、指定した配列の変更を許す場合、
+	 * すなわち、LU(boolean)でtrue、changeArray(boolean)でtrueを指定した場合、
+	 * その元となった係数行列の要素は変更しないようにしてください。LU分解結果
+	 * を改竄することになり、正しい結果を返さなくなります。
+	 *
 	 * @param A 連立方程式の係数行列
 	 * @param B 連立方程式の右辺項ベクトル
 	 * */
 	public double[] solve(double[][] A, double[] B) {
 		double[][] a;
 		double[] b;
-		if((LU == null && !matrixIsNormal(A,B)) || (LU != null && LU.length != B.length)) {
-			//LUがnullのとき
-			//→A,Bはどちらも正しく指定されてなければならない
-			//LUがnullでないとき
-			//→LUと指定されたBの行数が合ってなければならない
+		if(A==null && LU==null) {
+			//AもLUもnullはダメ
+			throw new IllegalArgumentException("係数行列が指定されていません");
+		}
+		if((A!=null && !matrixIsNormal(A,B)) //Aがnullでないときは、AとBの行数が一致しないならダメ
+				||
+			(A==null && !matrixIsNormal(LU,B))//Aがnullのときは、LUとBの行数が一致しないならダメ
+		) {
 			throw new IllegalArgumentException("指定された配列は行数、列数が一致していません");
 		}
 
-		if(LU!=null) {
+		if(A==null) {
 			//LU結果があって、それを用いる場合
+			//（Aが指定されていないため、前回計算したLUを用いる）
 			a = LU;
 			if(this.changeArray) {
 				//bを変化させてもいい場合
@@ -81,6 +111,7 @@ public class LU extends LinearEquationSolver {
 
 		}else {
 			//LU結果が存在しない場合
+			//または、新しく係数行列を指定された場合
 
 			//a,bの初期化
 			if(this.changeArray) {
@@ -108,10 +139,12 @@ public class LU extends LinearEquationSolver {
 			if(this.isreuse) {
 				//lineorderを初期化する
 				lineorder = new int[a.length];
+				/*必要なし
 				for(int i=0;i<a.length;i++) {
 					//並び替えが全くない状態に初期化
 					lineorder[i] = i;
 				}
+				*/
 			}
 
 			//Lの対角成分が全て1のLUに分解する
