@@ -98,64 +98,35 @@ public class LUTest {
 		/**
 		 * 係数行列や右辺項ベクトルを変化させない解き方でのテストメソッド
 		 * */
-		public void testLU(SolverConstructor solverconstructor, double[][][] As,double[][] bs,boolean[] AisNull) {
+		public void testSolveNotChangeArrayAndSeveralTime(SolverConstructor solverconstructor, double[][][] As,double[][] bs,boolean[] AisNull) {
 			try {
 				LinearEquationSolver solver
 					= solverconstructor.solverclass
 							.getConstructor(solverconstructor.parameterType)
 							.newInstance(solverconstructor.parameter);
 
-
-
 				solver.changeArray(false);
-				if(((LU) solver).isToReuseLUResult()) {
-					for(int i=0;i<3;i++) {
-						//今までの試行ではAは全てnull指定だったのか
-						boolean allnull = true;
-						//null指定ではない一番最後の試行回はいつだったのか
-						int lastNotNullI=0;
-						for(int j=i-1;j>=0;j--) {
-							if(!AisNull[j]) {
-								allnull = false;
-								lastNotNullI = j;
-								break;
-							}
-						}
+				//配列が本当に変化していないのかを1行分だけ調べる
+				double[][] Atest = new double[As.length][As[0].length];
+				double[] Btest = new double[bs.length];
+				//As.length==bs.length
 
-						if(AisNull[i]) {
-							//この試行回ではAがnullだった場合
-							if(allnull) {
-								//それまでもnullだった場合、例外処理
-								final int k=i;
-								Assertions.assertThrows(
-										IllegalArgumentException.class,
-										()->solver.solve(null, bs[k])
-								);
-							}else {
-								//一番最後に係数行列を指定した回の係数行列を用いてアサーション
-								double[] x = solver.solve(null, bs[i]);
-								assertSolutionIsCorrect(As[lastNotNullI],x,bs[i]);
-							}
-						}else {
-							double[] x = solver.solve(As[i],bs[i]);
-							assertSolutionIsCorrect(As[i],x,bs[i]);
-						}
+				assertEquals(As.length,bs.length);
 
+				for(int i=0;i<As.length;i++) {
+					for(int j=0;j<As[0].length;j++) {
+						Atest[i][j] = As[i][0][j];
 					}
-				}else {
-					//LU分解結果を用いない場合
-					for(int i=0;i<3;i++) {
-						if(AisNull[i]) {
-							final int k=i;
-							Assertions.assertThrows(
-									IllegalArgumentException.class,
-									()->solver.solve(null, bs[k])
-							);
-						}else{
-							double[] x = solver.solve(As[i],bs[i]);
-							assertSolutionIsCorrect(As[i],x,bs[i]);
-						}
+					Btest[i] = bs[i][0];
+				}
+				repeatSolve(solver,As,bs,AisNull);
+
+				//配列の変化が実際に起こっていないかをチェック
+				for(int i=0;i<As.length;i++) {
+					for(int j=0;j<As[0].length;j++) {
+						assertEquals(Atest[i][j],As[i][0][j],0.0);
 					}
+					assertEquals(Btest[i],bs[i][0],0.0);
 				}
 
 			} catch (InstantiationException e) {
@@ -170,6 +141,61 @@ public class LUTest {
 				e.printStackTrace();
 			} catch (SecurityException e) {
 				e.printStackTrace();
+			}
+		}
+
+		/**
+		 * 繰り返し方程式を解かせても問題ないか
+		 * */
+		private void repeatSolve(LinearEquationSolver solver, double[][][] As, double[][] bs, boolean[] AisNull) {
+			if(solver instanceof LU && ((LU) solver).isToReuseLUResult()) {
+				for(int i=0;i<As.length;i++) {
+					//今までの試行ではAは全てnull指定だったのか
+					boolean allnull = true;
+					//null指定ではない一番最後の試行回はいつだったのか
+					int lastNotNullI=0;
+					for(int j=i-1;j>=0;j--) {
+						if(!AisNull[j]) {
+							allnull = false;
+							lastNotNullI = j;
+							break;
+						}
+					}
+
+					if(AisNull[i]) {
+						//この試行回ではAがnullだった場合
+						if(allnull) {
+							//それまでもnullだった場合、例外処理
+							final int k=i;
+							Assertions.assertThrows(
+									IllegalArgumentException.class,
+									()->solver.solve(null, bs[k])
+							);
+						}else {
+							//一番最後に係数行列を指定した回の係数行列を用いてアサーション
+							double[] x = solver.solve(null, bs[i]);
+							assertSolutionIsCorrect(As[lastNotNullI],x,bs[i]);
+						}
+					}else {
+						double[] x = solver.solve(As[i],bs[i]);
+						assertSolutionIsCorrect(As[i],x,bs[i]);
+					}
+
+				}
+			}else {
+				//LU分解結果を用いない場合
+				for(int i=0;i<As.length;i++) {
+					if(AisNull[i]) {
+						final int k=i;
+						Assertions.assertThrows(
+								IllegalArgumentException.class,
+								()->solver.solve(null, bs[k])
+						);
+					}else{
+						double[] x = solver.solve(As[i],bs[i]);
+						assertSolutionIsCorrect(As[i],x,bs[i]);
+					}
+				}
 			}
 		}
 
