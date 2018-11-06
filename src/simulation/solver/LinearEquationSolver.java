@@ -46,6 +46,10 @@ public abstract class LinearEquationSolver {
 	 * @return 行数、列数が一致していない場合、falseを返します。
 	 * */
 	protected boolean matrixIsNormal(double[][] a, double[] b) {
+		if(a == null || b == null) {
+			return false;
+		}
+
 		boolean result = true;
 		int n = a.length;
 		for(double[] ai:a) {
