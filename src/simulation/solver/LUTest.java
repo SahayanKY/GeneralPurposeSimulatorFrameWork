@@ -3,6 +3,7 @@ package simulation.solver;
 import static org.junit.Assert.*;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.IntConsumer;
 
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -14,20 +15,19 @@ import org.junit.runner.RunWith;
 
 @RunWith(Enclosed.class)
 public class LUTest {
+	static class SolverConstructor{
+		Class<? extends LinearEquationSolver> solverclass;
+		Object[] parameter;
+		Class<?>[] parameterType;
+		SolverConstructor(Class<? extends LinearEquationSolver> solverclass, Class<?>[] parameterType, Object[] parameter){
+			this.solverclass = solverclass;
+			this.parameter = parameter;
+			this.parameterType = parameterType;
+		}
+	}
 
 	@RunWith(Theories.class)
-	public static class SolveTest{
-		static class SolverConstructor{
-			Class<? extends LinearEquationSolver> solverclass;
-			Object[] parameter;
-			Class<?>[] parameterType;
-			SolverConstructor(Class<? extends LinearEquationSolver> solverclass, Class<?>[] parameterType, Object[] parameter){
-				this.solverclass = solverclass;
-				this.parameter = parameter;
-				this.parameterType = parameterType;
-			}
-		}
-
+	public static class RepeatSolveTest{
 		@DataPoints
 		public static double[][][][] As = {
 				{
@@ -73,6 +73,7 @@ public class LUTest {
 		@DataPoints
 		public static double[][][] Bs = {
 				{
+					//3回連続で解く
 					{2,5,2},
 					{3,4,7},
 					{1,0,3}
@@ -98,7 +99,7 @@ public class LUTest {
 		/**
 		 * 係数行列や右辺項ベクトルを変化させない解き方でのテストメソッド
 		 * */
-		public void testSolveNotChangeArrayAndSeveralTime(SolverConstructor solverconstructor, double[][][] As,double[][] bs,boolean[] AisNull) {
+		public void testSolve_NotChangeArrayAndSeveralTime(SolverConstructor solverconstructor, double[][][] As,double[][] bs,boolean[] AisNull) {
 			try {
 				LinearEquationSolver solver
 					= solverconstructor.solverclass
@@ -119,6 +120,8 @@ public class LUTest {
 					}
 					Btest[i] = bs[i][0];
 				}
+
+				//連続で解く
 				repeatSolve(solver,As,bs,AisNull);
 
 				//配列の変化が実際に起こっていないかをチェック
@@ -144,10 +147,84 @@ public class LUTest {
 			}
 		}
 
+		@Test
+		@Theory
 		/**
-		 * 繰り返し方程式を解かせても問題ないか
+		 * 配列を改変してもいい解き方で繰り返し解いても問題はないか
+		 * */
+		public void testSolve_ChangeArrayAndSeveralTime(SolverConstructor solverconstructor, double[][][] As,double[][] bs,boolean[] AisNull) {
+			try {
+				LinearEquationSolver solver
+					= solverconstructor.solverclass
+							.getConstructor(solverconstructor.parameterType)
+							.newInstance(solverconstructor.parameter);
+
+				solver.changeArray(true);
+
+				assertEquals(As.length,bs.length);
+				assertEquals(As[0].length,bs[0].length);
+				assertEquals(As[0].length,As[0][0].length);
+
+				//配列を新しく用意しておく（次のテストケースのときに変化している恐れがあるため）
+				double[][][] _As = new double[As.length][As[0].length][As[0][0].length];
+				double[][] _bs = new double[bs.length][bs[0].length];
+				for(int i=0;i<As.length;i++) {
+					for(int j=0;j<As[0].length;j++) {
+						for(int k=0;k<As[0][0].length;k++) {
+							_As[i][j][k] = As[i][j][k];
+						}
+						_bs[i][j] = bs[i][j];
+					}
+				}
+
+				//連続で解く
+				repeatSolve(solver,_As,_bs,AisNull);
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				e.printStackTrace();
+			}
+		}
+
+
+		/**
+		 * 繰り返し方程式を解かせても問題ないかをテストします。
+		 * ソルバーが配列を変化させない設定だった場合、引数で指定された配列を直接テスト計算に用います。
+		 * 一方、ソルバーが配列を変化させる設定の場合、引数で指定された配列とはまた違う配列を用意し、
+		 * それを用いて計算します。すなわち、いずれにしても引数で指定された配列は変化しないことが
+		 * 期待されます。
 		 * */
 		private void repeatSolve(LinearEquationSolver solver, double[][][] As, double[][] bs, boolean[] AisNull) {
+			IntConsumer assertSolution = (i) -> {
+				double[][] A;
+				double[] b;
+				if(solver.isToChangeArray()) {
+					//solverが配列を変える設定だった場合、
+					A = new double[As[0].length][As[0][0].length];
+					b = new double[bs[0].length];
+					for(int j=0;j<A.length;j++) {
+						for(int k=0;k<A[0].length;k++) {
+							A[j][k] = As[i][j][k];
+						}
+						b[j] = bs[i][j];
+					}
+				}else {
+					//solverが配列を変えない設定だった場合、元々テストメソッドで指定された配列を計算に用いる
+					A = As[i];
+					b = bs[i];
+				}
+				double[] x = solver.solve(A,b);
+				assertSolutionIsCorrect(As[i],x,bs[i]);
+			};
+
 			if(solver instanceof LU && ((LU) solver).isToReuseLUResult()) {
 				for(int i=0;i<As.length;i++) {
 					//今までの試行ではAは全てnull指定だったのか
@@ -164,6 +241,7 @@ public class LUTest {
 
 					if(AisNull[i]) {
 						//この試行回ではAがnullだった場合
+
 						if(allnull) {
 							//それまでもnullだった場合、例外処理
 							final int k=i;
@@ -172,13 +250,24 @@ public class LUTest {
 									()->solver.solve(null, bs[k])
 							);
 						}else {
+							//bは今回のものを用い、前回のLU分解結果を利用して解いた結果が
+							//前回指定した係数行列に対して合っているのかをアサーション
+							double[] b;
+							if(solver.isToChangeArray()) {
+								b = new double[bs[i].length];
+								for(int j=0;j<b.length;j++) {
+									b[j] = bs[i][j];
+								}
+							}else {
+								b = bs[i];
+							}
+							double[] x = solver.solve(null, b);
+
 							//一番最後に係数行列を指定した回の係数行列を用いてアサーション
-							double[] x = solver.solve(null, bs[i]);
 							assertSolutionIsCorrect(As[lastNotNullI],x,bs[i]);
 						}
 					}else {
-						double[] x = solver.solve(As[i],bs[i]);
-						assertSolutionIsCorrect(As[i],x,bs[i]);
+						assertSolution.accept(i);
 					}
 
 				}
@@ -192,8 +281,7 @@ public class LUTest {
 								()->solver.solve(null, bs[k])
 						);
 					}else{
-						double[] x = solver.solve(As[i],bs[i]);
-						assertSolutionIsCorrect(As[i],x,bs[i]);
+						assertSolution.accept(i);
 					}
 				}
 			}
@@ -209,7 +297,6 @@ public class LUTest {
 	 * @param b 方程式の右辺項ベクトル
 	 * */
 	public static void assertSolutionIsCorrect(double[][] a, double[] x, double[] b) {
-		System.out.println(1.7763568394002505E-15+0.0);
 		assertEquals(a.length,b.length);
 		assertEquals(a.length,x.length);
 		for(int i=0;i<a.length;i++) {
@@ -228,5 +315,4 @@ public class LUTest {
 			}
 		}
 	}
-
 }
