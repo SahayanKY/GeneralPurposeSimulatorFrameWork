@@ -1,17 +1,28 @@
 package simulation.function.nurbs;
 
 public class NURBSFunction {
+	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
 	private double[][] ctrl;
+
+	/**このインスタンスが必要とする基底関数のノットベクトルや次数*/
 	private final NURBSProperty pro;
+
+	/**このインスタンスが扱う関数値の次元数*/
+	private int dimension;
+
+	/**関数値計算時に必要となるコントロールポイント数*/
+	private int effCtrlNum=1;
 
 	/**
 	 * NURBS関数をインスタンス化させます。
 	 * コントロールポイントは多変数NURBSの場合注意が必要です。
 	 * mを変数の数、Pをコントロールポイント、n_iを変数i方向のポイントの数としたとき、
-	 * P_{0,0,...,0,0}はctrl[0]に格納される。
-	 * P_{0,0,...,0,n_{m-1}-1}はctrl[n_{m-1}-1]に格納される。
-	 * P_{0,0,...,1,0}はctrl[n_{m-1}]に格納される。
-	 * P_{i_0,i_1,...,i_{m-2},i_{m-1}}はctrl[i_{m-1}+i_{m-2}*n_{m-1}+...+i_0*n_1*...*n_{m-1}]に格納される。
+	 * <ul>
+	 * 	<li>P_{0,0,...,0,0}はctrl[0]に格納される。
+	 * 	<li>P_{0,0,...,0,n_{m-1}-1}はctrl[n_{m-1}-1]に格納される。
+	 * 	<li>P_{0,0,...,1,0}はctrl[n_{m-1}]に格納される。
+	 * 	<li>P_{i_0,i_1,...,i_{m-2},i_{m-1}}はctrl[i_{m-1}+i_{m-2}*n_{m-1}+...+i_0*n_1*...*n_{m-1}]に格納される。
+	 * </ul>
 	 * これを前提として計算を行います。ctrlの第2のインデックスは各コントロールポイントの重みと座標
 	 * を保持します。ただしこのうち、1番目の要素は重みであり、正の数を必ず指定してください。
 	 * ここで全て1を指定した場合、Bスプラインに対応します。2番目以降がポイントの座標になります。
@@ -57,7 +68,11 @@ public class NURBSFunction {
 				);
 			}
 
+			//コントロールポイント総数計算
 			sumctrl *= ctrlNum[i];
+
+			//関数値計算時に有効なコントロールポイント数計算
+			this.effCtrlNum *= (pro.p[i]+1);
 		}
 
 
@@ -98,6 +113,7 @@ public class NURBSFunction {
 
 		pro.registerNURBSFunction(this);
 
+		this.dimension = L-1;
 		this.ctrl = ctrl;
 		this.pro = pro;
 	}
@@ -137,9 +153,102 @@ public class NURBSFunction {
 		}
 
 		//以降deBoorアルゴリズムの通り
+		double Q[][] = new double[effCtrlNum][dimension+1];
+
+		//元のコントロールポイントから必要なものをコピーし初期化する
+		{int[] indexs = new int[pro.parameterNum];
+		out:while(true) {
+			int Qindex=0,Pindex=0;
+			//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
+			for(int i=0;i<pro.parameterNum;i++) {
+				Qindex += indexs[i] *pro.Pi[i+1];
+				Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi[i+1];
+			}
+
+			for(int i=0;i<dimension+1;i++) {
+				Q[Qindex][i] = ctrl[Pindex][i];
+			}
+
+			//繰り上がり処理
+			for(int i=indexs.length-1;i>=0;i--) {
+				indexs[i]++;
+				if(indexs[i]<=pro.p[i]) {
+					break;
+				}else {
+					indexs[i]=0;
+					if(i==0) {
+						//全ての組み合わせについて終了
+						break out;
+					}else {
+						continue;
+					}
+				}
+			}
+		}}
+
+		//4つループの入れ子
+		for(int l=pro.parameterNum-1;l>=0;l--) {
+			for(int r=0;r<=pro.p[l]-1;r++) {
+				for(int i=pro.p[l];i>=r+1;i--) {
+					double alpha
+						= (t[l] -pro.knot[l][i+k[l]-pro.p[l]])
+							/(pro.knot[l][i+k[l]-r] -pro.knot[l][i+k[l]-pro.p[l]]);
 
 
-		return null;
+					//0,0,...,0からp0,p1,...,p{l-1}まで繰り返す
+					int[] indexs = new int[pro.parameterNum];
+					//indexsのインデックスl+1からm-1までは次数pで固定であり、
+					//インデックスlは対象外（他の意味によって指定される）
+					for(int j=l+1;j<pro.parameterNum;j++) {
+						indexs[j] = pro.p[j];
+					}
+					indexs[l] = i;
+
+					out:while(true) {
+						//i{0},i{1},...,i{l-1},i{l},p{l+1},...,p{m-1}を変換したものを格納
+						int convertIndex = 0;
+						for(int j=0;j<pro.parameterNum;j++) {
+							convertIndex += indexs[j]*pro.Pi[j+1];
+						}
+
+						//deBoorの計算Q = (1-a)Q +aQの部分
+						for(int d=0;d<dimension+1;d++) {
+							//コントロールポイントの各成分毎に計算
+							Q[convertIndex][d] =
+								(1-alpha)*Q[convertIndex-pro.Pi[l+1]][d]
+									+
+								alpha*Q[convertIndex][d];
+						}
+
+
+						//繰り上がり処理
+						//i0,i1,...,i{l-1}までを弄るのでl-1始まり
+						for(int j=l-1;j>=0;j--) {
+							indexs[j]++;
+							if(indexs[j]<=pro.p[j]) {
+								break;
+							}else {
+								indexs[j]=0;
+								if(j==0) {
+									//全ての組み合わせについて終了
+									break out;
+								}else {
+									continue;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		//結果を格納しているp{0},p[1],...,p{m-1}を変換し、取得する
+		int resultIndex=0;
+		for(int i=0;i<pro.parameterNum;i++) {
+			resultIndex += pro.p[i]*pro.Pi[i+1];
+		}
+
+		return Q[resultIndex];
 	}
 
 	/**

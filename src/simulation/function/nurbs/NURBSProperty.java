@@ -5,10 +5,16 @@ import java.util.ArrayList;
 public class NURBSProperty {
 	/**各変数の基底関数のノットベクトル*/
 	protected double[][] knot;
+
 	/**各変数の基底関数の次数*/
 	protected int[] p;
+
+	/**インデックスの変換計算に使う*/
+	protected int[] Pi;
+
 	/**変数の数*/
 	protected final int parameterNum;
+
 	/**registerNURBSFunction(NURBSFunction)で登録されたNURBSFunction*/
 	private final ArrayList<NURBSFunction> nurbslist = new ArrayList<>();
 
@@ -32,8 +38,10 @@ public class NURBSProperty {
 			throw new IllegalArgumentException("knotとpが示す変数の数が一致していません");
 		}
 		this.parameterNum = knot.length;
+		this.Pi = new int[this.parameterNum+1];
+		this.Pi[this.parameterNum] = 1;
 
-		for(int i=0;i<parameterNum;i++) {
+		for(int i=parameterNum-1;i>=0;i--) {
 			//各変数の基底関数の次数は1以上になっているのか
 			if(p[i]<1) {
 				throw new IllegalArgumentException("次数p["+i+"]が1以上でありません");
@@ -58,8 +66,9 @@ public class NURBSProperty {
 					throw new IllegalArgumentException("ノットベクトルが単調増加列でありません:knot["+i+"]["+j+"]>knot["+i+"]["+j+1+"]");
 				}
 			}
-		}
 
+			this.Pi[i] = this.Pi[i+1]*(p[i]+1);
+		}
 
 		this.knot = knot;
 		this.p = p;
