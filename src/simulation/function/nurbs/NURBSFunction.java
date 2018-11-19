@@ -1,6 +1,39 @@
 package simulation.function.nurbs;
 
 public class NURBSFunction {
+	public static void main(String args[]) {
+		double[][] ctrl = {
+				{1,0,0},
+				{1,1,1},
+				{1,0,3}
+		};
+
+		double[][] knot = {
+				{0,0,0,1,1,1}
+		};
+
+		int[] ctrlNum = {
+				3
+		};
+
+		int[] p = {2};
+
+		NURBSProperty property = new NURBSProperty(knot, p);
+		NURBSFunction func = new NURBSFunction(ctrl, ctrlNum, property);
+
+		for(int i=0;i<=30;i++) {
+			double t = (i==0)? knot[0][0] : (i==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*i/30;
+			double[] result = func.value(t);
+			System.out.print(t);
+			for(double f:result) {
+				System.out.print("	"+f);
+			}
+			System.out.println("");
+		}
+
+	}
+
+
 	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
 	private double[][] ctrl;
 
@@ -156,35 +189,38 @@ public class NURBSFunction {
 		double Q[][] = new double[effCtrlNum][dimension+1];
 
 		//元のコントロールポイントから必要なものをコピーし初期化する
-		{int[] indexs = new int[pro.parameterNum];
-		out:while(true) {
-			int Qindex=0,Pindex=0;
-			//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
-			for(int i=0;i<pro.parameterNum;i++) {
-				Qindex += indexs[i] *pro.Pi[i+1];
-				Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi[i+1];
-			}
+		{
+			int[] indexs = new int[pro.parameterNum];
+			out:while(true) {
+				int Qindex=0,Pindex=0;
+				//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
+				for(int i=0;i<pro.parameterNum;i++) {
+					Qindex += indexs[i] *pro.Pi[i+1];
+					Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi[i+1];
+				}
 
-			for(int i=0;i<dimension+1;i++) {
-				Q[Qindex][i] = ctrl[Pindex][i];
-			}
+				for(int i=0;i<dimension+1;i++) {
+					Q[Qindex][i] = ctrl[Pindex][i];
+				}
 
-			//繰り上がり処理
-			for(int i=indexs.length-1;i>=0;i--) {
-				indexs[i]++;
-				if(indexs[i]<=pro.p[i]) {
-					break;
-				}else {
-					indexs[i]=0;
-					if(i==0) {
-						//全ての組み合わせについて終了
-						break out;
+				//繰り上がり処理
+				for(int i=indexs.length-1;i>=0;i--) {
+					indexs[i]++;
+					if(indexs[i]<=pro.p[i]) {
+						break;
 					}else {
-						continue;
+						indexs[i]=0;
+						if(i==0) {
+							//全ての組み合わせについて終了
+							break out;
+						}else {
+							continue;
+						}
 					}
 				}
 			}
-		}}
+		}
+
 
 		//4つループの入れ子
 		for(int l=pro.parameterNum-1;l>=0;l--) {
@@ -237,6 +273,10 @@ public class NURBSFunction {
 								}
 							}
 						}
+
+						if(l==0) {
+							break out;
+						}
 					}
 				}
 			}
@@ -248,7 +288,15 @@ public class NURBSFunction {
 			resultIndex += pro.p[i]*pro.Pi[i+1];
 		}
 
-		return Q[resultIndex];
+		/*Q[resultIndex]には{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
+		 * インデックス0で残りの要素を割り、その残りの要素を結果として出さなければならない
+		 * (NURBSの特徴)*/
+		double[] result = new double[dimension];
+		for(int i=1;i<=dimension;i++) {
+			result[i-1] = Q[resultIndex][i]/Q[resultIndex][0];
+		}
+
+		return result;
 	}
 
 	/**
