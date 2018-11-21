@@ -15,9 +15,6 @@ public class NURBSFunction {
 				{0,0,0,1,1,1}
 		};
 
-		int[] ctrlNum = {
-				3
-		};
 
 		int[] p = {2};
 
@@ -38,16 +35,15 @@ public class NURBSFunction {
 
 
 	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
-	private double[][] ctrl;
+	private final double[][] ctrl;
 
 	/**このインスタンスが必要とする基底関数のノットベクトルや次数*/
 	private final NURBSProperty pro;
 
 	/**このインスタンスが扱う関数値の次元数*/
-	private int dimension=-1;
+	private final int dimension;
 
-	/**関数値計算時に必要となるコントロールポイント数*/
-	private int effCtrlNum=1;
+
 
 	/**
 	 * NURBS関数をインスタンス化させます。
@@ -74,8 +70,6 @@ public class NURBSFunction {
 			throw new IllegalArgumentException("引数proがnullです");
 		}
 
-		this.effCtrlNum = pro.Pi_p[0];
-
 
 		if(ctrl.length != pro.weight.length) {
 			throw new IllegalArgumentException("コントロールポイントの数が重みの数に一致しません");
@@ -83,16 +77,12 @@ public class NURBSFunction {
 
 		//ctrlの各要素の成分の数は一定になっているのか、
 		//d!=0か
+		dimension = ctrl[0].length;
+		if(dimension == 0) {
+			throw new IllegalArgumentException("コントロールポイントの要素数が足りません:次元d(>0)");
+		}
 		for(int i=0;i<ctrl.length;i++) {
 			double[] monoctrl=ctrl[i];
-			if(dimension==-1) {
-				dimension = monoctrl.length;
-
-				if(dimension == 0) {
-					throw new IllegalArgumentException("コントロールポイントの要素数が足りません:次元d(>0)");
-				}
-			}
-
 			if(dimension != monoctrl.length) {
 				throw new IllegalArgumentException("コントロールポイントctrl["+i+"]に次元数の過不足があります");
 			}
@@ -115,18 +105,8 @@ public class NURBSFunction {
 	 * @return 関数値
 	 */
 	public double[] value(double... t){
-		//指定された変数の数は想定している変数の数に一致しているか
-		if(t.length != pro.parameterNum) {
-			throw new IllegalArgumentException("変数の数が要求される数"+pro.parameterNum+"に合いません:"+t.length);
-		}
-
-		//tはNURBS関数の定義域に反していないか
-		for(int i=0;i<pro.parameterNum;i++) {
-			//各変数について対応のノットベクトルの範囲の中にあるかを調べる
-			if(t[i] < pro.knot[i][0] || t[i] > pro.knot[i][pro.knot[i].length-1]) {
-				throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
-			}
-		}
+		//定義域に反していないかをチェック
+		pro.checkVariableIsValid(t);
 
 		//各変数についてt_k <= t < t_k+1となるようなkをさがす
 		int[] k = new int[pro.parameterNum];
@@ -146,43 +126,80 @@ public class NURBSFunction {
 		//以降deBoorアルゴリズムの通り
 		//Q[][0]:重み
 		//Q[][1]以降:重み*座標値
-		double Q[][] = new double[effCtrlNum][dimension+1];
+		double Q[][] = restrictControlPoint(k, pro);
+
+		//4つの入れ子ループ部分へ
+		double[] loopResult = this.deBoorsLoop(t, k, Q, pro);
+
+		/*Q[resultIndex]には{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
+		 * インデックス0で残りの要素を割り、その残りの要素を結果として出さなければならない
+		 * (NURBSの特徴)
+		 * */
+		double[] result = new double[dimension];
+		for(int i=1;i<=dimension;i++) {
+			result[i-1] = loopResult[i]/loopResult[0];
+		}
+
+		return result;
+	}
+
+
+	private double[][] restrictControlPoint(int[] k,NURBSProperty pro){
+//------------------------------------------------------------------------------------------
+		//dimensionの定義、一般化を考えた時に大丈夫か
+
+		double[][] Q = new double[pro.effCtrlNum][dimension+1];
 
 		//元のコントロールポイントから必要なものをコピーし初期化する
-		{
-			int[] indexs = new int[pro.parameterNum];
-			out:while(true) {
-				int Qindex=0,Pindex=0;
-				//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
-				for(int i=0;i<pro.parameterNum;i++) {
-					Qindex += indexs[i] *pro.Pi_p[i+1];
-					Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi_n[i+1];
-				}
+		int[] indexs = new int[pro.parameterNum];
+		out:while(true) {
+			int Qindex=0,Pindex=0;
+			//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
+			for(int i=0;i<pro.parameterNum;i++) {
+				Qindex += indexs[i] *pro.Pi_p[i+1];
+				Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi_n[i+1];
+			}
 
-				Q[Qindex][0] = pro.weight[Qindex];
-				for(int i=1;i<dimension+1;i++) {
-					Q[Qindex][i] = ctrl[Pindex][i-1];
-				}
+			Q[Qindex][0] = pro.weight[Qindex];
+			for(int i=1;i<dimension+1;i++) {
+				Q[Qindex][i] = ctrl[Pindex][i-1];
+			}
 
-				//繰り上がり処理
-				for(int i=indexs.length-1;i>=0;i--) {
-					indexs[i]++;
-					if(indexs[i]<=pro.p[i]) {
-						break;
+			//繰り上がり処理
+			for(int i=indexs.length-1;i>=0;i--) {
+				indexs[i]++;
+				if(indexs[i]<=pro.p[i]) {
+					break;
+				}else {
+					indexs[i]=0;
+					if(i==0) {
+						//全ての組み合わせについて終了
+						break out;
 					}else {
-						indexs[i]=0;
-						if(i==0) {
-							//全ての組み合わせについて終了
-							break out;
-						}else {
-							continue;
-						}
+						continue;
 					}
 				}
 			}
 		}
+		return null;
+	}
 
 
+
+	/**
+	 * deBoorのアルゴリズムのループ部分。
+	 *
+	 * これにより、f{i,j,..,k}N{i,p}N{j,q}...N{k,r}を計算したことになる。
+	 *
+	 * ノット範囲の限定、及びそれに基づくコントロールポイントの限定を行ってから、
+	 * このメソッドを呼び出す。
+	 * @param t 変数値
+	 * @param k ノット範囲の限定パラメータ。
+	 * @param Q 限定後のコントロールポイント。BスプラインのdeBoorアルゴリズムを
+	 * 作用させるものを指定する。
+	 * @param pro プロパティ
+	 * */
+	private double[] deBoorsLoop(double[] t, int[] k, double[][] Q, NURBSProperty pro) {
 		//4つループの入れ子
 		for(int l=pro.parameterNum-1;l>=0;l--) {
 			for(int r=0;r<=pro.p[l]-1;r++) {
@@ -209,7 +226,7 @@ public class NURBSFunction {
 						}
 
 						//deBoorの計算Q = (1-a)Q +aQの部分
-						for(int d=0;d<dimension+1;d++) {
+						for(int d=0;d<Q[0].length;d++) {
 							//コントロールポイントの各成分毎に計算
 							Q[convertIndex][d] =
 								(1-alpha)*Q[convertIndex-pro.Pi_p[l+1]][d]
@@ -248,16 +265,7 @@ public class NURBSFunction {
 		for(int i=0;i<pro.parameterNum;i++) {
 			resultIndex += pro.p[i]*pro.Pi_p[i+1];
 		}
-
-		/*Q[resultIndex]には{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
-		 * インデックス0で残りの要素を割り、その残りの要素を結果として出さなければならない
-		 * (NURBSの特徴)*/
-		double[] result = new double[dimension];
-		for(int i=1;i<=dimension;i++) {
-			result[i-1] = Q[resultIndex][i]/Q[resultIndex][0];
-		}
-
-		return result;
+		return Q[resultIndex];
 	}
 
 	/**
