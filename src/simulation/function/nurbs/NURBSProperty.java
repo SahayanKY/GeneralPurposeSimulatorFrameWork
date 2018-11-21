@@ -2,7 +2,12 @@ package simulation.function.nurbs;
 
 import java.util.ArrayList;
 
+/**NURBS基底関数の組を表すクラス
+ * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
+ * 重みを保持し、それらにより構成される基底関数の組を表します。
+ * */
 public class NURBSProperty {
+
 	/**各変数の基底関数のノットベクトル*/
 	protected double[][] knot;
 
@@ -14,6 +19,9 @@ public class NURBSProperty {
 	 * i=mについては1
 	 * */
 	protected int[] Pi_p;
+
+	/**関数値計算時に必要となるコントロールポイント数*/
+	protected int effCtrlNum=1;
 
 	/**インデックスの変換計算に使う
 	 * i=0,1,...,m-1についてはn{i}*n{i+1}*...*n{m-1}
@@ -29,6 +37,9 @@ public class NURBSProperty {
 
 	/**registerNURBSFunction(NURBSFunction)で登録されたNURBSFunction*/
 	private final ArrayList<NURBSFunction> nurbslist = new ArrayList<>();
+
+	/**このプロパティが示す基底関数組が特にBスプライン基底関数である場合、true*/
+	public final boolean isBSpline;
 
 	/**
 	 * NURBSの基底関数組を保有するNURBSPropertyをインスタンス化します。
@@ -57,19 +68,26 @@ public class NURBSProperty {
 			throw new IllegalArgumentException("knotとpが示す変数の数が一致していません");
 		}
 
-		//重みが全て正の数かをチェック
+		boolean isBSpline=true;
+
 		for(int i=0;i<weight.length;i++) {
+			//重みが全て正の数かをチェック
 			if(weight[i]<=0) {
 				throw new IllegalArgumentException("重みweight["+i+"]が正の数でありません");
 			}
+
+			//重みが全て1だった場合、Bスプラインである
+			if(isBSpline && weight[i]!=1) {
+				isBSpline = false;
+			}
 		}
+		this.isBSpline = isBSpline;
 
 		this.parameterNum = knot.length;
 		this.Pi_p = new int[this.parameterNum+1];
 		this.Pi_p[this.parameterNum] = 1;
 		this.Pi_n = new int[this.parameterNum+1];
 		this.Pi_n[this.parameterNum] = 1;
-
 
 		/*ノットベクトルと次数から予想されるコントロールポイント数を計算
 		 * 1変数に対して(コントロールポイントの数)=(ノット要素数)-(次数)-1
@@ -114,9 +132,32 @@ public class NURBSProperty {
 					"コントロールポイントの数とノットベクトルの要素数と次数のつじつまが合いません");
 		}
 
+
+		this.effCtrlNum = Pi_p[0];
 		this.knot = knot;
 		this.p = p;
 		this.weight = weight;
+	}
+
+	/**
+	 * 指定された値が定義域内であるかどうかを判断します。
+	 *
+	 * 定義域外であれば例外がスローされます。
+	 * @param t 調べる変数値
+	 * */
+	public void checkVariableIsValid(double... t) throws IllegalArgumentException{
+		//指定された変数の数は想定している変数の数に一致しているか
+		if(t.length != parameterNum) {
+			throw new IllegalArgumentException("変数の数が要求される数"+parameterNum+"に合いません:"+t.length);
+		}
+
+		//tはNURBS関数の定義域に反していないか
+		for(int i=0;i<parameterNum;i++) {
+			//各変数について対応のノットベクトルの範囲の中にあるかを調べる
+			if(t[i] < knot[i][0] || t[i] > knot[i][knot[i].length-1]) {
+				throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
+			}
+		}
 	}
 
 	/**
