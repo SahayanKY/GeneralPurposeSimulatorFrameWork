@@ -3,9 +3,12 @@ package simulation.function.nurbs;
 public class NURBSFunction {
 	public static void main(String args[]) {
 		double[][] ctrl = {
-				{1,0,0},
-				{1,1,1},
-				{1,0,3}
+				{0,0},
+				{1,1},
+				{0,3}
+		};
+		double[] weight = {
+			1,1,1
 		};
 
 		double[][] knot = {
@@ -18,8 +21,8 @@ public class NURBSFunction {
 
 		int[] p = {2};
 
-		NURBSProperty property = new NURBSProperty(knot, p);
-		NURBSFunction func = new NURBSFunction(ctrl, ctrlNum, property);
+		NURBSProperty property = new NURBSProperty(knot, p, weight);
+		NURBSFunction func = new NURBSFunction(ctrl, property);
 
 		for(int i=0;i<=30;i++) {
 			double t = (i==0)? knot[0][0] : (i==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*i/30;
@@ -41,7 +44,7 @@ public class NURBSFunction {
 	private final NURBSProperty pro;
 
 	/**このインスタンスが扱う関数値の次元数*/
-	private int dimension;
+	private int dimension=-1;
 
 	/**関数値計算時に必要となるコントロールポイント数*/
 	private int effCtrlNum=1;
@@ -56,97 +59,52 @@ public class NURBSFunction {
 	 * 	<li>P_{0,0,...,1,0}はctrl[n_{m-1}]に格納される。
 	 * 	<li>P_{i_0,i_1,...,i_{m-2},i_{m-1}}はctrl[i_{m-1}+i_{m-2}*n_{m-1}+...+i_0*n_1*...*n_{m-1}]に格納される。
 	 * </ul>
-	 * これを前提として計算を行います。ctrlの第2のインデックスは各コントロールポイントの重みと座標
-	 * を保持します。ただしこのうち、1番目の要素は重みであり、正の数を必ず指定してください。
-	 * ここで全て1を指定した場合、Bスプラインに対応します。2番目以降がポイントの座標になります。
-	 * 最低でも1つの要素を指定してください。
+	 * これを前提として計算を行います。ctrlの第2のインデックスは各コントロールポイントの座標
+	 * を保持します。
 	 *
 	 * @param ctrl コントロールポイントを指定する。
 	 * @param ctrlNum 各方向のコントロールポイントの数を指定する。
 	 * @param pro このNURBS関数が必要とするノットベクトルを表すNURBSProperty
 	 */
-	public NURBSFunction(double[][] ctrl, int[] ctrlNum, NURBSProperty pro) {
+	public NURBSFunction(double[][] ctrl, NURBSProperty pro) {
 		//nullチェック
 		if(ctrl == null) {
 			throw new IllegalArgumentException("引数ctrlがnullです");
-		}else if(ctrlNum == null) {
-			throw new IllegalArgumentException("引数ctrlNumがnullです");
 		}else if(pro == null) {
 			throw new IllegalArgumentException("引数proがnullです");
 		}
 
-		//コントロールポイントの数が1以上になっているのか
-		if(ctrl.length == 0) {
-			throw new IllegalArgumentException("引数ctrlの要素数が0です");
-		}
-
-		//変数の数が一致しているか
-		if(ctrlNum.length != pro.parameterNum) {
-			throw new IllegalArgumentException("関数の変数の数の指定がctrlNumとproとで一致していません");
-		}
+		this.effCtrlNum = pro.Pi_p[0];
 
 
-		int sumctrl = 1;
-		for(int i=0;i<pro.parameterNum;i++) {
-			//ctrlNumの各要素数は1以上になっているのか
-			if(ctrlNum[i]<1) {
-				throw new IllegalArgumentException("ctrlNum["+i+"]が1以上ではありません");
-			}
-
-			//コントロールポイントの数(ctrlNum)はpro.knotとpro.pとつじつまがあうのか
-			if(pro.knot[i].length != ctrlNum[i]+pro.p[i]+1) {
-				throw new IllegalArgumentException(
-					"コントロールポイントの数とノットベクトルの要素数と次数のつじつまが合いません"+
-					":pro.knot["+i+"].length != ctrlNum["+i+"]+pro.p["+i+"]+1"
-				);
-			}
-
-			//コントロールポイント総数計算
-			sumctrl *= ctrlNum[i];
-
-			//関数値計算時に有効なコントロールポイント数計算
-			this.effCtrlNum *= (pro.p[i]+1);
-		}
-
-
-		/*
-		 * ctrl.lengthはctrlNumの総積になっているのか
-		 * 例えばP_{0,0,0}からP_{2,2,2}まで存在する時、ctrl.length==27
-		 * ctrlNum[0]==3,ctrlNum[1]==3,ctrlNum[2]==3である
-		 * sumctrl == ctrlNum[0]*...*ctrlNum[2]となっている
-		*/
-		if(sumctrl != ctrl.length) {
-			throw new IllegalArgumentException("ctrlとctrlNumが示す全コントロールポイントの数が一致しません");
+		if(ctrl.length != pro.weight.length) {
+			throw new IllegalArgumentException("コントロールポイントの数が重みの数に一致しません");
 		}
 
 		//ctrlの各要素の成分の数は一定になっているのか、
-		//重み1+次元d==Lになっているのか
-		//d!=0ではないか
-		//重みw>0か
-		int L=-1;
+		//d!=0か
 		for(int i=0;i<ctrl.length;i++) {
 			double[] monoctrl=ctrl[i];
-			if(L==-1) {
-				L = monoctrl.length;
+			if(dimension==-1) {
+				dimension = monoctrl.length;
 
-				if(L < 2) {
-					throw new IllegalArgumentException("コントロールポイントの要素数が足りません:重み1+次元d(>0)");
+				if(dimension == 0) {
+					throw new IllegalArgumentException("コントロールポイントの要素数が足りません:次元d(>0)");
 				}
 			}
 
-			if(L != monoctrl.length) {
+			if(dimension != monoctrl.length) {
 				throw new IllegalArgumentException("コントロールポイントctrl["+i+"]に次元数の過不足があります");
 			}
 
 			//先に重みを各座標に掛け合わせておく
-			for(int j=1;j<L;j++) {
-				monoctrl[j] *= monoctrl[0];
+			for(int d=0;d<dimension;d++) {
+				monoctrl[d] *= pro.weight[i];
 			}
 		}
 
 		pro.registerNURBSFunction(this);
 
-		this.dimension = L-1;
 		this.ctrl = ctrl;
 		this.pro = pro;
 	}
@@ -186,6 +144,8 @@ public class NURBSFunction {
 		}
 
 		//以降deBoorアルゴリズムの通り
+		//Q[][0]:重み
+		//Q[][1]以降:重み*座標値
 		double Q[][] = new double[effCtrlNum][dimension+1];
 
 		//元のコントロールポイントから必要なものをコピーし初期化する
@@ -195,12 +155,13 @@ public class NURBSFunction {
 				int Qindex=0,Pindex=0;
 				//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
 				for(int i=0;i<pro.parameterNum;i++) {
-					Qindex += indexs[i] *pro.Pi[i+1];
-					Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi[i+1];
+					Qindex += indexs[i] *pro.Pi_p[i+1];
+					Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi_n[i+1];
 				}
 
-				for(int i=0;i<dimension+1;i++) {
-					Q[Qindex][i] = ctrl[Pindex][i];
+				Q[Qindex][0] = pro.weight[Qindex];
+				for(int i=1;i<dimension+1;i++) {
+					Q[Qindex][i] = ctrl[Pindex][i-1];
 				}
 
 				//繰り上がり処理
@@ -244,14 +205,14 @@ public class NURBSFunction {
 						//i{0},i{1},...,i{l-1},i{l},p{l+1},...,p{m-1}を変換したものを格納
 						int convertIndex = 0;
 						for(int j=0;j<pro.parameterNum;j++) {
-							convertIndex += indexs[j]*pro.Pi[j+1];
+							convertIndex += indexs[j]*pro.Pi_p[j+1];
 						}
 
 						//deBoorの計算Q = (1-a)Q +aQの部分
 						for(int d=0;d<dimension+1;d++) {
 							//コントロールポイントの各成分毎に計算
 							Q[convertIndex][d] =
-								(1-alpha)*Q[convertIndex-pro.Pi[l+1]][d]
+								(1-alpha)*Q[convertIndex-pro.Pi_p[l+1]][d]
 									+
 								alpha*Q[convertIndex][d];
 						}
@@ -285,7 +246,7 @@ public class NURBSFunction {
 		//結果を格納しているp{0},p[1],...,p{m-1}を変換し、取得する
 		int resultIndex=0;
 		for(int i=0;i<pro.parameterNum;i++) {
-			resultIndex += pro.p[i]*pro.Pi[i+1];
+			resultIndex += pro.p[i]*pro.Pi_p[i+1];
 		}
 
 		/*Q[resultIndex]には{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
