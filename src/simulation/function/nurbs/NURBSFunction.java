@@ -1,38 +1,6 @@
 package simulation.function.nurbs;
 
 public class NURBSFunction {
-	public static void main(String args[]) {
-		double[][] ctrl = {
-				{0,0},
-				{1,1},
-				{0,3}
-		};
-		double[] weight = {
-			1,1,1
-		};
-
-		double[][] knot = {
-				{0,0,0,1,1,1}
-		};
-
-
-		int[] p = {2};
-
-		NURBSProperty property = new NURBSProperty(knot, p, weight);
-		NURBSFunction func = new NURBSFunction(ctrl, property);
-
-		for(int i=0;i<=30;i++) {
-			double t = (i==0)? knot[0][0] : (i==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*i/30;
-			double[] result = func.value(t);
-			System.out.print(t);
-			for(double f:result) {
-				System.out.print("	"+f);
-			}
-			System.out.println("");
-		}
-
-	}
-
 
 	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
 	protected final double[][] ctrl;
@@ -106,10 +74,10 @@ public class NURBSFunction {
 	 */
 	public double[] value(double... t){
 		//定義域に反していないかをチェック
-		pro.checkVariableIsValid(t);
+		pro.assertVariableIsValid(true,t);
 
 		//各変数についてt_k <= t < t_k+1となるようなkをさがす
-		int[] k = NURBSCalculater.restrictKnotVectorRange(pro, t);
+		int[] k = NURBSCalculater.searchVariablesPosition_InKnotVectors(pro, t);
 
 		//以降deBoorアルゴリズムの通り
 		//Q[][0]:重み
@@ -121,8 +89,8 @@ public class NURBSFunction {
 		//loopResult[1]以降:重み*座標値の足し合わせ結果
 		double[] loopResult = NURBSCalculater.deBoorsLoop(t, k, Q, pro);
 
-		/*Q[resultIndex]には{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
-		 * インデックス0で残りの要素を割り、その残りの要素を結果として出さなければならない
+		/*loopResultには{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
+		 * loopResult[0]で残りの要素を割り、その残りの要素を結果として出さなければならない
 		 * (NURBSの特徴)
 		 * */
 		return NURBSCalculater.processWeight(loopResult);
