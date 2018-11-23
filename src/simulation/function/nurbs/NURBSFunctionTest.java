@@ -13,4 +13,46 @@ public class NURBSFunctionTest {
 	 * ・null指定
 	 * ・
 	 * */
+	public static void main(String args[]) {
+		double[][] ctrl = {
+				{0,0},
+				{1,1},
+				{0,3}
+		};
+		double[] weight = {
+			1,1,1
+		};
+
+		double[][] knot = {
+				{0,0,0,1,1,1}
+		};
+
+
+		int[] p = {2};
+
+		NURBSProperty property = new NURBSProperty(knot, p, weight);
+		NURBSFunction func = new NURBSFunction(ctrl, property);
+
+		for(int i=0;i<=30;i++) {
+			double t = (i==0)? knot[0][0] : (i==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*i/30.0;
+			double[] result = func.value(t);
+			System.out.print(t);
+			for(double f:result) {
+				System.out.print("	"+f);
+			}
+			System.out.println("");
+		}
+
+		System.out.println("-------------------------------------------------------------");
+
+		for(int i=0;i<weight.length;i++) {
+			for(int j=0;j<=30;j++) {
+				double t = (j==0)? knot[0][0] : (j==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*j/30.0;
+				double f = property.value(new int[] {i}, new double[] {t});
+				System.out.println(t+"	"+f);
+			}
+		}
+
+
+	}
 }
