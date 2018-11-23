@@ -4,13 +4,13 @@ public abstract class NURBSCalculater {
 
 	/**
 	 * 各変数についてt_k <= t < t_k+1となるようなkを探します。
-	 * @param pro プロパティ
+	 * @param basis 基底関数組
 	 * @param t 変数値
 	 * */
-	protected static int[] searchVariablesPosition_InKnotVectors(NURBSProperty pro, double[] t) {
-		int[] k = new int[pro.parameterNum];
-		for(int i=0;i<pro.parameterNum;i++) {
-			k[i] = searchVariablePosition_InKnotVector(pro.knot[i],pro.p[i],t[i]);
+	protected static int[] searchVariablesPosition_InKnotVectors(NURBSBasisFunction basis, double[] t) {
+		int[] k = new int[basis.parameterNum];
+		for(int i=0;i<basis.parameterNum;i++) {
+			k[i] = searchVariablePosition_InKnotVector(basis.knot[i],basis.p[i],t[i]);
 		}
 		return k;
 	}
@@ -49,13 +49,13 @@ public abstract class NURBSCalculater {
 	 * 	<li>第2インデックスはコントロールポイントの重み、重み*座標1、...
 	 * </ul>
 	 * です。funcにnullを指定した場合、第2インデックスは重みだけが返されます。
-	 * この配列の長さはpro.effCtrlNumです。
+	 * この配列の長さはbasis.effCtrlNumです。
 	 *
 	 * @param k ノットの有効範囲パラメータ
-	 * @param pro プロパティ
+	 * @param basis 基底関数組
 	 * @param func NURBSFunctionインスタンス
 	 * */
-	protected static double[][] restrictControlPoint(int[] k, NURBSProperty pro, NURBSFunction func){
+	protected static double[][] restrictControlPoint(int[] k, NURBSBasisFunction basis, NURBSFunction func){
 		int dimension;
 		if(func == null) {
 			dimension = 0;
@@ -63,19 +63,19 @@ public abstract class NURBSCalculater {
 			dimension = func.ctrl[0].length;
 		}
 
-		double[][] Q = new double[pro.effCtrlNum][dimension+1];
+		double[][] Q = new double[basis.effCtrlNum][dimension+1];
 
 		//元のコントロールポイントから必要なものをコピーし初期化する
-		int[] indexs = new int[pro.parameterNum];
+		int[] indexs = new int[basis.parameterNum];
 		out:while(true) {
 			int Qindex=0,Pindex=0;
 			//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
-			for(int i=0;i<pro.parameterNum;i++) {
-				Qindex += indexs[i] *pro.Pi_p[i+1];
-				Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi_n[i+1];
+			for(int i=0;i<basis.parameterNum;i++) {
+				Qindex += indexs[i] *basis.Pi_p[i+1];
+				Pindex += (k[i]-basis.p[i]+indexs[i]) *basis.Pi_n[i+1];
 			}
 
-			Q[Qindex][0] = pro.weight[Pindex];
+			Q[Qindex][0] = basis.weight[Pindex];
 			for(int i=1;i<dimension+1;i++) {
 				Q[Qindex][i] = func.ctrl[Pindex][i-1];
 			}
@@ -83,7 +83,7 @@ public abstract class NURBSCalculater {
 			//繰り上がり処理
 			for(int i=indexs.length-1;i>=0;i--) {
 				indexs[i]++;
-				if(indexs[i]<=pro.p[i]) {
+				if(indexs[i]<=basis.p[i]) {
 					break;
 				}else {
 					indexs[i]=0;
@@ -114,39 +114,39 @@ public abstract class NURBSCalculater {
 	 * @param k ノット範囲の限定パラメータ。
 	 * @param Q 限定後のコントロールポイント。BスプラインのdeBoorアルゴリズムを
 	 * 作用させるものを指定する。
-	 * @param pro プロパティ
+	 * @param basis 基底関数組
 	 * */
-	protected static double[] deBoorsLoop(double[] t, int[] k, double[][] Q, NURBSProperty pro) {
+	protected static double[] deBoorsLoop(double[] t, int[] k, double[][] Q, NURBSBasisFunction basis) {
 		//4つループの入れ子
-		for(int l=pro.parameterNum-1;l>=0;l--) {
-			for(int r=0;r<=pro.p[l]-1;r++) {
-				for(int i=pro.p[l];i>=r+1;i--) {
+		for(int l=basis.parameterNum-1;l>=0;l--) {
+			for(int r=0;r<=basis.p[l]-1;r++) {
+				for(int i=basis.p[l];i>=r+1;i--) {
 					double alpha
-						= (t[l] -pro.knot[l][i+k[l]-pro.p[l]])
-							/(pro.knot[l][i+k[l]-r] -pro.knot[l][i+k[l]-pro.p[l]]);
+						= (t[l] -basis.knot[l][i+k[l]-basis.p[l]])
+							/(basis.knot[l][i+k[l]-r] -basis.knot[l][i+k[l]-basis.p[l]]);
 
 
 					//0,0,...,0からp0,p1,...,p{l-1}まで繰り返す
-					int[] indexs = new int[pro.parameterNum];
+					int[] indexs = new int[basis.parameterNum];
 					//indexsのインデックスl+1からm-1までは次数pで固定であり、
 					//インデックスlは対象外（他の意味によって指定される）
-					for(int j=l+1;j<pro.parameterNum;j++) {
-						indexs[j] = pro.p[j];
+					for(int j=l+1;j<basis.parameterNum;j++) {
+						indexs[j] = basis.p[j];
 					}
 					indexs[l] = i;
 
 					out:while(true) {
 						//i{0},i{1},...,i{l-1},i{l},p{l+1},...,p{m-1}を変換したものを格納
 						int convertIndex = 0;
-						for(int j=0;j<pro.parameterNum;j++) {
-							convertIndex += indexs[j]*pro.Pi_p[j+1];
+						for(int j=0;j<basis.parameterNum;j++) {
+							convertIndex += indexs[j]*basis.Pi_p[j+1];
 						}
 
 						//deBoorの計算Q = (1-a)Q +aQの部分
 						for(int d=0;d<Q[0].length;d++) {
 							//コントロールポイントの各成分毎に計算
 							Q[convertIndex][d] =
-								(1-alpha)*Q[convertIndex-pro.Pi_p[l+1]][d]
+								(1-alpha)*Q[convertIndex-basis.Pi_p[l+1]][d]
 									+
 								alpha*Q[convertIndex][d];
 						}
@@ -156,7 +156,7 @@ public abstract class NURBSCalculater {
 						//i0,i1,...,i{l-1}までを弄るのでl-1始まり
 						for(int j=l-1;j>=0;j--) {
 							indexs[j]++;
-							if(indexs[j]<=pro.p[j]) {
+							if(indexs[j]<=basis.p[j]) {
 								break;
 							}else {
 								indexs[j]=0;

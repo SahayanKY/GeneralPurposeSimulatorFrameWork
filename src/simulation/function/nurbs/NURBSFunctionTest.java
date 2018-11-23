@@ -30,8 +30,8 @@ public class NURBSFunctionTest {
 
 		int[] p = {2};
 
-		NURBSProperty property = new NURBSProperty(knot, p, weight);
-		NURBSFunction func = new NURBSFunction(ctrl, property);
+		NURBSBasisFunction basis = new NURBSBasisFunction(knot, p, weight);
+		NURBSFunction func = new NURBSFunction(ctrl, basis);
 
 		for(int i=0;i<=30;i++) {
 			double t = (i==0)? knot[0][0] : (i==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*i/30.0;
@@ -48,7 +48,7 @@ public class NURBSFunctionTest {
 		for(int i=0;i<weight.length;i++) {
 			for(int j=0;j<=30;j++) {
 				double t = (j==0)? knot[0][0] : (j==30)? knot[0][knot[0].length-1]: (knot[0][knot[0].length-1]-knot[0][0])*j/30.0;
-				double f = property.value(new int[] {i}, new double[] {t});
+				double f = basis.value(new int[] {i}, new double[] {t});
 				System.out.println(t+"	"+f);
 			}
 		}

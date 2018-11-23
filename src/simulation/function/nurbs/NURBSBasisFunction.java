@@ -6,7 +6,7 @@ import java.util.ArrayList;
  * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
  * */
-public class NURBSProperty {
+public class NURBSBasisFunction {
 
 	/**各変数の基底関数のノットベクトル*/
 	protected double[][] knot;
@@ -42,7 +42,7 @@ public class NURBSProperty {
 	public final boolean isBSpline;
 
 	/**
-	 * NURBSの基底関数組を保有するNURBSPropertyをインスタンス化します。
+	 * NURBSの基底関数組を保有するNURBSBasisFunctionをインスタンス化します。
 	 * 指定するノットベクトルはオープンノットベクトルであることを前提とします。
 	 *
 	 * 重みについては正の数を必ず指定してください。
@@ -54,7 +54,7 @@ public class NURBSProperty {
 	 * @param p 各変数の基底関数の次数
 	 * @param weight 各コントロールポイントの重み
 	 */
-	public NURBSProperty(double[][] knot, int[] p, double[] weight){
+	public NURBSBasisFunction(double[][] knot, int[] p, double[] weight){
 		if(knot == null) {
 			throw new IllegalArgumentException("引数knotが指定されていません");
 		}else if(p == null) {
@@ -236,7 +236,7 @@ public class NURBSProperty {
 
 
 	/**
-	 * Bスプライン基底関数を計算する
+	 * 1変数Bスプライン基底関数を計算する
 	 * @param ivar 変数値配列のインデックス
 	 * @param iN 基底関数のインデックス
 	 * @param t 変数値

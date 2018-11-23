@@ -5,8 +5,8 @@ public class NURBSFunction {
 	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
 	protected final double[][] ctrl;
 
-	/**このインスタンスが必要とする基底関数のノットベクトルや次数*/
-	private final NURBSProperty pro;
+	/**このインスタンスが必要とするノットベクトルや次数からなる基底関数組*/
+	private final NURBSBasisFunction basis;
 
 	/**このインスタンスが扱う関数値の次元数*/
 	private final int dimension;
@@ -28,18 +28,18 @@ public class NURBSFunction {
 	 *
 	 * @param ctrl コントロールポイントを指定する。
 	 * @param ctrlNum 各方向のコントロールポイントの数を指定する。
-	 * @param pro このNURBS関数が必要とするノットベクトルを表すNURBSProperty
+	 * @param basis このNURBS関数が必要とする基底関数組
 	 */
-	public NURBSFunction(double[][] ctrl, NURBSProperty pro) {
+	public NURBSFunction(double[][] ctrl, NURBSBasisFunction basis) {
 		//nullチェック
 		if(ctrl == null) {
 			throw new IllegalArgumentException("引数ctrlがnullです");
-		}else if(pro == null) {
-			throw new IllegalArgumentException("引数proがnullです");
+		}else if(basis == null) {
+			throw new IllegalArgumentException("引数basisがnullです");
 		}
 
 
-		if(ctrl.length != pro.weight.length) {
+		if(ctrl.length != basis.weight.length) {
 			throw new IllegalArgumentException("コントロールポイントの数が重みの数に一致しません");
 		}
 
@@ -57,14 +57,14 @@ public class NURBSFunction {
 
 			//先に重みを各座標に掛け合わせておく
 			for(int d=0;d<dimension;d++) {
-				monoctrl[d] *= pro.weight[i];
+				monoctrl[d] *= basis.weight[i];
 			}
 		}
 
-		pro.registerNURBSFunction(this);
+		basis.registerNURBSFunction(this);
 
 		this.ctrl = ctrl;
-		this.pro = pro;
+		this.basis = basis;
 	}
 
 	/**
@@ -74,20 +74,20 @@ public class NURBSFunction {
 	 */
 	public double[] value(double... t){
 		//定義域に反していないかをチェック
-		pro.assertVariableIsValid(true,t);
+		basis.assertVariableIsValid(true,t);
 
 		//各変数についてt_k <= t < t_k+1となるようなkをさがす
-		int[] k = NURBSCalculater.searchVariablesPosition_InKnotVectors(pro, t);
+		int[] k = NURBSCalculater.searchVariablesPosition_InKnotVectors(basis, t);
 
 		//以降deBoorアルゴリズムの通り
 		//Q[][0]:重み
 		//Q[][1]以降:重み*座標値
-		double Q[][] = NURBSCalculater.restrictControlPoint(k, pro, this);
+		double Q[][] = NURBSCalculater.restrictControlPoint(k, basis, this);
 
 		//4つの入れ子ループ部分へ
 		//loopResult[0]:重みの足し合わせ結果
 		//loopResult[1]以降:重み*座標値の足し合わせ結果
-		double[] loopResult = NURBSCalculater.deBoorsLoop(t, k, Q, pro);
+		double[] loopResult = NURBSCalculater.deBoorsLoop(t, k, Q, basis);
 
 		/*loopResultには{重みの足し合わせ、座標1*重みの足し合わせ、...}が入っているため、
 		 * loopResult[0]で残りの要素を割り、その残りの要素を結果として出さなければならない
@@ -98,7 +98,7 @@ public class NURBSFunction {
 
 	/**
 	 * k法によるコントロールポイントの変更を行います。
-	 * ただし、このメソッドは登録してあるNURBSPropertyインスタンスから呼び出される
+	 * ただし、このメソッドは登録してあるNURBSBasisFunctionインスタンスから呼び出される
 	 * ものであり、利用者は明示的に呼び出さないでください。
 	 */
 	protected void kmethod() {}
