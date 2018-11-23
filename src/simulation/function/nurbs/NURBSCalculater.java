@@ -7,21 +7,36 @@ public abstract class NURBSCalculater {
 	 * @param pro プロパティ
 	 * @param t 変数値
 	 * */
-	protected static int[] restrictKnotVectorRange(NURBSProperty pro, double[] t) {
+	protected static int[] searchVariablesPosition_InKnotVectors(NURBSProperty pro, double[] t) {
 		int[] k = new int[pro.parameterNum];
 		for(int i=0;i<pro.parameterNum;i++) {
-			for(int j=0; j<pro.knot[i].length; j++) {
-				if(t[i] < pro.knot[i][j]) {
-					k[i] = j-1; //直前の位置がk
+			k[i] = searchVariablePosition_InKnotVector(pro.knot[i],pro.p[i],t[i]);
+		}
+		return k;
+	}
+
+	/**
+	 * 1変数について、t_k <= t < t_k+1となるようなkを探します。
+	 * @param knot 変数に対応するノットベクトル
+	 * @param p 変数に対応する次数
+	 * @param t 変数値
+	 * */
+	protected static int searchVariablePosition_InKnotVector(double[] knot, int p,double t) {
+		int k=-1;
+		if(t == knot[knot.length-1]) {
+			//tがノットの最後端に等しい時、（値が違う）一つ前のノットを指定する
+			k = knot.length-p-2; //==n-1
+		}else {
+			for(int j=0; j<knot.length; j++) {
+				if(t < knot[j]) {
+					k = j-1; //直前の位置がk
 					break;
 				}
 			}
-			//tがノットの最後端に等しい時、（値が違う）一つ前のノットを指定する
-			if(t[i] == pro.knot[i][pro.knot[i].length-1]) {
-				k[i] = pro.knot[i].length-pro.p[i]-2; //==n-1
-			}
 		}
-
+		if(k == -1) {
+			throw new IllegalArgumentException("変数tはノットベクトルの範囲にありません");
+		}
 		return k;
 	}
 
@@ -60,7 +75,7 @@ public abstract class NURBSCalculater {
 				Pindex += (k[i]-pro.p[i]+indexs[i]) *pro.Pi_n[i+1];
 			}
 
-			Q[Qindex][0] = pro.weight[Qindex];
+			Q[Qindex][0] = pro.weight[Pindex];
 			for(int i=1;i<dimension+1;i++) {
 				Q[Qindex][i] = func.ctrl[Pindex][i-1];
 			}
@@ -87,12 +102,14 @@ public abstract class NURBSCalculater {
 
 
 	/**
-	 * deBoorのアルゴリズムのループ部分。
+	 * deBoorのアルゴリズムのループ部分です。
 	 *
-	 * これにより、f{i,j,..,k}N{i,p}N{j,q}...N{k,r}を計算したことになる。
+	 * これにより、f{i,j,..,k}N{i,p}N{j,q}...N{k,r}を計算したことになります。
 	 *
 	 * ノット範囲の限定、及びそれに基づくコントロールポイントの限定を行ってから、
-	 * このメソッドを呼び出す。
+	 * このメソッドを呼び出してください。また、引数Qに上書きしながら計算を行うため、
+	 * Qの各要素の値は呼び出し前に対して変わっています。
+	 *
 	 * @param t 変数値
 	 * @param k ノット範囲の限定パラメータ。
 	 * @param Q 限定後のコントロールポイント。BスプラインのdeBoorアルゴリズムを
