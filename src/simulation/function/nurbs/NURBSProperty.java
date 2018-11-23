@@ -142,22 +142,188 @@ public class NURBSProperty {
 	/**
 	 * 指定された値が定義域内であるかどうかを判断します。
 	 *
-	 * 定義域外であれば例外がスローされます。
+	 * @param assertion trueを指定した場合、定義域外であれば例外がスローされます。
 	 * @param t 調べる変数値
 	 * */
-	public void checkVariableIsValid(double... t) throws IllegalArgumentException{
+	public boolean assertVariableIsValid(boolean assertion, double... t){
+		boolean result = true;
+
 		//指定された変数の数は想定している変数の数に一致しているか
 		if(t.length != parameterNum) {
-			throw new IllegalArgumentException("変数の数が要求される数"+parameterNum+"に合いません:"+t.length);
+			if(assertion) {
+				throw new IllegalArgumentException("変数の数が要求される数"+parameterNum+"に合いません:"+t.length);
+			}
+			result = false;
 		}
 
 		//tはNURBS関数の定義域に反していないか
 		for(int i=0;i<parameterNum;i++) {
 			//各変数について対応のノットベクトルの範囲の中にあるかを調べる
 			if(t[i] < knot[i][0] || t[i] > knot[i][knot[i].length-1]) {
-				throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
+				if(assertion) {
+					throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
+				}
+				result = false;
 			}
 		}
+		return result;
+	}
+
+	/**
+	 * 基底関数の値を返します。
+	 * @param indexs 各変数のBスプライン基底関数のインデックスを指定します。
+	 * @param t 変数値
+	 * */
+	public double value(int[] indexs,double[] t) {
+		if(indexs == null) {
+			throw new IllegalArgumentException("indexsが指定されていません");
+		}else if(t == null) {
+			throw new IllegalArgumentException("tが指定されていません");
+		}
+
+		//変数値が定義域に即しているか
+		assertVariableIsValid(true,t);
+
+		if(indexs.length != t.length) {
+			throw new IllegalArgumentException("基底関数のインデックス組の数と変数値の数が一致していません");
+		}
+
+
+		double result = 1;
+		//各Bスプライン基底関数を掛け合わせていく
+		for(int i=0;i<indexs.length;i++) {
+			//0になる基底関数をかけることになるときはその場で0をreturnするようにする
+			double f = BSplineBasisFunctionValue(i,indexs[i],t[i]);
+			if(f==0) {
+				return 0;
+			}else {
+				result *= f;
+			}
+		}
+
+		if(this.isBSpline) {
+			//重みが全て1なので、後の計算結果loopResult[0]は1になるので
+			return result;
+		}
+
+
+
+		//indexsでの重みを取得する
+		int weightIndex = 0;
+		//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
+		for(int i=0;i<this.parameterNum;i++) {
+			weightIndex += indexs[i] *Pi_n[i+1];
+		}
+		result *= weight[weightIndex];
+
+
+
+		//重みだけでdeBoorを実行し、それでresultを割る
+		//各変数についてt_k <= t < t_k+1となるようなkをさがす
+		int[] k = NURBSCalculater.searchVariablesPosition_InKnotVectors(this, t);
+
+		//以降deBoorアルゴリズムの通り
+		//Q[][0]:重み
+		double Q[][] = NURBSCalculater.restrictControlPoint(k, this, null);
+
+		//4つの入れ子ループ部分へ
+		//loopResult[0]:重みの足し合わせ結果
+		double[] loopResult = NURBSCalculater.deBoorsLoop(t, k, Q, this);
+
+
+		return result/loopResult[0];
+	}
+
+
+	/**
+	 * Bスプライン基底関数を計算する
+	 * @param ivar 変数値配列のインデックス
+	 * @param iN 基底関数のインデックス
+	 * @param t 変数値
+	 * */
+	private double BSplineBasisFunctionValue(int ivar,int iN,double t) {
+		double[] knot = this.knot[ivar];
+		int p = this.p[ivar];
+
+		//t_k <= t < t_k+1
+		int k = NURBSCalculater.searchVariablePosition_InKnotVector(knot, p, t);
+
+		int h = k-iN;
+		if(h < 0) {
+			return 0;
+		}
+
+
+		double[] result;
+
+
+		if(p-h >= h) {
+			result = new double[h+1];
+			result[0] = 1;
+			for(int i=p;i>p-h;i--) {
+				for(int j=p-i+1;j>=0;j--) {
+					if(j==p-i+1) {
+						result[j] = result[j-1]*(knot[iN+p+1]-t)/(knot[iN+p+1]-knot[iN+p-i+1]);
+					}else if(j==0) {
+						result[0] = result[0]*(t-knot[iN])/(knot[iN+i]-knot[iN]);
+					}else {
+						double a = (t-knot[iN+j])/(knot[iN+j+i]-knot[iN+j]);
+						result[j] = a*result[j] +(1-a)*result[j-1];
+					}
+				}
+			}
+			for(int i=p-h;i>h;i--) {
+				for(int j=h;j>=0;j--) {
+					if(j==0) {
+						result[0] = result[0]*(t-knot[iN])/(knot[iN+i]-knot[iN]);
+					}else {
+						double a = (t-knot[iN+j])/(knot[iN+j+i]-knot[iN+j]);
+						result[j] = a*result[j] +(1-a)*result[j-1];
+					}
+				}
+			}
+			for(int i=h;i>0;i--) {
+				for(int j=h;j>=h-i+1;j--) {
+					double a = (t-knot[iN+j])/(knot[iN+j+i]-knot[iN+j]);
+					result[j] = a*result[j] +(1-a)*result[j-1];
+				}
+			}
+
+		}else {
+			result = new double[p-h+1];
+			result[0] = 1;
+
+			for(int i=p;i>h;i--) {
+				for(int j=p-i+1;j>=0;j--) {
+					if(j==p-i+1) {
+						result[p-i+1] = result[p-i]*(knot[iN+j+i]-t)/(knot[iN+j+i]-knot[iN+j]);
+					}else if(j==0) {
+						result[0] = result[0]*(t-knot[iN])/(knot[iN+i]-knot[iN]);
+					}else {
+						double a = (t-knot[iN+j])/(knot[iN+j+i]-knot[iN+j]);
+						result[j] = a*result[j] +(1-a)*result[j-1];
+					}
+				}
+			}
+			for(int i=h;i>p-h;i--) {
+				for(int j=0;j<=p-h;j++) {
+					if(j==p-h) {
+						result[j] = result[j]*(knot[iN+p+1]-t)/(knot[iN+p+1]-knot[iN+p-i+1]);
+					}else {
+						double a = (t-knot[iN+h-i+j+1])/(knot[iN+h+j+1]-knot[iN+h-i+j+1]);
+						result[j] = (1-a)*result[j] +a*result[j+1];
+					}
+				}
+			}
+			for(int i=p-h;i>0;i--) {
+				for(int j=h;j>=h-i+1;j--) {
+					double a = (t-knot[iN+j])/(knot[iN+j+i]-knot[iN+j]);
+					result[j] = a*result[j] +(1-a)*result[j-1];
+				}
+			}
+		}
+
+		return result[result.length-1];
 	}
 
 	/**
@@ -176,5 +342,5 @@ public class NURBSProperty {
 	 * k法によるノットの挿入、及び登録されているNURBSFunctionのコントロールポイントの
 	 * 追加を行います。
 	 * */
-	public void k_method(){}
+	public void kmethod(){}
 }
