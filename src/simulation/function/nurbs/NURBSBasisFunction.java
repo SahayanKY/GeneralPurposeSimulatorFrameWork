@@ -342,5 +342,7 @@ public class NURBSBasisFunction {
 	 * k法によるノットの挿入、及び登録されているNURBSFunctionのコントロールポイントの
 	 * 追加を行います。
 	 * */
-	public void kmethod(){}
+	public void kmethod(){
+		//k法実行後Pi_p,Pi_nも更新させる
+	}
 }
