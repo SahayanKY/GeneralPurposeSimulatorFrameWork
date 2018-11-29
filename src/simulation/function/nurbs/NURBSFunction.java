@@ -96,10 +96,4 @@ public class NURBSFunction {
 		return NURBSCalculater.processWeight(loopResult);
 	}
 
-	/**
-	 * k法によるコントロールポイントの変更を行います。
-	 * ただし、このメソッドは登録してあるNURBSBasisFunctionインスタンスから呼び出される
-	 * ものであり、利用者は明示的に呼び出さないでください。
-	 */
-	protected void kmethod() {}
 }
