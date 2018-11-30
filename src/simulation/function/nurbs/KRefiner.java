@@ -23,5 +23,5 @@ public interface KRefiner {
 	 * addedKnotを追加することによって関数の連続性が保持されない場合。
 	 * addedKnotの最小値、最大値が元のノット範囲外にあるとき。
 	 * */
-	public void kRefinement(NURBSBasisFunction basis,int q,double[][] addedKnot);
+	public void kRefinement(NURBSBasisFunction basis,int[] q,double[][] addedKnot);
 }
