@@ -101,25 +101,7 @@ public class NURBSBasisFunction {
 				throw new IllegalArgumentException("次数p["+i+"]が1以上でありません");
 			}
 
-			//各ノットベクトルについて
-			for(int j=0;j<knot[i].length-1;j++) {
-				//オープンノットベクトルになっているか
-				//前後ろの要素がp+1個重なっているか
-				//0,1,...,pが同じ、n,...,n+p-1,n+pが同じ(n+p+1 == knot[i].length)
-				if(j<p[i] //前のノットについて調べるとき
-						||
-					knot[i].length-p[i]-1 <= j //後ろのノットについて調べるとき
-				) {
-					if(knot[i][j]!=knot[i][j+1]) {
-						throw new IllegalArgumentException("ノットベクトルknot["+i+"]がオープンノットベクトルでありません");
-					}
-				}
-
-				//各変数のノットベクトルは単調増加列になっているのか
-				if(knot[i][j]>knot[i][j+1]) {
-					throw new IllegalArgumentException("ノットベクトルが単調増加列でありません:knot["+i+"]["+j+"]>knot["+i+"]["+j+1+"]");
-				}
-			}
+			assertArrayIsOpenKnotVector(true, knot[i], p[i]);
 
 			this.Pi_p[i] = this.Pi_p[i+1]*(p[i]+1);
 			this.Pi_n[i] = this.Pi_n[i+1]*(knot[i].length-p[i]-1);
@@ -142,8 +124,10 @@ public class NURBSBasisFunction {
 	/**
 	 * 指定された値が定義域内であるかどうかを判断します。
 	 *
-	 * @param assertion trueを指定した場合、定義域外であれば例外がスローされます。
+	 * @param assertion trueを指定した場合、例外がスローされます。
 	 * @param t 調べる変数値
+	 * @return 定義域内だった場合true
+	 * @throws IllegalArgumentException 定義域外であった場合
 	 * */
 	public boolean assertVariableIsValid(boolean assertion, double... t){
 		boolean result = true;
@@ -166,6 +150,47 @@ public class NURBSBasisFunction {
 				result = false;
 			}
 		}
+		return result;
+	}
+
+	/**
+	 * 指定された配列がオープンノットベクトルかどうかを調べます。
+	 *
+	 * @param assertion trueを指定した場合、例外がスローされます。
+	 * @param knot 調べる配列
+	 * @param p 対応する次数
+	 * @return オープンノットベクトルだった場合true
+	 * @throws IllegalArgumentException オープンノットベクトルで無い場合
+	 * */
+	public static boolean assertArrayIsOpenKnotVector(boolean assertion, double[] knot, int p) {
+		boolean result=true;
+
+		//各ノットベクトルについて
+		for(int j=0;j<knot.length-1;j++) {
+			//オープンノットベクトルになっているか
+			//前後ろの要素がp+1個重なっているか
+			//0,1,...,pが同じ、n,...,n+p-1,n+pが同じ(n+p+1 == knot[i].length)
+			if(j<p //前のノットについて調べるとき
+					||
+				knot.length-p-1 <= j //後ろのノットについて調べるとき
+			) {
+				if(knot[j]!=knot[j+1]) {
+					if(assertion) {
+						throw new IllegalArgumentException("ノットベクトルがオープンノットベクトルでありません");
+					}
+					result = false;
+				}
+			}
+
+			//各変数のノットベクトルは単調増加列になっているのか
+			if(knot[j]>knot[j+1]) {
+				if(assertion) {
+					throw new IllegalArgumentException("ノットベクトルが単調増加列でありません:knot["+j+"]>knot["+j+1+"]");
+				}
+				result = false;
+			}
+		}
+
 		return result;
 	}
 
