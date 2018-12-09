@@ -13,14 +13,17 @@ public class DirectKRefiner implements KRefiner {
 	 * 解いています。そのため、他の実装に比べて計算時間がかかる可能性があります。
 	 * </p>
 	 *
+	 * @author SahayanKY
 	 * @param basis NURBS基底関数
 	 * @param q 増やしたい次数
 	 * @param addedKnot 追加したいノット。各配列は単調増加列であるとこを前提とします。
 	 * @throws IllegalArgumentException
-	 * addedKnotを追加することによって関数の連続性が保持されない場合。
-	 * addedKnotの最小値、最大値が元のノット範囲外にあるとき。
-	 * addedKnotが単調増加列の配列の配列で無かった場合。
-	 * qの各要素のうちいずれかが負数であった場合。
+	 * <ul>
+	 * <li>addedKnotを追加することによって関数の連続性が保持されない場合。
+	 * <li>addedKnotの最小値、最大値が元のノット範囲外にあるとき。
+	 * <li>addedKnotが単調増加列の配列の配列で無かった場合。
+	 * <li>qの各要素のうちいずれかが負数であった場合。
+	 * </ul>
 	 * */
 	@Override
 	public void kRefinement(NURBSBasisFunction basis, int[] q, double[][] addedKnot) {
@@ -120,6 +123,7 @@ public class DirectKRefiner implements KRefiner {
 	}
 
 	public static void main(String args[]) {
+		/*
 		double[][] knot = {
 				{0,0,0,1,2,2,4,5,6,6,6},
 				{0,0,1,2,2},
@@ -165,7 +169,7 @@ public class DirectKRefiner implements KRefiner {
 		 * 		{0,0,0,1,2,2,4,5,6,6,6},
 				{0,0,1,2,2},
 				{-5,-5,-5,-5,-3,-3,-1,0,0,0,0}
-		 * */
+		 *
 
 		double[][] addedKnot = {
 				{0.5,0.5,1,3,4,5},
@@ -190,7 +194,7 @@ public class DirectKRefiner implements KRefiner {
 		 * 0,0,0,0,0.5,0.7,1,1,1,2,2,2,2
 		 *
 		 *
-		 * */
+		 *
 
 
 		for(int i=0;i<basis.parameterNum;i++) {
@@ -199,9 +203,95 @@ public class DirectKRefiner implements KRefiner {
 			}
 			System.out.println("--------------------------------------");
 		}
+		*/
+
+		double[] X = {1,1,3,4,9};
+		double[] knot = {0,0,0,2,2,4,5,8,9,10,10,10};
+		double[] weight = {1,1,1,1,1,1,1,1,1};
+
+		NURBSBasisFunction basis = refineKnot(X,knot,weight,2);
+		for(int index=0;index<6;index++) {
+			for(int i=0;i<=30;i++) {
+				double t = (i==0)? knot[0] : (i==30)? knot[knot.length-1]: knot[0]+(knot[knot.length-1]-knot[0])*i/30.0;
+				System.out.println(basis.value(new int[] {index}, new double[] {t}));
+			}
+			System.out.println("-----------------------------------------");
+		}
 	}
 
+	/**
+	 * ノット挿入の仮実装
+	 * @param X 挿入するノット、元のノットベクトルの範囲内である必要がある。
+	 * @param knot 挿入先のノットベクトル
+	 * @param ctrls コントロールポイントPw
+	 * */
+	private static NURBSBasisFunction refineKnot(double[] X, double[] knot, double[] ctrls, int p) {
+		double[] bKnot = new double[knot.length+X.length];
+		double[] nCtrls = new double[ctrls.length+X.length];
+		for(int i=0;i<nCtrls.length;i++) {
+			nCtrls[i] = -1;
+		}
 
+		if(X[0]<=knot[0] || knot[knot.length-1]<=X[X.length-1]) {
+			throw new IllegalArgumentException("追加のノットが条件を満たしていません");
+		}
+
+		for(int iu=0, ix=0,ibu=0,inC=0;ix<X.length;ix++) {
+			//X[ix]を頭から1つずつ挿入する
+
+			if(knot[iu]<=X[ix]) {
+				while(knot[iu]<=X[ix]) {
+					bKnot[ibu] = knot[iu];
+					nCtrls[inC] = ctrls[inC-ix];
+					iu++;
+					ibu++;
+					inC++;
+				}
+				ibu--;
+			}else {
+				nCtrls[inC] = ctrls[inC-ix];
+				ibu++;
+				inC++;
+			}
+
+			bKnot[ibu+1] = X[ix];
+
+			//bKnot[ibu]<=X[ix]<bKnot[ibu+2](まだ存在しないが、
+			//これ以降はまだ使っていない元のノット(knot[iu]以降)が続くかのように計算が行われる)
+			//(元のノットに、一つ一つノットを追加するように計算をしていくため)
+
+			ibu += 0;
+
+			for(int i=ibu,j=iu+p-1;i>ibu-p;i--,j--) {
+				//k+2<=i+p+1,i<=kより
+				//buip1:<<i+p+1>>は元のノットから参照,knot[iu]からknot[iu+p-1]までを参照すればよい
+				//bui:<<i>>はこれまでに作ってきた新しいノットから参照
+				//因みに<<k>>==bKnot[ibu],<<k+1>>==X[ix],<<k+2>>==knot[iu],...
+				double bui = bKnot[i]; //<<i>>
+				double buip1 = knot[j]; //<<i+p+1>>
+				double α = (X[ix] -bui)/(buip1 -bui);
+
+				nCtrls[i] = α*(nCtrls[i] -nCtrls[i-1]) +nCtrls[i-1];
+			}
+
+			if(ix == X.length-1) {
+				//最後、変形が起こらなかったコントロールポイントを追加していく
+				for(int i=ibu;i<nCtrls.length;i++) {
+					nCtrls[i] = ctrls[i-ix-1];
+				}
+
+				//使用されなかった元のノットベクトルも追加していく
+				for(int i=iu;i<knot.length;i++) {
+					bKnot[ibu+i-iu] = knot[i];
+				}
+			}
+
+		}
+
+
+		NURBSBasisFunction basis = new NURBSBasisFunction(new double[][] {bKnot}, new int[] {p}, nCtrls);
+		return basis;
+	}
 
 
 

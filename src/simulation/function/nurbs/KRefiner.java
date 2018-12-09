@@ -20,8 +20,12 @@ public interface KRefiner {
 	 * @param q 増やしたい次数
 	 * @param addedKnot 追加したいノット
 	 * @throws IllegalArgumentException
-	 * addedKnotを追加することによって関数の連続性が保持されない場合。
-	 * addedKnotの最小値、最大値が元のノット範囲外にあるとき。
+	 * <ul>
+	 * <li>addedKnotを追加することによって関数の連続性が保持されない場合。
+	 * <li>addedKnotの最小値、最大値が元のノット範囲外にあるとき。
+	 * <li>addedKnotが単調増加列の配列の配列で無かった場合。
+	 * <li>qの各要素のうちいずれかが負数であった場合。
+	 * </ul>
 	 * */
 	public void kRefinement(NURBSBasisFunction basis,int[] q,double[][] addedKnot);
 }
