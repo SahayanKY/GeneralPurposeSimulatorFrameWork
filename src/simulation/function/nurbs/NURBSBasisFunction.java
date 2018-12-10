@@ -274,7 +274,7 @@ public class NURBSBasisFunction {
 		int k = NURBSCalculater.searchVariablePosition_InKnotVector(knot, p, t);
 
 		int h = k-iN;
-		if(h < 0) {
+		if(h < 0 || iN < k-p) {
 			return 0;
 		}
 
