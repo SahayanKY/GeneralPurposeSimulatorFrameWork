@@ -210,12 +210,12 @@ public class DirectKRefiner implements KRefiner {
 		double[] weight = {1,1,1,1,1,1,1,1,1};
 
 		NURBSBasisFunction basis = refineKnot(X,knot,weight,2);
-		for(int index=0;index<6;index++) {
-			for(int i=0;i<=30;i++) {
-				double t = (i==0)? knot[0] : (i==30)? knot[knot.length-1]: knot[0]+(knot[knot.length-1]-knot[0])*i/30.0;
+		for(int index=6;index<14;index++) {
+			for(int i=0;i<=100;i++) {
+				double t = (i==0)? knot[0] : (i==100)? knot[knot.length-1]: knot[0]+(knot[knot.length-1]-knot[0])*i/100.0;
 				System.out.println(basis.value(new int[] {index}, new double[] {t}));
 			}
-			System.out.println("-----------------------------------------");
+			System.out.println("");
 		}
 	}
 
@@ -236,43 +236,44 @@ public class DirectKRefiner implements KRefiner {
 			throw new IllegalArgumentException("追加のノットが条件を満たしていません");
 		}
 
-		for(int iu=0, ix=0,ibu=0,inC=0;ix<X.length;ix++) {
+		bKnot[0] = knot[0];
+
+		for(int iu=1, ix=0,ibu=1;ix<X.length;ix++) {
 			//X[ix]を頭から1つずつ挿入する
 
-			if(knot[iu]<=X[ix]) {
-				while(knot[iu]<=X[ix]) {
-					bKnot[ibu] = knot[iu];
-					nCtrls[inC] = ctrls[inC-ix];
-					iu++;
-					ibu++;
-					inC++;
-				}
-				ibu--;
-			}else {
-				nCtrls[inC] = ctrls[inC-ix];
+			while(knot[iu]<=X[ix]) {
+				bKnot[ibu] = knot[iu];
+				nCtrls[ibu-1] = ctrls[ibu-1-ix];
+				iu++;
 				ibu++;
-				inC++;
 			}
-
-			bKnot[ibu+1] = X[ix];
-
-			//bKnot[ibu]<=X[ix]<bKnot[ibu+2](まだ存在しないが、
-			//これ以降はまだ使っていない元のノット(knot[iu]以降)が続くかのように計算が行われる)
-			//(元のノットに、一つ一つノットを追加するように計算をしていくため)
+			bKnot[ibu] = X[ix];
+			nCtrls[ibu-1] = ctrls[ibu-1-ix];
 
 			ibu += 0;
 
-			for(int i=ibu,j=iu+p-1;i>ibu-p;i--,j--) {
-				//k+2<=i+p+1,i<=kより
-				//buip1:<<i+p+1>>は元のノットから参照,knot[iu]からknot[iu+p-1]までを参照すればよい
-				//bui:<<i>>はこれまでに作ってきた新しいノットから参照
-				//因みに<<k>>==bKnot[ibu],<<k+1>>==X[ix],<<k+2>>==knot[iu],...
+			for(int i=ibu-1,j=iu+p-1;i>=ibu-p;i--,j--) {
+				//bKnot[ibu-1]<=X[ix]<bKnot[ibu+1]
+				//bKnot[ibu+1]以降はまだ存在しないが、
+				//これ以降はまだ使っていない元のノット(knot[iu]以降)が続くかのように計算が行われる)
+				//(元のノットに、一つ一つノットを追加するように計算をしていくため)
+
+				//<<k>>==bKnot[ibu-1],<<k+1>>==X[ix],<<k+2>>==knot[iu],...
+
+				//k+2<=i+p+1<=k+p+1より、現時点でその位置は元のノットベクトルの続きの部分なので
+				//buip1:<<i+p+1>>=knot[iu],knot[iu+1],...,knot[iu+p-1]を参照する
+
+				//k-p+1<=i<=kより、これまで作ってきた新しいノットベクトルbKnotを参照し、
+				//bui:<<i>>=knot[ibu-p],knot[ibu-p+1],...,knot[ibu-1]を参照する
+
+
 				double bui = bKnot[i]; //<<i>>
 				double buip1 = knot[j]; //<<i+p+1>>
 				double α = (X[ix] -bui)/(buip1 -bui);
 
 				nCtrls[i] = α*(nCtrls[i] -nCtrls[i-1]) +nCtrls[i-1];
 			}
+
 
 			if(ix == X.length-1) {
 				//最後、変形が起こらなかったコントロールポイントを追加していく
@@ -281,10 +282,13 @@ public class DirectKRefiner implements KRefiner {
 				}
 
 				//使用されなかった元のノットベクトルも追加していく
+				//<<k+2>>,...,=knot[iu],...
 				for(int i=iu;i<knot.length;i++) {
-					bKnot[ibu+i-iu] = knot[i];
+					bKnot[ibu+1+i-iu] = knot[i];
 				}
 			}
+
+			ibu++;
 
 		}
 
