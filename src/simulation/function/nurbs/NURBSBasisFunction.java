@@ -23,9 +23,11 @@ public class NURBSBasisFunction {
 	/**関数値計算時に必要となるコントロールポイント数*/
 	protected int effCtrlNum=1;
 
-	/**インデックスの変換計算に使う
-	 * i=0,1,...,m-1についてはn{i}*n{i+1}*...*n{m-1}
-	 * i=mについては1
+	/**インデックスの変換計算等に使う<br>
+	 * n{i}を変数t{i}方向のポイントの数として、
+	 * i=0,1,...,m-1についてはn{i}*n{i+1}*...*n{m-1}、
+	 * i=mについては1。<br>
+	 * 総コントロールポイント数はPi_n[0]に等しい。
 	 * */
 	protected int[] Pi_n;
 
@@ -36,7 +38,7 @@ public class NURBSBasisFunction {
 	protected final int parameterNum;
 
 	/**registerNURBSFunction(NURBSFunction)で登録されたNURBSFunction*/
-	private final ArrayList<NURBSFunction> nurbslist = new ArrayList<>();
+	protected final ArrayList<NURBSFunction> nurbslist = new ArrayList<>();
 
 	/**このプロパティが示す基底関数組が特にBスプライン基底関数である場合、true*/
 	public final boolean isBSpline;
@@ -225,12 +227,15 @@ public class NURBSBasisFunction {
 				result *= f;
 			}
 		}
+		/*
+		 * result==N{i}N{j}..N{k}
+		 * */
+
 
 		if(this.isBSpline) {
-			//重みが全て1なので、後の計算結果loopResult[0]は1になるので
+			//重みが全て1なので、後の計算結果loopResult[0]やweight[weightIndex]は1になるので省略
 			return result;
 		}
-
 
 
 		//indexsでの重みを取得する
@@ -240,7 +245,9 @@ public class NURBSBasisFunction {
 			weightIndex += indexs[i] *Pi_n[i+1];
 		}
 		result *= weight[weightIndex];
-
+		/*
+		 * result==w{ij..k}N{i}N{j}..N{k}
+		 * */
 
 
 		//重みだけでdeBoorを実行し、それでresultを割る
@@ -248,15 +255,20 @@ public class NURBSBasisFunction {
 		int[] k = NURBSCalculater.searchVariablesPosition_InKnotVectors(this, t);
 
 		//以降deBoorアルゴリズムの通り
-		//Q[][0]:重み
+		//Q[][0]:計算に必要な重みのみに制限した配列
 		double Q[][] = NURBSCalculater.restrictControlPoint(k, this, null);
 
 		//4つの入れ子ループ部分へ
 		//loopResult[0]:重みの足し合わせ結果
 		double[] loopResult = NURBSCalculater.deBoorsLoop(t, k, Q, this);
-
+		/*
+		 * loopResult[0]==sum{a}sum{b}..sum{c} w{ab..c}N{a}N{b}..N{c}
+		 * */
 
 		return result/loopResult[0];
+		/*
+		 * return==w{ij..k}N{i}N{j}..N{k}/(sum{a}sum{b}..sum{c} w{ab..c}N{a}N{b}..N{c})
+		 * */
 	}
 
 

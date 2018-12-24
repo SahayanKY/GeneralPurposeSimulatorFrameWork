@@ -9,7 +9,7 @@ public class NURBSFunction {
 	private final NURBSBasisFunction basis;
 
 	/**このインスタンスが扱う関数値の次元数*/
-	private final int dimension;
+	public final int dimension;
 
 
 
