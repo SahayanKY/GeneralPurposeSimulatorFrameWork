@@ -23,16 +23,15 @@ public class DirectKRefiner implements KRefiner {
 	 * <li>addedKnotの最小値、最大値が元のノット範囲外にあるとき。
 	 * <li>addedKnotが単調増加列の配列の配列で無かった場合。
 	 * <li>qの各要素のうちいずれかが負数であった場合。
+	 * <li>q,addedKnotの要素数がbasisの変数の数に一致しない場合。
 	 * </ul>
 	 * */
 	@Override
 	public void kRefinement(NURBSBasisFunction basis, int[] q, double[][] addedKnot) {
-
-		//新しいノットベクトルの生成
-		double[][] newKnot = new double[basis.parameterNum][];
-		for(int i=0;i<basis.parameterNum;i++) {
-
-			//追加する次数が負数になっていないか
+		for(int ivar=0;ivar<basis.parameterNum;ivar++) {
+			//1つの変数のノットベクトルに対して順にノットを挿入する
+			/*
+			 * //追加する次数が負数になっていないか
 			if(q[i]<0) {
 				throw new IllegalArgumentException("次数q["+i+"]が負数です");
 			}
@@ -42,84 +41,16 @@ public class DirectKRefiner implements KRefiner {
 					basis.knot[i][basis.knot[i].length-1] <= addedKnot[i][addedKnot[i].length-1]) {
 				throw new IllegalArgumentException("追加するノットaddedKnot["+i+"]が元のノットの範囲外に広がっています。");
 			}
-
-			/*
-			 * 新しいノットの長さを知るためには予めbasis.knot[i]のユニークなノットの数が
-			 * 分からないといけないため、一時的に最大数を確保しておく。
-			*/
-			double[] tempNewKnot = new double[basis.knot[i].length*(q[i]+1)+addedKnot[i].length];
-			int tempKnotLength=0;
-
-			for(int basisj=0,addedj=0,totalj=0,multi=1;
-					basisj<basis.knot[i].length;
-					totalj++) {
-
-				boolean addKnotDegreeTimesFlag=false;
-
-				if(addedj<addedKnot[i].length && addedKnot[i][addedj]<basis.knot[i][basisj]) {
-					//追加したいノットを追加し、addedKnotのイテレータを進める
-					tempNewKnot[totalj] = addedKnot[i][addedj];
-					addedj++;
-
-					if(addedj!=addedKnot[i].length && addedKnot[i][addedj-1]>addedKnot[i][addedj]) {
+			if(addedj!=addedKnot[i].length && addedKnot[i][addedj-1]>addedKnot[i][addedj]) {
 						throw new IllegalArgumentException("追加ノットaddedKnot["+i+"]は単調増加列でありません");
-					}
-
-				}else {
-					//元のノットベクトル由来のノットを追加
-
-					tempNewKnot[totalj] = basis.knot[i][basisj];
-					basisj++;
-
-					if(totalj==0 || tempNewKnot[totalj] != tempNewKnot[totalj-1]) {
-						addKnotDegreeTimesFlag = true;
-					}
-				}
-
-				if(totalj>0 && tempNewKnot[totalj-1] == tempNewKnot[totalj]) {
-					multi++;
-				}else {
-					multi = 1;
-				}
-
-
-				if(addKnotDegreeTimesFlag) {
-					/*
-					 * tempNewKnotの直前の値と今の値が等しくなく、
-					 * "今"は元のノットのユニークな値を1回目に追加しているとき
-					 * 元のノットが0,0,0,1,2,2,3,3,3だったら、0、3、4、6番目のとき
-					 * なので、増やしたい次数分追加する
-					 * */
-
-					totalj++;
-					for(int k=0;k<q[i];k++,totalj++) {
-						tempNewKnot[totalj] = basis.knot[i][basisj-1];
-						//basisjは上での操作で既にインクリメントしてしまっているので-1して
-						//参照する
-					}
-					totalj--;
-					multi += q[i];
-					//次数の分多重度が増える
-				}
+			}
 
 				if(multi>basis.p[i]+q[i] && tempNewKnot[totalj]!=basis.knot[i][0] && tempNewKnot[totalj]!=basis.knot[i][basis.knot[i].length-1]) {
 					throw new IllegalArgumentException("ノットを挿入し過ぎです:"+tempNewKnot[totalj]);
 				}
+			 * */
 
-				tempKnotLength = totalj;
-			}
-
-			newKnot[i] = new double[tempKnotLength+1];
-			for(int j=0;j<=tempKnotLength;j++) {
-				newKnot[i][j] = tempNewKnot[j];
-			}
 		}
-
-		this.newKnot = newKnot;
-
-		//指定されたaddedKnotやqの変数の数とかは大丈夫かをチェックするように
-		//連立方程式を解く
-
 	}
 
 	public static void main(String args[]) {
@@ -209,8 +140,10 @@ public class DirectKRefiner implements KRefiner {
 		double[] knot = {0,0,0,2,2,4,5,8,9,10,10,10};
 		double[] weight = {1,1,1,1,1,1,1,1,1};
 
-		NURBSBasisFunction basis = refineKnot(X,knot,weight,2);
-		for(int index=6;index<14;index++) {
+		NURBSBasisFunction basis = new NURBSBasisFunction(new double[][] {knot}, new int[] {2}, weight);
+
+		basis = refineKnot(basis,X);
+		for(int index=0;index<14;index++) {
 			for(int i=0;i<=100;i++) {
 				double t = (i==0)? knot[0] : (i==100)? knot[knot.length-1]: knot[0]+(knot[knot.length-1]-knot[0])*i/100.0;
 				System.out.println(basis.value(new int[] {index}, new double[] {t}));
@@ -222,9 +155,92 @@ public class DirectKRefiner implements KRefiner {
 	/**
 	 * ノット挿入の仮実装
 	 * @param X 挿入するノット、元のノットベクトルの範囲内である必要がある。
+	 * @param basis 元の基底関数
+	 * */
+	private static NURBSBasisFunction refineKnot(NURBSBasisFunction basis, double[] X) {
+		double[] knot = basis.knot[0];
+		int p = basis.p[0];
+
+		double[] bKnot = new double[knot.length+X.length];
+		double[] bWeight = new double[basis.weight.length+X.length];
+
+		int k_bef=-1,i_U=0,i_bU=0;
+
+		for(int i_X=0;i_X<X.length;i_X++) {
+			for(;knot[i_U]<=X[i_X];i_U++,i_bU++) {
+				bKnot[i_bU] = knot[i_U];
+			}
+			bKnot[i_bU] = X[i_X];
+			int k_now = i_bU -1;
+			i_bU++;
+
+			//--------------------------------------------
+
+			for(int j=k_bef+1 ; j<=k_now ; j++) {
+				bWeight[j] = basis.weight[j-i_X];
+			}
+
+			//---------------------------------------------
+
+			for(int j=k_now,jj=i_U+p-1 ; j>=k_now-p+1 ; j--,jj--) {
+				double alpha = (X[i_X] -bKnot[j])/(knot[jj] -bKnot[j]);
+				bWeight[j] = alpha*bWeight[j] +(1-alpha)*bWeight[j-1];
+			}
+
+			//---------------------------------------------
+
+			k_bef = k_now;
+
+		}
+
+		for(int i=k_bef+1;i<bWeight.length;i++) {
+			bWeight[i] = basis.weight[i-X.length];
+		}
+
+		for(;i_U<knot.length;i_U++,i_bU++) {
+			bKnot[i_bU] = knot[i_U];
+		}
+		
+
+
+		/*
+		 * ノット挿入で変化させないといけないもの
+		 * NURBSBasisFunction
+		 * ・knot(double[][]):ノットベクトル
+		 * ・weight(double[]):重み
+		 * ・Pi_n(int[]):ポイント数に依存するため
+		 *
+		 * NURBSFunction
+		 * ・ctrl(double[][]):コントロールポイント
+		 * */
+		
+		/*
+		 * 次数上げで変化させないといけないもの
+		 * NURBSBasisFunction
+		 * ・knot:ノットベクトル
+		 * ・weight:重み、ノットベクトルがかわるので
+		 * ・p:次数
+		 * ・Pi_p:次数に依存するため
+		 * ・effCtrlNum:次数に依存するため
+		 * ・Pi_n:ポイント数が変わるため
+		 * 
+		 * NURBSFunction
+		 * ・ctrl:コントロールポイント
+		 * */
+
+		
+		
+		return null;
+	}
+
+
+	/*
+	 * /**
+	 * ノット挿入の仮実装
+	 * @param X 挿入するノット、元のノットベクトルの範囲内である必要がある。
 	 * @param knot 挿入先のノットベクトル
 	 * @param ctrls コントロールポイントPw
-	 * */
+	 * *//*
 	private static NURBSBasisFunction refineKnot(double[] X, double[] knot, double[] ctrls, int p) {
 		double[] bKnot = new double[knot.length+X.length];
 		double[] nCtrls = new double[ctrls.length+X.length];
@@ -296,7 +312,8 @@ public class DirectKRefiner implements KRefiner {
 		NURBSBasisFunction basis = new NURBSBasisFunction(new double[][] {bKnot}, new int[] {p}, nCtrls);
 		return basis;
 	}
-
+	 *
+	 * */
 
 
 
