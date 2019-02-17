@@ -5,6 +5,7 @@ import static com.jogamp.opengl.fixedfunc.GLLightingFunc.*;
 import static com.jogamp.opengl.fixedfunc.GLMatrixFunc.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -12,22 +13,54 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.glu.GLU;
 import com.jogamp.opengl.util.FPSAnimator;
 
+import openGL.drawable.Drawable;
+import openGL.painter.Painter;
+import openGL.painter.PainterFactory;
 import simulation.model3d.AMFModel;
 import simulation.model3d.Model;
 import simulation.model3d.NURBSSurfaceModel;
 
 
 public class GLAnimator implements GLEventListener {
+	class PairDrawablePainter{
+		final Drawable drawable;
+		final Painter painter;
+		PairDrawablePainter(Drawable drawable, Painter painter){
+			this.drawable = drawable;
+			this.painter = painter;
+		}
+	}
+
+
 	private final GLU glu = new GLU();
 	private float r=0;
 	private FPSAnimator animator;
+
+	/**
+	 * 描画対象オブジェクトのリスト
+	 * */
+	private List<PairDrawablePainter> drawablelist = new ArrayList<>();
+
+	@Deprecated
 	private ArrayList<Model> modelList = null;
+	@Deprecated
 	private ArrayList<ModelPainter> painterList = null;
 
+
+	/**
+	 * アニメーションの設定を行います。
+	 * @param drawable 描画に使われるキャンバス
+	 * @param fps Frames Per Seconds
+	 * @param scheduleAtFixedRate
+	 * */
 	public void setAnimationConfigure(GLAutoDrawable drawable, int fps, boolean scheduleAtFixedRate) {
 		animator = new FPSAnimator(drawable, fps, scheduleAtFixedRate);
 	}
 
+
+	/**
+	 * アニメーションをスタートさせます。
+	 */
 	public void startAnimation() {
 		if(animator == null) {
 			return;
@@ -36,6 +69,10 @@ public class GLAnimator implements GLEventListener {
 		}
 	}
 
+
+	/**
+	 * アニメーションを停止、または再開します。
+	 * */
 	public void changeStateAnimation() {
 		if(animator == null) {
 			return;
@@ -48,6 +85,19 @@ public class GLAnimator implements GLEventListener {
 		}
 	}
 
+
+	/**
+	 * 描画したいものを追加します。
+	 * @param drawable 描画対象のインスタンス
+	 * */
+	public void addDrawable(Drawable drawable) {
+		Painter painter = PainterFactory.createPainter(drawable);
+		PairDrawablePainter pair = new PairDrawablePainter(drawable,painter);
+		drawablelist.add(pair);
+	}
+
+
+	@Deprecated
 	public void setModelList(ArrayList<Model> modelList){
 		//this.modelList = modelList;
 
@@ -116,7 +166,6 @@ public class GLAnimator implements GLEventListener {
 		gl2.glLightfv(GL_LIGHT0, GL_AMBIENT, new float[] {0.9f, 0.9f, 0.9f, 1},0);
 		//位置の設定
 		gl2.glLightfv(GL_LIGHT0, GL_POSITION, new float[] {0,300,300,0}, 0);
-
 	}
 
 	@Override
@@ -129,6 +178,8 @@ public class GLAnimator implements GLEventListener {
 		//視点の位置、向き
 		glu.gluLookAt(120, 120, 120, 0, 0, 0, 0, 1, 0);
 		gl2.glRotatef(-0.5f*r,0,1,0);
+
+
 
 
 		gl2.glDisable(GL_LIGHTING);
