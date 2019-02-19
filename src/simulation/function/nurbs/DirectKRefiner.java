@@ -3,6 +3,7 @@ package simulation.function.nurbs;
 /**
  * k法によりNURBSを精細化するクラス。
  * */
+@Deprecated
 public class DirectKRefiner implements KRefiner {
 	double[][] newKnot;
 
@@ -200,7 +201,7 @@ public class DirectKRefiner implements KRefiner {
 		for(;i_U<knot.length;i_U++,i_bU++) {
 			bKnot[i_bU] = knot[i_U];
 		}
-		
+
 
 
 		/*
@@ -213,7 +214,7 @@ public class DirectKRefiner implements KRefiner {
 		 * NURBSFunction
 		 * ・ctrl(double[][]):コントロールポイント
 		 * */
-		
+
 		/*
 		 * 次数上げで変化させないといけないもの
 		 * NURBSBasisFunction
@@ -223,13 +224,13 @@ public class DirectKRefiner implements KRefiner {
 		 * ・Pi_p:次数に依存するため
 		 * ・effCtrlNum:次数に依存するため
 		 * ・Pi_n:ポイント数が変わるため
-		 * 
+		 *
 		 * NURBSFunction
 		 * ・ctrl:コントロールポイント
 		 * */
 
-		
-		
+
+
 		return null;
 	}
 

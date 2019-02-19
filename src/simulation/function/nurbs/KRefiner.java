@@ -3,6 +3,7 @@ package simulation.function.nurbs;
 /**
  * NURBSをk法（次数を上げた後、ノットを挿入する）により精細化するインターフェースです。
  * */
+@Deprecated
 public interface KRefiner {
 	/**
 	 * <p>

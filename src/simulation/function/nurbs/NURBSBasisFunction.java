@@ -1,7 +1,5 @@
 package simulation.function.nurbs;
 
-import java.util.ArrayList;
-
 /**NURBS基底関数の組を表すクラス
  * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
@@ -36,9 +34,6 @@ public class NURBSBasisFunction {
 
 	/**変数の数*/
 	protected final int parameterNum;
-
-	/**registerNURBSFunction(NURBSFunction)で登録されたNURBSFunction*/
-	protected final ArrayList<NURBSFunction> nurbslist = new ArrayList<>();
 
 	/**このプロパティが示す基底関数組が特にBスプライン基底関数である場合、true*/
 	public final boolean isBSpline;
@@ -363,23 +358,4 @@ public class NURBSBasisFunction {
 		return result[result.length-1];
 	}
 
-	/**
-	 * NURBSFunctionインスタンスをこのインスタンスに登録します。
-	 * k法によって精細化を行う際、NURBSFunctionの状態を変える必要があり、
-	 * それを一括で行うためのものです。なお、これはNURBSFunction内部から
-	 * 自動的に呼び出されるので、NURBSFunctionインスタンスを利用する際に
-	 * 明示的に呼び出してはなりません。
-	 * @param function 登録されるNURBSFunctionインスタンス
-	 */
-	protected void registerNURBSFunction(NURBSFunction function) {
-		this.nurbslist.add(function);
-	}
-
-	/**
-	 * k法によるノットの挿入、及び登録されているNURBSFunctionのコントロールポイントの
-	 * 追加を行います。
-	 * */
-	public void kmethod(){
-		//k法実行後Pi_p,Pi_nも更新させる
-	}
 }

@@ -2,7 +2,12 @@ package simulation.function.nurbs;
 
 public class NURBSFunction {
 
-	/**コントロールポイント。具体的な中身はコンストラクタを参照*/
+	/**
+	 * 重み付きのコントロールポイント。<br>
+	 * w_{i_0,i_1,...,i_{m-2},i_{m-1}} P_{i_0,i_1,...,i_{m-2},i_{m-1}}は<br>
+	 * ctrl[i_{m-1}+i_{m-2}*n_{m-1}+...+i_0*n_1*...*n_{m-1}]に格納されており、
+	 * i_{k}=0,1,...,n_{k}-1が有効です。(n_{k}は変数k方向のポイント数)
+	 * */
 	protected final double[][] ctrl;
 
 	/**このインスタンスが必要とするノットベクトルや次数からなる基底関数組*/
@@ -10,8 +15,6 @@ public class NURBSFunction {
 
 	/**このインスタンスが扱う関数値の次元数*/
 	public final int dimension;
-
-
 
 	/**
 	 * NURBS関数をインスタンス化させます。
@@ -27,7 +30,6 @@ public class NURBSFunction {
 	 * を保持します。
 	 *
 	 * @param ctrl コントロールポイントを指定する。
-	 * @param ctrlNum 各方向のコントロールポイントの数を指定する。
 	 * @param basis このNURBS関数が必要とする基底関数組
 	 */
 	public NURBSFunction(double[][] ctrl, NURBSBasisFunction basis) {
@@ -61,8 +63,6 @@ public class NURBSFunction {
 			}
 		}
 
-		basis.registerNURBSFunction(this);
-
 		this.ctrl = ctrl;
 		this.basis = basis;
 	}
@@ -94,6 +94,10 @@ public class NURBSFunction {
 		 * (NURBSの特徴)
 		 * */
 		return NURBSCalculater.processWeight(loopResult);
+	}
+
+	public boolean basisFunctionIs(NURBSBasisFunction basis) {
+		return this.basis == basis;
 	}
 
 }
