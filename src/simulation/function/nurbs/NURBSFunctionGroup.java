@@ -2,7 +2,7 @@ package simulation.function.nurbs;
 
 public class NURBSFunctionGroup {
 	protected final NURBSBasisFunction basis;
-	protected final NURBSFunction[] func;
+	protected final NURBSFunction[] funcs;
 
 	/**
 	 * NURBSBasisFunctionとNURBSFunctionの組を作ります。
@@ -19,7 +19,7 @@ public class NURBSFunctionGroup {
 				throw new IllegalArgumentException("指定されたNURBSFunctionの基底関数は指定された基底関数と同じではありません");
 			}
 		}
-		this.func = func;
+		this.funcs = func;
 	}
 
 }

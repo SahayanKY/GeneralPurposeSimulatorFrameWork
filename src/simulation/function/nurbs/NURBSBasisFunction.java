@@ -7,19 +7,19 @@ package simulation.function.nurbs;
 public class NURBSBasisFunction {
 
 	/**各変数の基底関数のノットベクトル*/
-	protected double[][] knot;
+	protected final double[][] knot;
 
 	/**各変数の基底関数の次数*/
-	protected int[] p;
+	protected final int[] p;
 
 	/**インデックスの変換計算に使う
 	 * i=0,1,...,m-1については(p{i}+1)(p{i+1}+1)...(p{m-1}+1)
 	 * i=mについては1
 	 * */
-	protected int[] Pi_p;
+	protected final int[] Pi_p;
 
 	/**関数値計算時に必要となるコントロールポイント数*/
-	protected int effCtrlNum=1;
+	protected final int effCtrlNum;
 
 	/**インデックスの変換計算等に使う<br>
 	 * n{i}を変数t{i}方向のポイントの数として、
@@ -27,10 +27,15 @@ public class NURBSBasisFunction {
 	 * i=mについては1。<br>
 	 * 総コントロールポイント数はPi_n[0]に等しい。
 	 * */
-	protected int[] Pi_n;
+	protected final int[] Pi_n;
+
+	/**
+	 * 各変数方向のコントロールポイントの数
+	 * */
+	protected final int[] n;
 
 	/**コントロールポイントの重み*/
-	protected double[] weight;
+	protected final double[] weight;
 
 	/**変数の数*/
 	protected final int parameterNum;
@@ -85,6 +90,7 @@ public class NURBSBasisFunction {
 		this.Pi_p[this.parameterNum] = 1;
 		this.Pi_n = new int[this.parameterNum+1];
 		this.Pi_n[this.parameterNum] = 1;
+		this.n = new int[this.parameterNum];
 
 		/*ノットベクトルと次数から予想されるコントロールポイント数を計算
 		 * 1変数に対して(コントロールポイントの数)=(ノット要素数)-(次数)-1
@@ -101,7 +107,8 @@ public class NURBSBasisFunction {
 			assertArrayIsOpenKnotVector(true, knot[i], p[i]);
 
 			this.Pi_p[i] = this.Pi_p[i+1]*(p[i]+1);
-			this.Pi_n[i] = this.Pi_n[i+1]*(knot[i].length-p[i]-1);
+			this.n[i] = knot[i].length-p[i]-1;
+			this.Pi_n[i] = this.Pi_n[i+1]*this.n[i];
 		}
 
 
