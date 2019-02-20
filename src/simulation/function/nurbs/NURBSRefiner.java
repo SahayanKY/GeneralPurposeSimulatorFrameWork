@@ -113,6 +113,7 @@ public class NURBSRefiner {
 	/**
 	 * ノットを精細化します。
 	 * ctrlとknotとX、そしてpの状態は変えません。
+	 * また、NewCtrlとNewKnotは全て初期化しておいてください。
 	 *
 	 * @param ctrl 基底関数の重み、各NURBS関数のコントロールポイントをまとめたもの
 	 * @param NewCtrl 新しいポイントを保存する配列
@@ -122,9 +123,81 @@ public class NURBSRefiner {
 	 * @param p 基底関数の次数
 	 *
 	 * @throws IllegalArgumentException ノットを挿入した事により関数の不連続化が起こる場合
+	 * @throws NullPointerException NewCtrl[*]やNewKnot[*]がnullの場合
 	 * */
 	private void refineKnot(double[][] ctrl, double[][] NewCtrl, double[][] knot, double[][] X, double[][] NewKnot, int[] p) {
+		//変数の数
+		final int parameterNum = knot.length;
 
+		for(int l=0;l<parameterNum;l++) {
+
+			double[] Ul = knot[l];
+			double[] Xl = X[l];
+			double[] bUl = NewKnot[l];
+
+			//X[l]をknot[l]に挿入した結果をNewKnot[l]に代入する
+			//NewKnot[l]に挿入結果を作りながら、順次新しいポイントを計算していく
+			int k_bef = -1,k_now;
+			int i_Ul = 0, i_bUl = 0;
+			int n_Xl = Xl.length, n_Ul = Ul.length;
+			for(int i_Xl = 0;i_Xl < n_Xl ; i_Xl++) {
+				//x_iXまでbUlを完成させる
+				for(; Ul[i_Ul] <= Xl[i_Xl] ; i_Ul++,i_bUl++) {
+					bUl[i_bUl] = Ul[i_Ul];
+				}
+				bUl[i_bUl] = Xl[i_Xl];
+				k_now = i_bUl -1;
+				i_bUl++;
+
+				//---------------------------------------------------------------------
+
+				//x_iXを挿入した事による新しいポイントを計算するのに必要な分だけ、
+				//QiにPiを代入する
+
+				for(int j = k_bef+1 ; j <= k_now ;j++) {
+					//変数l以外の方向についてループさせる
+					//代入
+					//未実装
+				}
+
+				//---------------------------------------------------------------------
+
+				//新しいポイントを内分計算
+
+				for(int j = k_now ; j >= k_now -p[l]+1 ; j--) {
+					double α = (Xl[i_Xl] -bUl[j])/(Ul[j-k_now+i_Ul+p[l]-1] -bUl[j]);
+
+					//変数l以外の方向についてループさせる
+					//内分計算
+					//未実装
+
+				}
+
+				//---------------------------------------------------------------------
+
+				k_bef = k_now;
+
+			}
+
+			//X[l]を全て代入し終わった
+
+			//-------------------------------------------------------------------------
+
+			//後方の変化しなかったポイントを代入する
+			for(int i=k_bef+1 ; i < n_Ul+n_Xl ; i++) {
+
+			}
+
+			//-------------------------------------------------------------------------
+
+			//残った元のノットを追加する
+			for(;i_Ul < n_Ul ; i_Ul++, i_bUl++) {
+				bUl[i_bUl] = Ul[i_Ul];
+			}
+
+		}
+
+		//全てのノットを挿入し終わり、ポイントも計算し終わった
 	}
 
 
