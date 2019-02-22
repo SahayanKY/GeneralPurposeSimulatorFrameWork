@@ -1,7 +1,15 @@
 package simulation.function.nurbs;
 
 public class NURBSFunctionGroup {
+	/**
+	 * 基底関数
+	 * @version 2019/02/22 20:26
+	 * */
 	public final NURBSBasisFunction basis;
+	/**
+	 * NURBS関数
+	 * @version 2019/02/22 20:26
+	 * */
 	public final NURBSFunction[] funcs;
 
 	/**
@@ -11,6 +19,7 @@ public class NURBSFunctionGroup {
 	 * @param func basisを基底関数とするNURBSFunctionインスタンス
 	 *
 	 * @throws IllegalArgumentException NURBSBasisFunctionインスタンスが一致しない場合
+	 * @version 2019/02/22 20:26
 	 * */
 	public NURBSFunctionGroup(NURBSBasisFunction basis, NURBSFunction[] func) {
 		this.basis = basis;

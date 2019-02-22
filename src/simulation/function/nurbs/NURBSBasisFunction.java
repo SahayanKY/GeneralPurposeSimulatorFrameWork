@@ -1,5 +1,7 @@
 package simulation.function.nurbs;
 
+import simulation.function.nurbs.assertion.NURBSAsserter;
+
 /**NURBS基底関数の組を表すクラス
  * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
@@ -87,8 +89,50 @@ public class NURBSBasisFunction {
 	 * 関数値計算時に必要となるコントロールポイント数
 	 * @version 2019/02/22 21:40
 	 * */
+	@Deprecated
 	public final int effCtrlNum;
+	/**
+	 * 関数値計算時等に必要となるコントロールポイント数を返します。
+	 * @return 計算に必要なポイント数
+	 * @version 2019/02/23 0:52
+	 * */
+	public int getEffectiveCtrlNum() {
+		int effCtrlNum = 1;
+		for(int i=0;i<this.parameterNum;i++) {
+			effCtrlNum *= (this.p[i]+1);
+		}
+		return effCtrlNum;
+	}
 
+
+	/**
+	 * 各変数方向のコントロールポイントの数<br>
+	 * インデックスは0からm-1まであります。(mは変数の数)
+	 * @version 2019/02/22 21:40
+	 * */
+	private final int[] n;
+	/**
+	 * コントロールポイントの数の配列を返します。<br>
+	 * 配列は複製を渡します。
+	 *
+	 * @return 各変数についてのポイント数の配列
+	 * @version 2019/02/22 21:40
+	 * */
+	public int[] getNumberArrayOfCtrl() {
+		int[] copy_n = new int[this.parameterNum];
+		for(int i=0;i<this.parameterNum;i++) {
+			copy_n[i] = this.n[i];
+		}
+		return copy_n;
+	}
+	/**
+	 * 全コントロールポイントの数を返します。
+	 * @return 全ポイント数
+	 * @version 2019/02/23 0:55
+	 * */
+	public int getNumberOfAllCtrl() {
+		return this.weight.length;
+	}
 	/**
 	 * インデックスの変換計算等に使う<br>
 	 * n{i}を変数t{i}方向のポイントの数として、
@@ -119,30 +163,10 @@ public class NURBSBasisFunction {
 		return Pi_n;
 	}
 
-	/**
-	 * 各変数方向のコントロールポイントの数<br>
-	 * インデックスは0からm-1まであります。(mは変数の数)
-	 * @version 2019/02/22 21:40
-	 * */
-	private final int[] n;
-	/**
-	 * コントロールポイントの数の配列を返します。<br>
-	 * 配列は複製を渡します。
-	 *
-	 * @return 各変数についてのポイント数の配列
-	 * @version 2019/02/22 21:40
-	 * */
-	public int[] getNumberArrayOfCtrl() {
-		int[] copy_n = new int[this.parameterNum];
-		for(int i=0;i<this.parameterNum;i++) {
-			copy_n[i] = this.n[i];
-		}
-		return copy_n;
-	}
 
 	/**
 	 * コントロールポイントの重みの配列<br>
-	 * インデックスは0からm-1まであります。(mは変数の数)
+	 * インデックスは0からn-1まであります。(nはコントロールポイントの数)
 	 * @version 2019/02/22 21:41
 	 * */
 	private final double[] weight;
@@ -153,7 +177,7 @@ public class NURBSBasisFunction {
 	 * @return コントロールポイントの重みの配列
 	 * @version 2019/02/22 21:41
 	 * */
-	public double[] getWeight() {
+	public double[] getWeightArray() {
 		double[] copy_weight = new double[this.weight.length];
 		for(int i=0;i<copy_weight.length;i++) {
 			copy_weight[i] = this.weight[i];
@@ -175,9 +199,6 @@ public class NURBSBasisFunction {
 	public final boolean isBSpline;
 
 	/**
-	 * TODO Pi_n,Pi_pを消す<br>
-	 * TODO 引数のknot,p,weightをディープコピーしてメンバ変数に代入させる<br>
-	 *
 	 * NURBSの基底関数組を表すNURBSBasisFunctionをインスタンス化します。
 	 * 指定するノットベクトルはオープンノットベクトルであることを前提とします。
 	 *
@@ -200,6 +221,8 @@ public class NURBSBasisFunction {
 	 * 		<li>重みとして与えられた数が0または負数の場合
 	 * 		<li>次数として与えられた数が1未満の場合
 	 * 		<li>コントロールポイントの数、ノットベクトルの要素の数、次数のつじつまが合わない場合
+	 * 		<li>ノットベクトルがオープンノットベクトルでない場合
+	 * 		<li>ノットベクトルが単調増加列でない場合
 	 * </ul>
 	 * @version 2019/02/22 21:42
 	 */
@@ -233,12 +256,11 @@ public class NURBSBasisFunction {
 		this.isBSpline = isBSpline;
 
 		this.parameterNum = knot.length;
-		this.Pi_p = new int[this.parameterNum+1];
-		this.Pi_p[this.parameterNum] = 1;
-		this.Pi_n = new int[this.parameterNum+1];
-		this.Pi_n[this.parameterNum] = 1;
 		this.n = new int[this.parameterNum];
+		NURBSAsserter asserter = new NURBSAsserter(true);
 
+		//ポイントの総数、ノットと次数から推算
+		int AllCtrlNum = 0;
 		/*ノットベクトルと次数から予想されるコントロールポイント数を計算
 		 * 1変数に対して(コントロールポイントの数)=(ノット要素数)-(次数)-1
 		 * 2変数以上ではそれらの総積
@@ -251,106 +273,56 @@ public class NURBSBasisFunction {
 				throw new IllegalArgumentException("次数p["+i+"]が1以上でありません");
 			}
 
-			assertArrayIsOpenKnotVector(true, knot[i], p[i]);
+			asserter.assertArrayIsOpenKnotVector(knot[i], p[i]);
 
-			this.Pi_p[i] = this.Pi_p[i+1]*(p[i]+1);
 			this.n[i] = knot[i].length-p[i]-1;
-			this.Pi_n[i] = this.Pi_n[i+1]*this.n[i];
+			AllCtrlNum += n[i];
 		}
 
-
-		if(this.Pi_n[0] != weight.length) {
-			//Pi_n[0]は総コントロールポイント数に等しい
+		if(AllCtrlNum != weight.length) {
+			//総コントロールポイント数を比較
+			//重みの数と、ノットベクトルと次数から推算したポイントの数は等しいはず
 			throw new IllegalArgumentException(
 					"コントロールポイントの数とノットベクトルの要素数と次数のつじつまが合いません");
 		}
 
-
-		this.effCtrlNum = Pi_p[0];
-		this.knot = knot;
-		this.p = p;
-		this.weight = weight;
-	}
-
-	/**
-	 * 指定された値が定義域内であるかどうかを判断します。
-	 *
-	 * @param assertion trueを指定した場合、例外がスローされます。
-	 * @param t 調べる変数値
-	 * @return 定義域内だった場合true
-	 * @throws IllegalArgumentException
-	 * <ul>
-	 * 		<li>定義域外を指定した場合
-	 * 		<li>変数の数が一致していない場合
-	 * </ul>
-	 *
-	 * @version 2019/02/22 21:43
-	 * */
-	public boolean assertVariableIsValid(boolean assertion, double... t){
-		boolean result = true;
-
-		//指定された変数の数は想定している変数の数に一致しているか
-		if(t.length != parameterNum) {
-			if(assertion) {
-				throw new IllegalArgumentException("変数の数が要求される数"+parameterNum+"に合いません:"+t.length);
-			}
-			result = false;
-		}
-
-		//tはNURBS関数の定義域に反していないか
+		this.knot = new double[parameterNum][];
+		this.p = new int[parameterNum];
 		for(int i=0;i<parameterNum;i++) {
-			//各変数について対応のノットベクトルの範囲の中にあるかを調べる
-			if(t[i] < knot[i][0] || knot[i][knot[i].length-1] < t[i]) {
-				if(assertion) {
-					throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
-				}
-				result = false;
+			this.p[i] = p[i];
+			this.knot[i] = new double[knot[i].length];
+			for(int j=0;j<knot[i].length;j++) {
+				this.knot[i][j] = knot[i][j];
 			}
 		}
-		return result;
+
+		this.weight = new double[weight.length];
+		for(int i=0;i<weight.length;i++) {
+			this.weight[i] = weight[i];
+		}
 	}
 
 	/**
-	 * 指定された配列がオープンノットベクトルかどうかを調べます。
+	 * <p>この基底関数の定義域を返します。</p>
 	 *
-	 * @param assertion trueを指定した場合、例外がスローされます。
-	 * @param knot 調べる配列
-	 * @param p 対応する次数
-	 * @return オープンノットベクトルだった場合true
-	 * @throws IllegalArgumentException オープンノットベクトルで無い場合
-	 * @version 2019/02/22 21:58
+	 * <p>
+	 * 第1インデックスは変数x{i}を指定し、
+	 * 第2インデックスの1つ目の要素は最小値、2つ目の要素は最大値を表しています。
+	 * </p>
+	 *
+	 * @return 定義域の配列
+	 * @version 2019/02/23 2:40
 	 * */
-	public static boolean assertArrayIsOpenKnotVector(boolean assertion, double[] knot, int p) {
-		boolean result=true;
-
-		//各ノットベクトルについて
-		for(int j=0;j<knot.length-1;j++) {
-			//オープンノットベクトルになっているか
-			//前後ろの要素がp+1個重なっているか
-			//0,1,...,pが同じ、n,...,n+p-1,n+pが同じ(n+p+1 == knot[i].length)
-			if(j<p //前のノットについて調べるとき
-					||
-				knot.length-p-1 <= j //後ろのノットについて調べるとき
-			) {
-				if(knot[j]!=knot[j+1]) {
-					if(assertion) {
-						throw new IllegalArgumentException("ノットベクトルがオープンノットベクトルでありません");
-					}
-					result = false;
-				}
-			}
-
-			//各変数のノットベクトルは単調増加列になっているのか
-			if(knot[j]>knot[j+1]) {
-				if(assertion) {
-					throw new IllegalArgumentException("ノットベクトルが単調増加列でありません:knot["+j+"]>knot["+j+1+"]");
-				}
-				result = false;
-			}
+	public double[][] getDomain(){
+		double[][] domain = new double[this.parameterNum][2];
+		for(int i=0;i<this.parameterNum;i++) {
+			domain[i][0] = this.knot[i][0];
+			domain[i][1] = this.knot[i][this.knot[i].length-1];
 		}
 
-		return result;
+		return domain;
 	}
+
 
 	/**
 	 * <p>
@@ -371,8 +343,10 @@ public class NURBSBasisFunction {
 			throw new IllegalArgumentException("tが指定されていません");
 		}
 
+		NURBSAsserter asserter = new NURBSAsserter(true);
+
 		//変数値が定義域に即しているか
-		assertVariableIsValid(true,t);
+		asserter.assertVariableIsValid(this, t);
 
 		if(indexs.length != t.length) {
 			throw new IllegalArgumentException("基底関数のインデックス組の数と変数値の数が一致していません");
@@ -403,6 +377,7 @@ public class NURBSBasisFunction {
 
 		//indexsでの重みを取得する
 		int weightIndex = 0;
+		int[] Pi_n = this.getPi_n();
 		//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
 		for(int i=0;i<this.parameterNum;i++) {
 			weightIndex += indexs[i] *Pi_n[i+1];
