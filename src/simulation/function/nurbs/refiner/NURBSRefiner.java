@@ -1,8 +1,14 @@
-package simulation.function.nurbs;
+package simulation.function.nurbs.refiner;
+
+import simulation.function.nurbs.NURBSBasisFunction;
+import simulation.function.nurbs.NURBSFunction;
+import simulation.function.nurbs.NURBSFunctionGroup;
 
 public class NURBSRefiner {
 
 	/**
+	 * <p>TODO BasisFunctionの可視性の変化に伴う調整をする</p>
+	 *
 	 * 指定されたNURBS基底関数に対して、ノットを挿入します。
 	 * 返されるインスタンスは指定されたものとは全く異なる参照をもちます。
 	 * また、返されるNURBSFunctionインスタンスの順番は、指定された順番と対応しています。
@@ -18,6 +24,7 @@ public class NURBSRefiner {
 	 * 		<li>Xが単調増加列の配列の配列で無かった場合
 	 * 		<li>Xの要素数がbasisの変数の数に一致しない場合。
 	 * </ul>
+	 * @version 2019/02/22 21:57
 	 * */
 	public NURBSFunctionGroup refineKnot(NURBSFunctionGroup group, double[][] X) {
 		//Xが正常かどうかを調べる
@@ -111,6 +118,10 @@ public class NURBSRefiner {
 
 
 	/**
+	 * <p>TODO ポイント計算の実装を完了させる</p>
+	 * <p>TODO 処理のコンテクスト毎にメソッドを分割する</p>
+	 * <p>TODO 並列実装と逐次実装の両方を作る</p>
+	 *
 	 * ノットを精細化します。
 	 * ctrlとknotとX、そしてpの状態は変えません。
 	 * また、NewCtrlとNewKnotは全て初期化しておいてください。
@@ -124,6 +135,7 @@ public class NURBSRefiner {
 	 *
 	 * @throws IllegalArgumentException ノットを挿入した事により関数の不連続化が起こる場合
 	 * @throws NullPointerException NewCtrl[*]やNewKnot[*]がnullの場合
+	 * @version 2019/02/22 21:57
 	 * */
 	private void refineKnot(double[][] ctrl, double[][] NewCtrl, double[][] knot, double[][] X, double[][] NewKnot, int[] p) {
 		//変数の数
@@ -202,6 +214,8 @@ public class NURBSRefiner {
 
 
 	/**
+	 * <p>TODO NURBSBasisFunction.assertVariableIsValid()を利用する実装にする</p>
+	 *
 	 * 挿入するノットとして指定された配列が条件を満たしているかを調べます。
 	 * Xを挿入する事による関数の不連続化の可能性については調べません。
 	 *
@@ -211,6 +225,7 @@ public class NURBSRefiner {
 	 * 		<li>Xが単調増加列の配列の配列で無かった場合
 	 * 		<li>Xの要素数がbasisの変数の数に一致しない場合。
 	 * </ul>
+	 * @version 2019/02/22 21:57
 	 * */
 	private void assertInsertedKnotVectorIsValid(NURBSBasisFunction basis, double[][] X) {
 		if(X.length != basis.parameterNum) {

@@ -1,8 +1,8 @@
 package simulation.function.nurbs;
 
 public class NURBSFunctionGroup {
-	protected final NURBSBasisFunction basis;
-	protected final NURBSFunction[] funcs;
+	public final NURBSBasisFunction basis;
+	public final NURBSFunction[] funcs;
 
 	/**
 	 * NURBSBasisFunctionとNURBSFunctionの組を作ります。

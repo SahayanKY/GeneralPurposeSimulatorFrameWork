@@ -3,48 +3,182 @@ package simulation.function.nurbs;
 /**NURBS基底関数の組を表すクラス
  * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
+ *
+ * このオブジェクトはimmutableであり、全ての変数、配列変数の要素も不変です。
  * */
 public class NURBSBasisFunction {
 
-	/**各変数の基底関数のノットベクトル*/
-	protected final double[][] knot;
+	/**
+	 * 各変数の基底関数のノットベクトル<br>
+	 * 第1インデックスは0からm-1(mは変数の数)まであり、<br>
+	 * 第2インデックスは不定です。
+	 *
+	 * @version 2019/02/22 21:37
+	 * */
+	private final double[][] knot;
+	/**
+	 * ノットベクトルを返します。<br>
+	 * 配列の複製を渡します。
+	 *
+	 * @return ノットベクトル
+	 * @version 2019/02/22 21:37
+	 * */
+	public double[][] getKnotVector(){
+		double[][] copy_knot = new double[this.parameterNum][];
+		for(int i=0;i<this.parameterNum;i++) {
+			copy_knot[i] = new double[this.knot[i].length];
+			for(int j=0;j<copy_knot[i].length;j++) {
+				copy_knot[i][j] = this.knot[i][j];
+			}
+		}
 
-	/**各変数の基底関数の次数*/
-	protected final int[] p;
+		return copy_knot;
+	}
 
-	/**インデックスの変換計算に使う
+	/**
+	 * 各変数の基底関数の次数<br>
+	 * インデックスは0からm-1(mは変数の数)まであります。
+	 *
+	 * @version 2019/02/22 21:38
+	 * */
+	private final int[] p;
+	/**
+	 * 次数の配列を返します。
+	 * 配列は複製を渡します。
+	 *
+	 * @return 次数の配列
+	 * @version 2019/02/22 21:38
+	 * */
+	public int[] getDegreeArray() {
+		int[] copy_p = new int[this.parameterNum];
+		for(int i=0;i<this.parameterNum;i++) {
+			copy_p[i] = this.p[i];
+		}
+		return copy_p;
+	}
+
+	/**インデックスの変換計算に使う<br>
 	 * i=0,1,...,m-1については(p{i}+1)(p{i+1}+1)...(p{m-1}+1)
 	 * i=mについては1
+	 *
+	 * @version 2019/02/22 21:38
 	 * */
+	@Deprecated
 	protected final int[] Pi_p;
+	/**
+	 * Pi_p配列を計算し、返します。<br>
+	 * Pi_p[i] = (p{i}+1)(p{i+1}+1)...(p{m-1}+1)
+	 * (mは変数の数、pは次数)
+	 * です。(ただし、i=mでは1)<br>
+	 * インデックスは0からmまであります。
+	 *
+	 * @version 2019/02/22 21:38
+	 * */
+	public int[] getPi_p() {
+		int[] Pi_p = new int[this.parameterNum+1];
+		Pi_p[this.parameterNum] = 1;
+		for(int i=this.parameterNum-1;i>=0;i--) {
+			Pi_p[i] = (p[i]+1)*Pi_p[i+1];
+		}
+		return Pi_p;
+	}
 
-	/**関数値計算時に必要となるコントロールポイント数*/
-	protected final int effCtrlNum;
+	/**
+	 * 関数値計算時に必要となるコントロールポイント数
+	 * @version 2019/02/22 21:40
+	 * */
+	public final int effCtrlNum;
 
-	/**インデックスの変換計算等に使う<br>
+	/**
+	 * インデックスの変換計算等に使う<br>
 	 * n{i}を変数t{i}方向のポイントの数として、
 	 * i=0,1,...,m-1についてはn{i}*n{i+1}*...*n{m-1}、
 	 * i=mについては1。<br>
 	 * 総コントロールポイント数はPi_n[0]に等しい。
+	 * @version 2019/02/22 21:40
 	 * */
+	@Deprecated
 	protected final int[] Pi_n;
+	/**
+	 * Pi_n配列を計算し、返します。<br>
+	 * Pi_n[i] = n{i}*n{i+1}*...*n{m-1}
+	 * (mは変数の数、nはコントロールポイントの数)
+	 * です。(ただし、i=mでは1)<br>
+	 * インデックスは0からm(mは変数の数)まであります。<br>
+	 *
+	 * @return Pi_n配列。具体的な中身はメソッドの説明参照。
+	 * @version 2019/02/22 21:40
+	 * */
+	public int[] getPi_n() {
+		int[] Pi_n = new int[this.parameterNum+1];
+		Pi_n[this.parameterNum] = 1;
+		for(int i=this.parameterNum-1;i>=0;i++) {
+			Pi_n[i] = this.n[i]*Pi_n[i+1];
+		}
+
+		return Pi_n;
+	}
 
 	/**
-	 * 各変数方向のコントロールポイントの数
+	 * 各変数方向のコントロールポイントの数<br>
+	 * インデックスは0からm-1まであります。(mは変数の数)
+	 * @version 2019/02/22 21:40
 	 * */
-	protected final int[] n;
+	private final int[] n;
+	/**
+	 * コントロールポイントの数の配列を返します。<br>
+	 * 配列は複製を渡します。
+	 *
+	 * @return 各変数についてのポイント数の配列
+	 * @version 2019/02/22 21:40
+	 * */
+	public int[] getNumberArrayOfCtrl() {
+		int[] copy_n = new int[this.parameterNum];
+		for(int i=0;i<this.parameterNum;i++) {
+			copy_n[i] = this.n[i];
+		}
+		return copy_n;
+	}
 
-	/**コントロールポイントの重み*/
-	protected final double[] weight;
+	/**
+	 * コントロールポイントの重みの配列<br>
+	 * インデックスは0からm-1まであります。(mは変数の数)
+	 * @version 2019/02/22 21:41
+	 * */
+	private final double[] weight;
+	/**
+	 * コントロールポイントの重みの配列を返します。<br>
+	 * 配列は複製を返します。
+	 *
+	 * @return コントロールポイントの重みの配列
+	 * @version 2019/02/22 21:41
+	 * */
+	public double[] getWeight() {
+		double[] copy_weight = new double[this.weight.length];
+		for(int i=0;i<copy_weight.length;i++) {
+			copy_weight[i] = this.weight[i];
+		}
 
-	/**変数の数*/
-	protected final int parameterNum;
+		return copy_weight;
+	}
 
-	/**このプロパティが示す基底関数組が特にBスプライン基底関数である場合、true*/
+	/**
+	 * 変数の数
+	 * @version 2019/02/22 21:41
+	 * */
+	public final int parameterNum;
+
+	/**
+	 * このインスタンスが示す基底関数が特にBスプライン基底関数である場合、true
+	 * @version 2019/02/22 21:42
+	 * */
 	public final boolean isBSpline;
 
 	/**
-	 * NURBSの基底関数組を保有するNURBSBasisFunctionをインスタンス化します。
+	 * TODO Pi_n,Pi_pを消す<br>
+	 * TODO 引数のknot,p,weightをディープコピーしてメンバ変数に代入させる<br>
+	 *
+	 * NURBSの基底関数組を表すNURBSBasisFunctionをインスタンス化します。
 	 * 指定するノットベクトルはオープンノットベクトルであることを前提とします。
 	 *
 	 * 重みについては正の数を必ず指定してください。
@@ -55,14 +189,27 @@ public class NURBSBasisFunction {
 	 * を与え、knot.lengthは2であること。以下同様である。
 	 * @param p 各変数の基底関数の次数
 	 * @param weight 各コントロールポイントの重み
+	 *
+	 * @throws NullPointerException
+	 * <ul>
+	 * 		<li>knot,p,weightがnullの場合
+	 * </ul>
+	 * @throws IllegalArgumentException
+	 * <ul>
+	 * 		<li>ノットベクトルの数と次数の数が一致しない場合
+	 * 		<li>重みとして与えられた数が0または負数の場合
+	 * 		<li>次数として与えられた数が1未満の場合
+	 * 		<li>コントロールポイントの数、ノットベクトルの要素の数、次数のつじつまが合わない場合
+	 * </ul>
+	 * @version 2019/02/22 21:42
 	 */
 	public NURBSBasisFunction(double[][] knot, int[] p, double[] weight){
 		if(knot == null) {
-			throw new IllegalArgumentException("引数knotが指定されていません");
+			throw new NullPointerException("引数knotが指定されていません");
 		}else if(p == null) {
-			throw new IllegalArgumentException("引数pが指定されていません");
+			throw new NullPointerException("引数pが指定されていません");
 		}else if(weight == null) {
-			throw new IllegalArgumentException("引数weightが指定されていません");
+			throw new NullPointerException("引数weightが指定されていません");
 		}
 
 		if(knot.length != p.length) {
@@ -131,7 +278,13 @@ public class NURBSBasisFunction {
 	 * @param assertion trueを指定した場合、例外がスローされます。
 	 * @param t 調べる変数値
 	 * @return 定義域内だった場合true
-	 * @throws IllegalArgumentException 定義域外であった場合
+	 * @throws IllegalArgumentException
+	 * <ul>
+	 * 		<li>定義域外を指定した場合
+	 * 		<li>変数の数が一致していない場合
+	 * </ul>
+	 *
+	 * @version 2019/02/22 21:43
 	 * */
 	public boolean assertVariableIsValid(boolean assertion, double... t){
 		boolean result = true;
@@ -147,7 +300,7 @@ public class NURBSBasisFunction {
 		//tはNURBS関数の定義域に反していないか
 		for(int i=0;i<parameterNum;i++) {
 			//各変数について対応のノットベクトルの範囲の中にあるかを調べる
-			if(t[i] < knot[i][0] || t[i] > knot[i][knot[i].length-1]) {
+			if(t[i] < knot[i][0] || knot[i][knot[i].length-1] < t[i]) {
 				if(assertion) {
 					throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
 				}
@@ -165,6 +318,7 @@ public class NURBSBasisFunction {
 	 * @param p 対応する次数
 	 * @return オープンノットベクトルだった場合true
 	 * @throws IllegalArgumentException オープンノットベクトルで無い場合
+	 * @version 2019/02/22 21:58
 	 * */
 	public static boolean assertArrayIsOpenKnotVector(boolean assertion, double[] knot, int p) {
 		boolean result=true;
@@ -199,9 +353,16 @@ public class NURBSBasisFunction {
 	}
 
 	/**
+	 * <p>
 	 * 基底関数の値を返します。
-	 * @param indexs 各変数のBスプライン基底関数のインデックスを指定します。
+	 * </p>
+	 * <p>
+	 * 基底関数w{i,j,..k}N{i,p}N{j,q}...N{k,r}/(sum{a}sum{b}..sum{c} w{a,b,..c}N{a,p}N{b,q}..N{c,r})の値を計算します。
+	 * </p>
+	 *
+	 * @param indexs 各変数のBスプライン基底関数のインデックス{i,j,..k}を指定します。
 	 * @param t 変数値
+	 * @version 2019/02/22 22:03
 	 * */
 	public double value(int[] indexs,double[] t) {
 		if(indexs == null) {
@@ -275,10 +436,11 @@ public class NURBSBasisFunction {
 
 
 	/**
-	 * 1変数Bスプライン基底関数を計算する
-	 * @param ivar 変数値配列のインデックス
-	 * @param iN 基底関数のインデックス
+	 * 1変数Bスプライン基底関数N{i,p}を計算する
+	 * @param ivar 変数値配列のインデックス。どの変数かを指定する。
+	 * @param iN 基底関数のインデックスi
 	 * @param t 変数値
+	 * @version 2019/02/22 22:03
 	 * */
 	private double BSplineBasisFunctionValue(int ivar,int iN,double t) {
 		double[] knot = this.knot[ivar];

@@ -1,4 +1,6 @@
-package simulation.function.nurbs;
+package simulation.function.nurbs.refiner;
+
+import simulation.function.nurbs.NURBSBasisFunction;
 
 /**
  * NURBSをk法（次数を上げた後、ノットを挿入する）により精細化するインターフェースです。

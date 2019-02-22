@@ -1,4 +1,6 @@
-package simulation.function.nurbs;
+package simulation.function.nurbs.refiner;
+
+import simulation.function.nurbs.NURBSBasisFunction;
 
 /**
  * k法によりNURBSを精細化するクラス。
