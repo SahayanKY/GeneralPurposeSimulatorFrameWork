@@ -18,6 +18,7 @@ public class NURBSAsserter {
 	/**
 	 * 指定された値が定義域内であるかどうかを判断します。
 	 *
+	 * @param basis 基底関数
 	 * @param t 調べる変数値
 	 * @return 定義域内だった場合true
 	 * @throws IllegalArgumentException
@@ -29,14 +30,12 @@ public class NURBSAsserter {
 	 * @version 2019/02/23 2:57
 	 * */
 	public boolean assertVariableIsValid(NURBSBasisFunction basis, double... t){
-		boolean result = true;
-
 		//指定された変数の数は想定している変数の数に一致しているか
 		if(t.length != basis.parameterNum) {
 			if(assertion) {
 				throw new IllegalArgumentException("変数の数が要求される数"+basis.parameterNum+"に合いません:"+t.length);
 			}
-			result = false;
+			return false;
 		}
 
 		double[][] domain = basis.getDomain();
@@ -48,10 +47,10 @@ public class NURBSAsserter {
 				if(assertion) {
 					throw new IllegalArgumentException("指定された変数値t["+i+"]はノットベクトルの範囲を超えています");
 				}
-				result = false;
+				return false;
 			}
 		}
-		return result;
+		return true;
 	}
 
 
@@ -73,8 +72,6 @@ public class NURBSAsserter {
 	 * @version 2019/02/23 2:57
 	 * */
 	public boolean assertArrayIsOpenKnotVector(double[] knot, int p) {
-		boolean result=true;
-
 		//各ノットベクトルについて
 		for(int j=0;j<knot.length-1;j++) {
 			//オープンノットベクトルになっているか
@@ -88,7 +85,7 @@ public class NURBSAsserter {
 					if(assertion) {
 						throw new IllegalArgumentException("ノットベクトルがオープンノットベクトルでありません");
 					}
-					result = false;
+					return false;
 				}
 			}
 
@@ -97,11 +94,67 @@ public class NURBSAsserter {
 				if(assertion) {
 					throw new IllegalArgumentException("ノットベクトルが単調増加列でありません:knot["+j+"]>knot["+j+1+"]");
 				}
-				result = false;
+				return false;
 			}
 		}
 
-		return result;
+		return true;
+	}
+
+
+
+	/**
+	 * 挿入するノットとして指定された配列が条件を満たしているかを調べます。
+	 * Xを挿入する事による関数の不連続化の可能性については調べません。
+	 *
+	 * @param basis 基底関数
+	 * @param X 挿入したいノットベクトル
+	 * @return 挿入するノットとして適切な場合true
+	 * @throws IllegalArgumentException
+	 * <ul>
+	 * 		<li>Xに含まれる値が、基底関数の定義域外であった場合
+	 * 		<li>Xが単調増加列の配列の配列で無かった場合
+	 * 		<li>Xの要素数がbasisの変数の数に一致しない場合。
+	 * </ul>
+	 * @version 2019/02/23 10:58
+	 * */
+	public boolean assertInsertedKnotVectorIsValid(NURBSBasisFunction basis, double[][] X) {
+		if(X.length != basis.parameterNum) {
+			if(assertion) {
+				throw new IllegalArgumentException("基底関数の数と挿入するベクトルの数が合いません");
+			}
+			return false;
+		}
+
+		double[][] domain = basis.getDomain();
+
+		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
+			if(X[varNum].length == 0) {
+				continue;
+			}
+
+			if(X[varNum][0] <= domain[varNum][0] ||
+					domain[varNum][1] <= X[varNum][X[varNum].length-1]) {
+				if(assertion) {
+					throw new IllegalArgumentException("挿入するベクトルの一部が基底関数の定義域外です");
+				}
+				return false;
+			}
+
+			for(int j=1; j<X[varNum].length; j++) {
+				if(X[varNum][j-1] > X[varNum][j]) {
+					if(assertion) {
+						throw new IllegalArgumentException("単調増加列でありません");
+					}
+					return false;
+				}
+			}
+
+
+		}
+
+		return true;
+
 	}
 
 
