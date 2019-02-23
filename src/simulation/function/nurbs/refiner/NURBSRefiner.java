@@ -5,11 +5,14 @@ import simulation.function.nurbs.NURBSFunction;
 import simulation.function.nurbs.NURBSFunctionGroup;
 import simulation.function.nurbs.assertion.NURBSAsserter;
 
+/**
+ * NURBS関数の形状を変えずにノットや次数を変化させるクラス
+ *
+ * @version 2019/02/23 17:59
+ * */
 public class NURBSRefiner {
 
 	/**
-	 * <p>TODO BasisFunctionの可視性の変化に伴う調整をする</p>
-	 *
 	 * 指定されたNURBS基底関数に対して、ノットを挿入します。
 	 * 返されるインスタンスは指定されたものとは全く異なる参照をもちます。
 	 * また、返されるNURBSFunctionインスタンスの順番は、指定された順番と対応しています。
@@ -25,7 +28,7 @@ public class NURBSRefiner {
 	 * 		<li>Xが単調増加列の配列の配列で無かった場合
 	 * 		<li>Xの要素数がbasisの変数の数に一致しない場合。
 	 * </ul>
-	 * @version 2019/02/22 21:57
+	 * @version 2019/02/23 17:56
 	 * */
 	public NURBSFunctionGroup refineKnot(NURBSFunctionGroup group, double[][] X) {
 		NURBSAsserter asserter = new NURBSAsserter(true);
@@ -36,8 +39,8 @@ public class NURBSRefiner {
 		NURBSFunction[] funcs = group.funcs;
 
 		//元のコントロールポイント数
-		int n_All = basis.getNumberOfAllCtrl();
-		int[] n = basis.getNumberArrayOfCtrl();
+		int n_All = basis.giveNumberOfAllCtrl();
+		int[] n = basis.giveNumberArrayOfCtrl();
 		//新しいコントロールポイントの数
 		int Newn_All = 1;
 		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
@@ -47,74 +50,71 @@ public class NURBSRefiner {
 
 		//---------------------------------------------------------------------
 
-		//これから操作するポイントの総座標数を計算する
-		int sumDimension=1;
-		for(NURBSFunction f:funcs) {
-			sumDimension += f.dimension;
-		}
-
-		//---------------------------------------------------------------------
-
 		//ctrl:今のポイントの値をまとめたもの
 		//NewCtrl:新しいポイントを保持するもの
-		//[][0]:重み
-		//[][1]:func[0]のポイントの1つめの座標...
-		double[][] ctrl = new double[n_All][sumDimension];
-		double[][] NewCtrl = new double[Newn_All][sumDimension];
-		double[] weight
+		//[0][*][0]:重み
+		//[i][1][d]:func[i]の1つ目のポイントのd座標
 
+		//メモリ消費量については、
+		//重みは元の配列、ここでctrl用に並び替えたもの、NewWeightで3つ分のメモリが必要
+		//ポイントは元の配列、NewCtrlで2つ分のメモリが必要
+		double[][][] ctrl = new double[funcs.length+1][][];
+		double[][][] NewCtrl = new double[funcs.length+1][Newn_All][];
+		double[] weight = basis.giveWeightArray_Shallow();
+
+		ctrl[0] = new double[n_All][1];
 		for(int i=0;i<n_All;i++) {
-			ctrl[i][0] = basis.weight[i];
+			ctrl[0][i][0] = weight[i];
 		}
-		for(int i_func=0, j=1;i_func<funcs.length;i_func++) {
-			for(int d=0;d<funcs[i_func].dimension;d++,j++) {
-				for(int i=0;i<n_All;i++) {
-					ctrl[i][j] = funcs[i_func].ctrl[i][d];
-				}
+		for(int i_func=0;i_func<funcs.length;i_func++) {
+			double[][] funcCtrls = funcs[i_func].giveCtrlArray_Shallow();
+			ctrl[i_func] = funcCtrls;
+		}
+
+		for(int i_func=0;i_func<funcs.length;i_func++) {
+			for(int i=0;i<Newn_All;i++) {
+				NewCtrl[i_func][i] = new double[funcs[i_func].dimension];
 			}
 		}
 
+
 		//---------------------------------------------------------------------
 
+		//curentKnot:現在のノット
 		//NewKnot:新しいノットを保持するもの
+		double[][] currentKnot = basis.giveKnotVector_Shallow();
 		double[][] NewKnot = new double[basis.parameterNum][];
 		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
-			NewKnot[varNum] = new double[basis.knot[varNum].length +X[varNum].length];
+			NewKnot[varNum] = new double[currentKnot[varNum].length +X[varNum].length];
 		}
 
 		//---------------------------------------------------------------------
 
+		//p:基底関数の次数配列、精細化では次数が変化しないので、
+		//後の関数のインスタンス化でも用いる
+		int[] p = basis.giveDegreeArray();
+
 		//新しいポイントとノットを計算する
-		refineKnot(ctrl,NewCtrl,basis.knot,X,NewKnot,basis.p);
+		refineKnot(ctrl, NewCtrl, currentKnot, X, NewKnot, p);
 
 		//---------------------------------------------------------------------
 
 		//計算結果から、新しいNURBSBasisFunctionとNURBSFunctionを生成するために、
 		//それらのコンストラクタの引数に必要なものを用意する
-		int[] Newp = basis.p.clone();
+		//具体的にはコントロールポイントを適切な構造に組み替える
+
+		//新しい重みの配列
 		double[] NewWeight = new double[Newn_All];
-
-		//各NURBSFunctionのポイント毎にまとめたもの
-		double[][][] NewCtrlEachFunc = new double[funcs.length][Newn_All][];
 		for(int i=0;i<Newn_All;i++) {
-			NewWeight[i] = NewCtrl[i][0];
-		}
-		for(int i_func=0, j=1;i_func<funcs.length;i_func++) {
-			for(int d=0;d<funcs[i_func].dimension;d++,j++) {
-				for(int i=0;i<n_All;i++) {
-					NewCtrlEachFunc[i_func][i][d] = NewCtrl[i][j];
-
-					//ctrl[i][j] = funcs[i_func].ctrl[i][d];
-				}
-			}
+			NewWeight[i] = NewCtrl[0][i][0];
 		}
 
 		//---------------------------------------------------------------------
 		//NURBSBasisFunctionとNURBSFunctionをインスタンス化し、Groupにまとめて返す
-		NURBSBasisFunction NewBasis = new NURBSBasisFunction(NewKnot, Newp, NewWeight);
+		NURBSBasisFunction NewBasis = new NURBSBasisFunction(NewKnot, p, NewWeight);
 		NURBSFunction[] NewFuncs = new NURBSFunction[funcs.length];
 		for(int i_func=0;i_func<funcs.length;i_func++) {
-			NewFuncs[i_func] = new NURBSFunction(NewCtrlEachFunc[i_func], NewBasis);
+			NewFuncs[i_func] = new NURBSFunction(NewCtrl[i_func], NewBasis);
 		}
 
 		return new NURBSFunctionGroup(NewBasis, NewFuncs);
@@ -127,7 +127,7 @@ public class NURBSRefiner {
 	 * <p>TODO 並列実装と逐次実装の両方を作る</p>
 	 *
 	 * ノットを精細化します。
-	 * ctrlとknotとX、そしてpの状態は変えません。
+	 * ctrlとknotとX、そしてpの要素の値は変えません。
 	 * また、NewCtrlとNewKnotは全て初期化しておいてください。
 	 *
 	 * @param ctrl 基底関数の重み、各NURBS関数のコントロールポイントをまとめたもの
@@ -141,7 +141,7 @@ public class NURBSRefiner {
 	 * @throws NullPointerException NewCtrl[*]やNewKnot[*]がnullの場合
 	 * @version 2019/02/22 21:57
 	 * */
-	private void refineKnot(double[][] ctrl, double[][] NewCtrl, double[][] knot, double[][] X, double[][] NewKnot, int[] p) {
+	private void refineKnot(double[][][] ctrl, double[][][] NewCtrl, double[][] knot, double[][] X, double[][] NewKnot, int[] p) {
 		//変数の数
 		final int parameterNum = knot.length;
 
@@ -173,7 +173,7 @@ public class NURBSRefiner {
 				for(int j = k_bef+1 ; j <= k_now ;j++) {
 					//変数l以外の方向についてループさせる
 					//代入
-					//未実装
+					//TODO 未実装
 				}
 
 				//---------------------------------------------------------------------
@@ -185,7 +185,7 @@ public class NURBSRefiner {
 
 					//変数l以外の方向についてループさせる
 					//内分計算
-					//未実装
+					//TODO 未実装
 
 				}
 
@@ -201,7 +201,7 @@ public class NURBSRefiner {
 
 			//後方の変化しなかったポイントを代入する
 			for(int i=k_bef+1 ; i < n_Ul+n_Xl ; i++) {
-
+				//TODO 未実装
 			}
 
 			//-------------------------------------------------------------------------
