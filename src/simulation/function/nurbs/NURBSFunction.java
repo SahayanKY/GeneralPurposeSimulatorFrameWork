@@ -3,11 +3,14 @@ package simulation.function.nurbs;
 import simulation.function.nurbs.assertion.NURBSAsserter;
 
 /**
- * <p>NURBSによる関数。</p>
- * <p>
- * NURBSBasisFunctionインスタンスをNURBS基底関数とする関数インスタンスを表す。
+ * <p>NURBSによる関数。
+ * <p>NURBSBasisFunctionインスタンスをNURBS基底関数とする関数インスタンスを表す。
  * 具体的には、コントロールポイントを保持しています。
- * </p>
+ *
+ * <p>このオブジェクトは基本immutableであり、全ての変数、配列変数の要素も不変です。
+ * ただし、shallowコピーメソッドを利用し、それで得た配列要素に対して
+ * 操作した場合、変化する可能性があります。
+ * @version 2019/02/23 17:58
  * */
 public class NURBSFunction {
 

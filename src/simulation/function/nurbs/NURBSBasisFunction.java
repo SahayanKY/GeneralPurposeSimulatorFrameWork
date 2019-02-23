@@ -2,13 +2,15 @@ package simulation.function.nurbs;
 
 import simulation.function.nurbs.assertion.NURBSAsserter;
 
-/**NURBS基底関数の組を表すクラス
- * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
+/**
+ * <p>NURBS基底関数の組を表すクラス
+ * <p>NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
  *
- * このオブジェクトは基本immutableであり、全ての変数、配列変数の要素も不変です。
+ * <p>このオブジェクトは基本immutableであり、全ての変数、配列変数の要素も不変です。
  * ただし、shallowコピーメソッドを利用し、それで得た配列要素に対して
  * 操作した場合、変化する可能性があります。
+ * @version 2019/02/23 17:58
  * */
 public class NURBSBasisFunction {
 
@@ -350,7 +352,7 @@ public class NURBSBasisFunction {
 	 * @return 定義域の配列
 	 * @version 2019/02/23 2:40
 	 * */
-	public double[][] getDomain(){
+	public double[][] giveDomain(){
 		double[][] domain = new double[this.parameterNum][2];
 		for(int i=0;i<this.parameterNum;i++) {
 			domain[i][0] = this.knot[i][0];
