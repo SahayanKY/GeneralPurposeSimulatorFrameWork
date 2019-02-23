@@ -3,6 +3,7 @@ package simulation.function.nurbs.refiner;
 import simulation.function.nurbs.NURBSBasisFunction;
 import simulation.function.nurbs.NURBSFunction;
 import simulation.function.nurbs.NURBSFunctionGroup;
+import simulation.function.nurbs.assertion.NURBSAsserter;
 
 public class NURBSRefiner {
 
@@ -27,19 +28,21 @@ public class NURBSRefiner {
 	 * @version 2019/02/22 21:57
 	 * */
 	public NURBSFunctionGroup refineKnot(NURBSFunctionGroup group, double[][] X) {
+		NURBSAsserter asserter = new NURBSAsserter(true);
 		//Xが正常かどうかを調べる
-		assertInsertedKnotVectorIsValid(group.basis,X);
+		asserter.assertInsertedKnotVectorIsValid(group.basis,X);
 
 		NURBSBasisFunction basis = group.basis;
 		NURBSFunction[] funcs = group.funcs;
 
 		//元のコントロールポイント数
-		int n_All = group.basis.Pi_n[0];
+		int n_All = basis.getNumberOfAllCtrl();
+		int[] n = basis.getNumberArrayOfCtrl();
 		//新しいコントロールポイントの数
 		int Newn_All = 1;
 		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
 			//X[varNum].length:ある変数方向のポイントの増加数
-			Newn_All *= (basis.n[varNum]+X[varNum].length);
+			Newn_All *= (n[varNum]+X[varNum].length);
 		}
 
 		//---------------------------------------------------------------------
@@ -58,6 +61,7 @@ public class NURBSRefiner {
 		//[][1]:func[0]のポイントの1つめの座標...
 		double[][] ctrl = new double[n_All][sumDimension];
 		double[][] NewCtrl = new double[Newn_All][sumDimension];
+		double[] weight
 
 		for(int i=0;i<n_All;i++) {
 			ctrl[i][0] = basis.weight[i];
@@ -211,42 +215,5 @@ public class NURBSRefiner {
 
 		//全てのノットを挿入し終わり、ポイントも計算し終わった
 	}
-
-
-	/**
-	 * <p>TODO NURBSBasisFunction.assertVariableIsValid()を利用する実装にする</p>
-	 *
-	 * 挿入するノットとして指定された配列が条件を満たしているかを調べます。
-	 * Xを挿入する事による関数の不連続化の可能性については調べません。
-	 *
-	 * @throws IllegalArgumentException
-	 * <ul>
-	 * 		<li>Xに含まれる値が、基底関数の定義域外であった場合
-	 * 		<li>Xが単調増加列の配列の配列で無かった場合
-	 * 		<li>Xの要素数がbasisの変数の数に一致しない場合。
-	 * </ul>
-	 * @version 2019/02/22 21:57
-	 * */
-	private void assertInsertedKnotVectorIsValid(NURBSBasisFunction basis, double[][] X) {
-		if(X.length != basis.parameterNum) {
-			throw new IllegalArgumentException("基底関数の数と挿入するベクトルの数が合いません");
-		}
-
-		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
-			double[] parentKnot = basis.knot[varNum];
-			double[] childKnot = X[varNum];
-
-			if(X[varNum].length == 0) {
-				continue;
-			}
-
-			if(childKnot[0] <= parentKnot[0] ||
-					parentKnot[parentKnot.length-1] <= childKnot[childKnot.length-1]) {
-				throw new IllegalArgumentException("挿入するベクトルの一部が基底関数の定義域外です");
-			}
-
-		}
-	}
-
 
 }

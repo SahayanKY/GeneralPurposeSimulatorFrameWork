@@ -20,15 +20,52 @@ public class NURBSFunction {
 	 * @version 2019/02/23 0:22
 	 * */
 	private final double[][] ctrl;
+	/**
+	 * <p>重み付きコントロールポイントの配列を返します。
+	 * 即ち、元のポイントに重みが掛けられたものです。
+	 * <p>配列は複製を返します。
+	 *
+	 * @return 重み付きコントロールポイントの配列
+	 * @see #giveCtrlArray_Shallow()
+	 * @version 2019/02/23 13:58
+	 * */
+	public double[][] giveCtrlArray_Deep(){
+		double[][] ctrl = new double[this.ctrl.length][this.dimension];
+		for(int j=0;j<this.dimension;j++) {
+			for(int i=0;i<ctrl.length;i++) {
+				ctrl[i][j] = this.ctrl[i][j];
+			}
+		}
+		return ctrl;
+	}
+	/**
+	 * <p>重み付きコントロールポイントの配列を返します。
+	 * <p>配列の参照を渡します。そのため、得た配列要素を変更すると
+	 * インスタンスの状態が変化します。それはこのインスタンスの想定された
+	 * 利用ではないので注意してください。
+	 * <p>このメソッドは、配列要素を変化させないコンテキストの中で、
+	 * 複製をするとメモリを圧迫する可能性を考慮したものです。
+	 *
+	 * @return 重み付きコントロールポイントの配列
+	 * @see #giveCtrlArray_Deep()
+	 * @version 2019/02/23 13:58
+	 * */
+	public double[][] giveCtrlArray_Shallow(){
+		return this.ctrl;
+	}
+
+
 
 	/**
 	 * この関数インスタンスの基底関数組
 	 * @version 2019/02/23 0:35
 	 * */
 	private final NURBSBasisFunction basis;
-	public NURBSBasisFunction getBasisFunction() {
+	public NURBSBasisFunction giveBasisFunction() {
 		return this.basis;
 	}
+
+
 
 	/**
 	 * このインスタンスが扱う関数値の次元数。
@@ -37,11 +74,8 @@ public class NURBSFunction {
 	 * */
 	public final int dimension;
 
+
 	/**
-	 * <p>
-	 * TODO ctrlをディープコピーさせる
-	 * </p>
-	 *
 	 * NURBS関数をインスタンス化させます。
 	 * コントロールポイントは多変数NURBSの場合注意が必要です。
 	 * mを変数の数、Pをコントロールポイント、n_iを変数x_i方向のポイントの数としたとき、
@@ -74,7 +108,7 @@ public class NURBSFunction {
 		}
 
 
-		if(ctrl.length != basis.getNumberOfAllCtrl()) {
+		if(ctrl.length != basis.giveNumberOfAllCtrl()) {
 			throw new IllegalArgumentException("コントロールポイントの数が重みの数に一致しません");
 		}
 
@@ -85,7 +119,7 @@ public class NURBSFunction {
 			throw new IllegalArgumentException("コントロールポイントの要素数が足りません:次元d(>0)");
 		}
 		this.ctrl = new double[ctrl.length][dimension];
-		double[] weight = basis.getWeightArray();
+		double[] weight = basis.giveWeightArray_Shallow();
 		for(int i=0;i<ctrl.length;i++) {
 			if(dimension != ctrl[i].length) {
 				throw new IllegalArgumentException("コントロールポイントctrl["+i+"]に次元数の過不足があります");

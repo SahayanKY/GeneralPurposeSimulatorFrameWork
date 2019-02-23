@@ -6,7 +6,9 @@ import simulation.function.nurbs.assertion.NURBSAsserter;
  * NURBS基底関数の構成要素である、ノットベクトル、各基底関数の次数、コントロールポイントの
  * 重みを保持し、それらにより構成される基底関数の組を表します。
  *
- * このオブジェクトはimmutableであり、全ての変数、配列変数の要素も不変です。
+ * このオブジェクトは基本immutableであり、全ての変数、配列変数の要素も不変です。
+ * ただし、shallowコピーメソッドを利用し、それで得た配列要素に対して
+ * 操作した場合、変化する可能性があります。
  * */
 public class NURBSBasisFunction {
 
@@ -23,9 +25,10 @@ public class NURBSBasisFunction {
 	 * 配列の複製を渡します。
 	 *
 	 * @return ノットベクトル
-	 * @version 2019/02/22 21:37
+	 * @see #giveKnotVector_Shallow()
+	 * @version 2019/02/23 13:43
 	 * */
-	public double[][] getKnotVector(){
+	public double[][] giveKnotVector_Deep(){
 		double[][] copy_knot = new double[this.parameterNum][];
 		for(int i=0;i<this.parameterNum;i++) {
 			copy_knot[i] = new double[this.knot[i].length];
@@ -36,6 +39,23 @@ public class NURBSBasisFunction {
 
 		return copy_knot;
 	}
+	/**
+	 * <p>ノットベクトルを返します。
+	 * <p>配列の参照を渡します。そのため、得た配列要素を変更すると
+	 * インスタンスの状態が変化します。それはこのインスタンスの想定された
+	 * 利用ではないので注意してください。
+	 * <p>このメソッドは、配列要素を変化させないコンテキストの中で、
+	 * 複製をするとメモリを圧迫する可能性を考慮したものです。
+	 *
+	 * @return ノットベクトル
+	 * @see #giveKnotVector_Deep()
+	 * @version 2019/02/23 13:42
+	 * */
+	public double[][] giveKnotVector_Shallow(){
+		return this.knot;
+	}
+
+
 
 	/**
 	 * 各変数の基底関数の次数<br>
@@ -51,13 +71,14 @@ public class NURBSBasisFunction {
 	 * @return 次数の配列
 	 * @version 2019/02/22 21:38
 	 * */
-	public int[] getDegreeArray() {
+	public int[] giveDegreeArray() {
 		int[] copy_p = new int[this.parameterNum];
 		for(int i=0;i<this.parameterNum;i++) {
 			copy_p[i] = this.p[i];
 		}
 		return copy_p;
 	}
+
 
 	/**インデックスの変換計算に使う<br>
 	 * i=0,1,...,m-1については(p{i}+1)(p{i+1}+1)...(p{m-1}+1)
@@ -76,7 +97,7 @@ public class NURBSBasisFunction {
 	 *
 	 * @version 2019/02/22 21:38
 	 * */
-	public int[] getPi_p() {
+	public int[] givePi_p() {
 		int[] Pi_p = new int[this.parameterNum+1];
 		Pi_p[this.parameterNum] = 1;
 		for(int i=this.parameterNum-1;i>=0;i--) {
@@ -96,7 +117,7 @@ public class NURBSBasisFunction {
 	 * @return 計算に必要なポイント数
 	 * @version 2019/02/23 0:52
 	 * */
-	public int getEffectiveCtrlNum() {
+	public int giveEffectiveCtrlNum() {
 		int effCtrlNum = 1;
 		for(int i=0;i<this.parameterNum;i++) {
 			effCtrlNum *= (this.p[i]+1);
@@ -118,7 +139,7 @@ public class NURBSBasisFunction {
 	 * @return 各変数についてのポイント数の配列
 	 * @version 2019/02/22 21:40
 	 * */
-	public int[] getNumberArrayOfCtrl() {
+	public int[] giveNumberArrayOfCtrl() {
 		int[] copy_n = new int[this.parameterNum];
 		for(int i=0;i<this.parameterNum;i++) {
 			copy_n[i] = this.n[i];
@@ -130,7 +151,7 @@ public class NURBSBasisFunction {
 	 * @return 全ポイント数
 	 * @version 2019/02/23 0:55
 	 * */
-	public int getNumberOfAllCtrl() {
+	public int giveNumberOfAllCtrl() {
 		return this.weight.length;
 	}
 	/**
@@ -153,7 +174,7 @@ public class NURBSBasisFunction {
 	 * @return Pi_n配列。具体的な中身はメソッドの説明参照。
 	 * @version 2019/02/22 21:40
 	 * */
-	public int[] getPi_n() {
+	public int[] givePi_n() {
 		int[] Pi_n = new int[this.parameterNum+1];
 		Pi_n[this.parameterNum] = 1;
 		for(int i=this.parameterNum-1;i>=0;i++) {
@@ -177,7 +198,7 @@ public class NURBSBasisFunction {
 	 * @return コントロールポイントの重みの配列
 	 * @version 2019/02/22 21:41
 	 * */
-	public double[] getWeightArray() {
+	public double[] giveWeightArray_Deep() {
 		double[] copy_weight = new double[this.weight.length];
 		for(int i=0;i<copy_weight.length;i++) {
 			copy_weight[i] = this.weight[i];
@@ -185,6 +206,22 @@ public class NURBSBasisFunction {
 
 		return copy_weight;
 	}
+	/**
+	 * <p>コントロールポイントの重みの配列を返します。
+	 * <p>配列の参照を渡します。そのため、得た配列要素を変更すると
+	 * インスタンスの状態が変化します。それはこのインスタンスの想定された
+	 * 利用ではないので注意してください。
+	 * <p>このメソッドは、配列要素を変化させないコンテキストの中で、
+	 * 複製をするとメモリを圧迫する可能性を考慮したものです。
+	 *
+	 * @return コントロールポイントの重みの配列
+	 * @see #giveWeightArray_Deep()
+	 * @version 2019/02/23 13:48
+	 * */
+	public double[] giveWeightArray_Shallow() {
+		return this.weight;
+	}
+
 
 	/**
 	 * 変数の数
@@ -377,7 +414,7 @@ public class NURBSBasisFunction {
 
 		//indexsでの重みを取得する
 		int weightIndex = 0;
-		int[] Pi_n = this.getPi_n();
+		int[] Pi_n = this.givePi_n();
 		//i0,i1,...,i{m-1}というインデックスを1つの数に置き換える
 		for(int i=0;i<this.parameterNum;i++) {
 			weightIndex += indexs[i] *Pi_n[i+1];
