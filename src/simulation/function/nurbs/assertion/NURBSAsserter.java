@@ -2,7 +2,16 @@ package simulation.function.nurbs.assertion;
 
 import simulation.function.nurbs.NURBSBasisFunction;
 
+/**
+ * NURBS関係のassertionを行うクラス。
+ * @version 2019/02/23 18:01
+ * */
 public class NURBSAsserter {
+	/**
+	 * 異常が検知された場合に、例外をスローするかどうかを定めます。
+	 * trueの場合、スローします。
+	 * @version 2019/02/23 18:02
+	 * */
 	private final boolean assertion;
 
 	/**
@@ -38,7 +47,7 @@ public class NURBSAsserter {
 			return false;
 		}
 
-		double[][] domain = basis.getDomain();
+		double[][] domain = basis.giveDomain();
 
 		//tはNURBS関数の定義域に反していないか
 		for(int i=0;i<basis.parameterNum;i++) {
@@ -126,7 +135,7 @@ public class NURBSAsserter {
 			return false;
 		}
 
-		double[][] domain = basis.getDomain();
+		double[][] domain = basis.giveDomain();
 
 		for(int varNum=0;varNum<basis.parameterNum;varNum++) {
 			if(X[varNum].length == 0) {
