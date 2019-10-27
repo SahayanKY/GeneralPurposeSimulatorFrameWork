@@ -19,6 +19,9 @@ import simulation.Simulator;
 
 /*
  * 各種パラメータのリストであり、状態を一括でチェックしたり、パラメータ値を設定するクラス
+ * 外部のプロパティファイルのパラメータ値を読み込み、Parameterインスタンスに設定したり、
+ * 計算実行開始直後に計算に使われるParameterインスタンス内のパラメータ値とそこから計算される量を
+ * プロパティファイルに書き出す。
  * */
 public class ParameterManager {
 	private final Simulator simulater;
