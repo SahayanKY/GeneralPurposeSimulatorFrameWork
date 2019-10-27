@@ -43,11 +43,11 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			ChangeTextFieldColor = "ChangeTextFieldColor",
 			SetExistingInputData = "SetInputData";
 
-	public DataInputFrame(Simulator simulater, int width, int height){
-		this.simulater = simulater;
-		this.paramManager = simulater.getParameterManager();
+	public DataInputFrame(Simulator simulator, int width, int height){
+		this.simulater = simulator;
+		this.paramManager = simulator.getParameterManager();
 		//フレームの設定
-		setTitle("ICGシミュレーション");
+		setTitle(simulator.getThisName());
 		//内側のサイズをコンストラクタの引数で指定
 		this.contentPaneW = width;
 		this.contentPaneH = height;

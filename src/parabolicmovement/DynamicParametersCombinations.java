@@ -29,8 +29,12 @@ public class DynamicParametersCombinations {
 	 * @return 次の計算条件。存在しない場合はnull。
 	 * */
 	public DynamicParameters getNextDynamicParameters() {
-		DynamicParameters next = new DynamicParameters(theta0[nextIndex]);
-		nextIndex++;
-		return next;
+		if(nextIndex == 720) {
+			return null;
+		}else {
+			DynamicParameters next = new DynamicParameters(theta0[nextIndex]);
+			nextIndex++;
+			return next;
+		}
 	}
 }

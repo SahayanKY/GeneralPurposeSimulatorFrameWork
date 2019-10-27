@@ -4,9 +4,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -14,6 +12,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import javax.swing.ProgressMonitor;
@@ -22,7 +24,10 @@ import javax.swing.SwingWorker;
 import simulation.frame.DataInputFrame;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
+import simulation.param.checker.DefaultParameterChecker;
+import simulation.param.checker.ParameterChecker;
 import simulation.param.checker.WhiteSpaceChecker;
+import simulation.system.SystemInfo;
 
 public abstract class Simulator extends SwingWorker<Object,String>{
 	private DataInputFrame inputFrame;
@@ -32,12 +37,11 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	protected final ParameterManager paraMana = new ParameterManager(this);
 	protected File resultStoreDirectory;
 	private double startTime,currentProgressRate;
-	protected final ArrayList<Supplier<String[]>> parameterSetterFuncList = new ArrayList<>();
+	protected int parallelNum;
 
-	public static final String
-		STREAM_CREATE = "1",
-		STREAM_CLOSE = "2",
-		STREAM_LOG = "3";
+	/**入力値をSolverに必要なParameterにセットし、
+	 * さらにその数値を処理してpropertiesファイルに出力する値の文字列を返す*/
+	protected final ArrayList<Supplier<String[]>> parameterSetterFuncList = new ArrayList<>();
 
 	public Simulator(){
 		addPropertyChangeListener(new PropertyChangeListener() {
@@ -106,7 +110,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		this.parameterSetterFuncList.add(sup);
 	}
 
-	public final String[][] setParameter(){
+	public final void setParameter(){
 		int n = this.parameterSetterFuncList.size();
 		String[][] result = new String[n][];
 		for(int i=0;i<n;i++) {
@@ -114,7 +118,12 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 			//プロパティファイルに出力したい文字列をresultに与える
 			result[i] = this.parameterSetterFuncList.get(i).get();
 		}
-		return result;
+		//ディレクトリを指定して、パラメータやその合成量をファイルとして記録させる
+		try {
+			paraMana.writePropertyOn(resultStoreDirectory,result);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 
@@ -123,29 +132,54 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * シミュレーションの計算実行開始メソッド。
 	 * */
 	protected Object doInBackground() {
-		try {
-			//シミュレーションに必要なパラメータをセットする
-			String result[][] = this.setParameter();
+		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
+		updateProgress(0);
 
-			//ディレクトリを指定して、パラメータやその合成量をファイルとして記録させる
-			paraMana.writePropertyOn(resultStoreDirectory,result);
-			executeSimulation();
+		//シミュレーションに必要なパラメータをセットする
+		this.setParameter();
 
-		}catch(Exception e) {
-
-			e.printStackTrace();
+		//スレッドプールの立上げ
+		ExecutorService exec = Executors.newFixedThreadPool(this.parallelNum);
+		List<Future<?>> futures = new ArrayList<>();
+		//runnableをsubmit
+		//TODO 一気にRunnableを作ると、メモリを圧迫する可能性があるので、進行状況をみてRunnableを作る感じにしたい
+		Runnable runnable;
+		while((runnable=this.createNextConditionSolver()) != null) {
+			Future<?> future = exec.submit(runnable);
+			futures.add(future);
 		}
+
+		//タスク受け取りの終了
+		exec.shutdown();
+
+		/* タスク完了の待機
+		 * この記述では先にSubmitされたタスクが完了する前に、
+		 * 後にSubmitされたタスクが完了した場合進捗が実際とは異なる可能性がある。
+		 * が、致命的な欠陥ではないはずなので放置
+		 * */
+		int N_task = futures.size();
+		int N_completedtask = 0;
+		for(Future<?> future:futures) {
+			try {
+				future.get();
+				System.out.println("Simulator.doInBackground");
+				N_completedtask++;
+				updateProgress(((double)N_completedtask)/N_task);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
+
+		updateProgress(1);
 
 		monitor.close();
 
 		return null;
 	}
 
-	/*
-	 * シミュレーション本体の実装部分。Simulatorの子クラスはこのメソッドをオーバーライドし、
-	 * 計算を行うようにすること。また、計算の各段階で適切にupdateProgress(double)とpublish(String)を使うこと。
-	 * */
-	protected abstract void executeSimulation();
+	protected abstract Runnable createNextConditionSolver();
 
 	/*
 	 * シミュレーションの計算進捗率を指定する。もし、シミュレーションを中断する
@@ -172,120 +206,28 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		return true;
 	}
 
-	/*
-	 * シミュレーション実行結果を外部ファイルへ出力する。このメソッドは直接呼ぶものではない。
-	 * 必ずpublish(String)を介して呼ぶこと。また、publish(String)で指定する文字列は以下に従うこと。
-	 *　・STREAM_CREATE+":xxx.yyy"でxxx.yyyへの出力ストリームを生成する
-	 *	・STREAM_CLOSE+":xxx.yyy"でxxx.yyyへの出力をやめる
-	 * 	・STREAM_LOG+":xxx.yyy:...."でxxx.yyyへ"...."を入力し、改行する
-	 * */
-	@Override
-	protected void process(List<String> list) {
-		for(String strline:list) {
-			if(strline.startsWith(STREAM_CREATE+":")) {
-				//writerを生成する分岐
-
-				try {
-					String filename = strline.substring(STREAM_CREATE.length()+1);
-					File storeFile = new File(resultStoreDirectory.toString()+"\\"+filename);
-					if(writermap.containsKey(filename)) {
-						//既に指定されたファイルに対応したwriterが存在する場合、
-						//例外をトレースした後、そのwriterをマッピングから外す
-						//フラッシュし、クローズし、新しいwriterをマッピングする
-						new IOException("指定されたファイルは既に存在し、結果は上書きされています:ファイル名:"+filename).printStackTrace();
-						BufferedWriter writer = writermap.remove(filename);
-						try {
-							writer.flush();
-						}catch(IOException e) {
-							e.printStackTrace();
-						}finally {
-							try {
-								writer.close();
-							}catch(IOException e) {
-								e.printStackTrace();
-							}
-						}
-					}
-
-					//writerを生成する
-					//前に対応するwriterが存在した場合、それは上で既に解法済みなのでNoProblem
-					writermap.put(filename,
-							new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"))
-					);
-				}catch(Exception e) {
-					e.printStackTrace();
-				}
-
-			}else if(strline.startsWith(STREAM_CLOSE+":")){
-				//ファイルへの出力を停止する分岐
-
-				final String filename = strline.substring(STREAM_CLOSE.length()+1);
-
-				if(!writermap.containsKey(filename)) {
-					//対応したwriterが存在しない場合
-					continue;
-				}
-				BufferedWriter writer = writermap.get(filename);
 
 
-				//writerをフラッシュし、クローズする
-				//その後、マッピングから外す
-				try {
-					writer.flush();
-				}catch(IOException e) {
-					e.printStackTrace();
-				}finally {
-					try {
-						writer.close();
-					}catch(IOException e) {
-						e.printStackTrace();
-					}finally {
-						writermap.remove(filename);
-					}
-				}
-
-			}else if(strline.startsWith(STREAM_LOG+":")) {
-				//ファイルへの出力をする分岐
-
-				//ファイル名を取得し、writerを取得
-				String strarray[] = strline.split(":",3);
-
-				//[0]=log
-				//[1]=xxx.yyy
-				//[2]=...... //内容
-				if(!writermap.containsKey(strarray[1])) {
-					//対応したwriterが存在しない場合
-					continue;
-				}
-				BufferedWriter writer = writermap.get(strarray[1]);
-
-				try {
-					//内容を出力する
-					writer.write(strarray[2]);
-					writer.newLine();
-				}catch(IOException e) {
-					e.printStackTrace();
-				}
-
-			}else {
-				//想定外の処理
-				new IllegalArgumentException("想定されていないコマンドです:"+strline).printStackTrace();
-			}
-
-		}
-	}
 
 	/*
 	 * このシミュレーションが使用するParameterをParameterManagerに登録する。
 	 * オーバーライドするときはSimulatorクラスのcreateParameter()を一番最初に呼び出すようにしてください。
 	 * */
 	public void createParameters(){
+		final ParameterChecker defchecker = new DefaultParameterChecker();
+		String mincore = "1", maxcore = String.valueOf(SystemInfo.CPU_CORE_NUM);
+
+
 		final Parameter
-			シミュ実行者 = new Parameter("一般", "シミュレーション実行者", "シミュレーション実行者", null, null, new WhiteSpaceChecker());
+			シミュ実行者 = new Parameter("一般", "シミュレーション実行者", "シミュレーション実行者", null, null, new WhiteSpaceChecker()),
+			並列数 = new Parameter("一般", "並列数", "並列数", mincore, maxcore, defchecker);
 
 		paraMana.addParameter(シミュ実行者);
+		paraMana.addParameter(並列数);
 
 		this.parameterSetterFuncList.add(()->{
+			parallelNum = Integer.valueOf(並列数.getValue());
+
 			return new String[] {
 					"シミュレーション年月日時分秒="+this.getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日_HH:mm:ss.SSS")),
 					"シミュレータ="+this.getThisName(),
@@ -309,7 +251,6 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * */
 	public void openDataInputFrame(int width, int height) {
 		inputFrame = new DataInputFrame(this,width,height);
-		monitor = new ProgressMonitor(inputFrame, "メッセージ", "ノート", 0, 100);
 	}
 
 	/*
