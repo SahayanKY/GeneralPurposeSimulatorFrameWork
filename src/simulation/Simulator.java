@@ -10,12 +10,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import javax.swing.ProgressMonitor;
@@ -52,6 +47,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 					return;
 				}
 				if(monitor.isCanceled()) {
+					System.out.println("iscancled");
 					return;
 				}
 				if("progress".equals(e.getPropertyName())) {
@@ -138,39 +134,14 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		//シミュレーションに必要なパラメータをセットする
 		this.setParameter();
 
-		//スレッドプールの立上げ
-		ExecutorService exec = Executors.newFixedThreadPool(this.parallelNum);
-		List<Future<?>> futures = new ArrayList<>();
-		//runnableをsubmit
-		//TODO 一気にRunnableを作ると、メモリを圧迫する可能性があるので、進行状況をみてRunnableを作る感じにしたい
-		Runnable runnable;
-		while((runnable=this.createNextConditionSolver()) != null) {
-			Future<?> future = exec.submit(runnable);
-			futures.add(future);
+		//final ExecutorService es_each = Executors.newFixedThreadPool(parallelNum);
+		//final ExecutorService es_all = E
+
+		double[] array;
+		for(int i=0;i<1000000;i++) {
+			array = new double[50];
 		}
 
-		//タスク受け取りの終了
-		exec.shutdown();
-
-		/* タスク完了の待機
-		 * この記述では先にSubmitされたタスクが完了する前に、
-		 * 後にSubmitされたタスクが完了した場合進捗が実際とは異なる可能性がある。
-		 * が、致命的な欠陥ではないはずなので放置
-		 * */
-		int N_task = this.getAllConditionNumber();
-		int N_completedtask = 0;
-		for(Future<?> future:futures) {
-			try {
-				future.get();
-				System.out.println("Simulator.doInBackground");
-				N_completedtask++;
-				updateProgress(((double)N_completedtask)/N_task);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-		}
 
 		updateProgress(1);
 
