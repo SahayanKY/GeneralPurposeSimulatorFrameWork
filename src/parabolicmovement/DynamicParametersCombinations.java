@@ -15,10 +15,16 @@ public class DynamicParametersCombinations {
 	private int nextIndex = 0;
 
 	/**
+	 * 全計算条件の数
+	 * */
+	public final int allCombiNum;
+
+	/**
 	 * コンストラクタ
 	 * */
 	public DynamicParametersCombinations(double[] theta0) {
 		this.theta0 = theta0;
+		this.allCombiNum = theta0.length;
 	}
 
 	/**
@@ -29,7 +35,7 @@ public class DynamicParametersCombinations {
 	 * @return 次の計算条件。存在しない場合はnull。
 	 * */
 	public DynamicParameters getNextDynamicParameters() {
-		if(nextIndex == 720) {
+		if(nextIndex == allCombiNum) {
 			return null;
 		}else {
 			DynamicParameters next = new DynamicParameters(theta0[nextIndex]);

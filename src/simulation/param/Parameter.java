@@ -2,6 +2,7 @@ package simulation.param;
 
 import simulation.param.checker.ParameterChecker;
 
+//TODO 上限下限を設定しない物理量に対しての単位の抜け穴を補修する。(別の単位の量を指定できてしまうため)
 public class Parameter {
 	public final String parentLabel, childLabel, propertyLabel, maxValue, minValue;
 	public final ParameterChecker checker;

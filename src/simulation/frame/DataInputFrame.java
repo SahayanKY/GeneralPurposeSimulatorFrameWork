@@ -205,7 +205,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 						}
 					}
 					//保存先のディレクトリを選択、nullの場合は処理を終了
-					File choosedDirectory = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, ChoosePurpose.ToSelect, "D:\\ゆうき", "保存先のフォルダを選択");
+					File choosedDirectory = ChooseFileDialog.choose(this, ChooseFileDialog.ChooseTarget.DirectoryOnly, ChoosePurpose.ToSelect, ".", "保存先のフォルダを選択");
 					if(choosedDirectory == null) {
 						break;
 					}

@@ -24,7 +24,7 @@ public class ParabolicMovementSimulator extends Simulator{
 
 
 	/**
-	 * (計算されていない、またはSubmitされていない)次の計算条件の元で計算を行うSolverインスタンスを返す。
+	 * {@inheritDoc}
 	 * */
 	@Override
 	protected Runnable createNextConditionSolver() {
@@ -54,6 +54,14 @@ public class ParabolicMovementSimulator extends Simulator{
 		}
 	}
 
+
+	/**
+	 * {@inheritDoc}
+	 * */
+	@Override
+	protected int getAllConditionNumber() {
+		return dynparamscomb.allCombiNum;
+	}
 
 
 	@Override

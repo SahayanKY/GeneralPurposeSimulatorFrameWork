@@ -157,7 +157,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		 * 後にSubmitされたタスクが完了した場合進捗が実際とは異なる可能性がある。
 		 * が、致命的な欠陥ではないはずなので放置
 		 * */
-		int N_task = futures.size();
+		int N_task = this.getAllConditionNumber();
 		int N_completedtask = 0;
 		for(Future<?> future:futures) {
 			try {
@@ -179,7 +179,18 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		return null;
 	}
 
+	/**
+	 * (計算されていない、またはSubmitされていない)次の計算条件の元で計算を行うSolverインスタンスを返す。
+	 *
+	 * */
 	protected abstract Runnable createNextConditionSolver();
+
+
+	/**
+	 * 条件の数
+	 * */
+	protected abstract int getAllConditionNumber();
+
 
 	/*
 	 * シミュレーションの計算進捗率を指定する。もし、シミュレーションを中断する
@@ -191,10 +202,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 	 * シミュレーションを中断するようProgressMonitorを介して
 	 * 指示されていた場合、false
 	 * */
-	protected boolean updateProgress(double progressRate) {
-		if(monitor.isCanceled()) {
-			return false;
-		}
+	protected void updateProgress(double progressRate) {
 		this.currentProgressRate = progressRate;
 		int n = (int)(progressRate*100);
 		if(n < 0) {
@@ -203,7 +211,6 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 			n = 100;
 		}
 		setProgress(n);
-		return true;
 	}
 
 
