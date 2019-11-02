@@ -14,6 +14,10 @@ import simulation.param.checker.ParameterChecker;
 import simulation.param.checker.WhiteSpaceChecker;
 import simulation.system.SystemInfo;
 
+/**
+ * 
+ * 単一条件を計算するSolverを生成する
+ * */
 public abstract class Simulator{
 	private LocalDateTime simulationStartTime;
 	protected final ParameterManager paraMana = new ParameterManager(this);
@@ -30,7 +34,6 @@ public abstract class Simulator{
 		this.simulationStartTime = LocalDateTime.now();
 	}
 
-	//getSimulationStartTime().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日HH時mm分ss.SSS秒"))
 	public final LocalDateTime getSimulationStartTime() {
 		if(this.simulationStartTime == null) {
 			throw new IllegalStateException("Simulatorはまだ起動していません");
@@ -80,7 +83,6 @@ public abstract class Simulator{
 
 	/**
 	 * (計算されていない、またはSubmitされていない)次の計算条件の元で計算を行うSolverインスタンスを返す。
-	 *
 	 * */
 	protected abstract Runnable createNextConditionSolver();
 
@@ -119,19 +121,19 @@ public abstract class Simulator{
 		});
 	}
 
-	/*
+	/**
 	 * このSimulatorインスタンスが保持するParameterManagerを返す。
 	 * */
 	public ParameterManager getParameterManager() {
 		return this.paraMana;
 	}
 
-	/*
+	/**
 	 * このシミュレータを表す名前を返す
 	 * */
 	public abstract String getThisName();
 
-	/*
+	/**
 	 * このシミュレータの開発バージョンを返す
 	 */
 	public abstract String getThisVersion();

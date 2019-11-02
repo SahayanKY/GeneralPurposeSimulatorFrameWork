@@ -16,7 +16,7 @@ public class SimulatorLauncher {
 
 	/**実行するシミュレーションのクラス*/
 	private Simulator simulator;
-	/**立ち上げたマルチスレッド全部の完了をもって完了するCompletableFuture*/
+	/**立ち上げたマルチスレッド全部の完了をもって完了する{@link CompletableFuture}*/
 	private CompletableFuture<Void> allcf;
 	/**interfacer*/
 	private SimulatorGUIInterfacer interfacer;
@@ -24,9 +24,9 @@ public class SimulatorLauncher {
 	/**
 	 * コンストラクタ。
 	 * @param simulator
-	 * 起動させるSimulatorクラスインスタンス
+	 * 起動させる{@link Simulator}クラスインスタンス
 	 * @param interfacer
-	 * GUI側とやり取りするSimulatorGUIInterfacerクラスインスタンス
+	 * GUI側とやり取りする{@link SimulatorGUIInterfacer}クラスインスタンス
 	 * */
 	SimulatorLauncher(Simulator simulator, SimulatorGUIInterfacer interfacer) {
 		this.simulator = simulator;
@@ -72,7 +72,7 @@ public class SimulatorLauncher {
 	}
 
 	/**
-	 * すべてのTaskが完了したのをもって完了とするCompletableFutureを返します。
+	 * すべてのTaskが完了したのをもって完了とする{@link CompletableFuture}を返します。
 	 * */
 	private CompletableFuture<Void> getIntegratedCompletableFuture(List<CompletableFuture<Void>> cflist, ExecutorService es) {
 		CompletableFuture<Void> allcf = CompletableFuture.allOf(
@@ -96,7 +96,7 @@ public class SimulatorLauncher {
 
 	/**
 	 * 指定されていた並列数の数だけ、
-	 * 単一条件の計算を次々と実行していくCompletableFutureを生成します。
+	 * 単一条件の計算を次々と実行していく{@link CompletableFuture}を生成します。
 	 * */
 	private List<CompletableFuture<Void>> executeMultithread(ExecutorService es) {
 		List<CompletableFuture<Void>> cflist = new ArrayList<>();
