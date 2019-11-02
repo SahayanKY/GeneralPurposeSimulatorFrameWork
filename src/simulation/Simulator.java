@@ -90,9 +90,11 @@ public abstract class Simulator{
 	 * */
 	protected abstract int getAllConditionNumber();
 
-	/*
+	/**
 	 * このシミュレーションが使用するParameterをParameterManagerに登録する。
-	 * オーバーライドするときはSimulatorクラスのcreateParameter()を一番最初に呼び出すようにしてください。
+	 * そして、計算開始時のGUIからのパラメータのセット方法について記述する。
+	 *
+	 * このインスタンスを生成した後はこのメソッドを最初に必ず呼び出してください。
 	 * */
 	public void createParameters(){
 		final ParameterChecker defchecker = new DefaultParameterChecker();

@@ -10,9 +10,20 @@ import java.io.UnsupportedEncodingException;
 
 import parabolicmovement.Result;
 
+/**
+ * 与えられたインスタンスをCSVに出力します。
+ * */
 public class CSVWriter {
 
-	public void writeNext(Result result,File storeFile) {
+	/**
+	 * 与えられたResultインスタンスをCSVに出力します。
+	 * CSVのヘッダーにはResultインスタンスが保持しているヘッダーの文字列を与えます。
+	 * @param result
+	 * 出力する計算結果
+	 * @param storeFile
+	 * 出力するファイルのインスタンス。ファイル名と拡張子を含む。
+	 * */
+	public void write(Result result,File storeFile) {
 		try(
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(storeFile),"UTF-8"));
 		){

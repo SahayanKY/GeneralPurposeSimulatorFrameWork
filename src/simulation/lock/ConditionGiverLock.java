@@ -1,5 +1,5 @@
 package simulation.lock;
 
-public class ConditionGiverLock {
+public abstract class ConditionGiverLock {
 
 }

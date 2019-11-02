@@ -3,7 +3,8 @@ package parabolicmovement;
 
 /**
  * 放物運動の計算を行うクラス
- * コンストラクタにて、計算条件を
+ * コンストラクタにて指定された単一の計算条件を元に計算を行います。
+ *
  * */
 public class ParabolicMovementSolver {
 	private final StaticParameters staparams;
@@ -18,6 +19,11 @@ public class ParabolicMovementSolver {
 		this.dynparams = dynparams;
 	}
 
+	/**
+	 * 放物運動の計算を行い、計算結果を返します。
+	 * @return
+	 * 各時刻での位置x,y、速度u,vを保持したResultインスタンス
+	 * */
 	public Result solve() {
 		final double
 			m = staparams.m,	//質量
