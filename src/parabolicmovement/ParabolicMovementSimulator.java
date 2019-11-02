@@ -12,8 +12,6 @@ import simulation.param.checker.DefaultParameterChecker;
 import simulation.param.checker.ParameterChecker;
 
 /**
- * {@inheritDoc}
- *
  * 放物運動のSimulatorクラス
  * */
 public class ParabolicMovementSimulator extends Simulator{
