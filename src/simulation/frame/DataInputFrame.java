@@ -25,12 +25,15 @@ import icg.ChooseFileDialog.ChoosePurpose;
 import icg.ChooseFileDialog.ChooseTarget;
 import icg.ComponentSetter;
 import simulation.Simulator;
+import simulation.SimulatorGUIInterfacer;
 import simulation.param.Parameter;
 import simulation.param.ParameterManager;
 
 public class DataInputFrame extends JFrame implements ActionListener,FocusListener{
-	private Simulator simulater;
+	private SimulatorGUIInterfacer interfacer;
 	private ParameterManager paramManager;
+
+
 	private CardLayout LayoutOfPanel = new CardLayout();
 	private JPanel CardPanel = new JPanel();
 
@@ -44,7 +47,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 			SetExistingInputData = "SetInputData";
 
 	public DataInputFrame(Simulator simulator, int width, int height){
-		this.simulater = simulator;
+		this.interfacer = new SimulatorGUIInterfacer(simulator,this);
 		this.paramManager = simulator.getParameterManager();
 		//フレームの設定
 		setTitle(simulator.getThisName());
@@ -212,7 +215,7 @@ public class DataInputFrame extends JFrame implements ActionListener,FocusListen
 					//このフレームの操作を不能にし、次のステージに進める
 					this.setEnabled(false);
 
-					simulater.execute(choosedDirectory);
+					interfacer.executeSimulator(choosedDirectory);
 				}catch(NullPointerException | IllegalArgumentException | IOException exc) {
 					JOptionPane.showMessageDialog(this, exc, "エラー", JOptionPane.ERROR_MESSAGE);
 				}
