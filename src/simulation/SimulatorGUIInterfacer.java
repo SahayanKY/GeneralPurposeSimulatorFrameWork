@@ -12,19 +12,23 @@ import javax.swing.SwingWorker;
 import simulation.frame.DataInputFrame;
 import simulation.lock.SimulationProgressLock;
 
+/**
+ * GUIアプリ側とSimulator側の境界をとるクラス。
+ * その実態はSwingWorkerの子クラス(実装クラス)である。
+ * ただし、{@link #executeSimulator(File)}を呼び出すことでシミュレーション(非同期処理)を開始するようにしてください。
+ * */
 public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 	private final Simulator simulator;
 	private final SimulatorLauncher launcher;
 	private final DataInputFrame inputFrame;
 	private ProgressMonitor monitor;
-	private final SimulationProgressLock progresslock = new SimulationProgressLock();
 
 	private int completedTaskNum = 0;
 
 	/**
 	 * GUIアプリ側とSimulator側の境界をとるクラスのインスタンスを生成します。
 	 * @param
-	 * 	simulator	起動する(使用する)Simulatorのクラスインスタンス
+	 * 	simulator	起動する(使用する){@link Simulator}のクラスインスタンス
 	 * @param
 	 * 	inputFrame	入力画面
 	 * */
@@ -66,9 +70,9 @@ public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 	}
 
 
-	/*
+	/**
 	 * 計算結果の出力先のディレクトリを指定し、シミュレーションを開始する。
-	 * 同名のexecute()では正しく起動しない実装をしているため、こちらを呼び起動させる。
+	 * 同名の{@link #execute()}では正しく起動しない実装をしているため、こちらを呼び起動させる。
 	 * @param resultStoreDirectory ユーザーが指定したシミュレーション結果を保存させるディレクトリ
 	 * このディレクトリの下の階層に各種結果ファイルを保存する
 	 * */
@@ -84,6 +88,10 @@ public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 	}
 
 
+	/**
+	 * GUIからの実行命令を受けて非同期に(新しいスレッド上で)実行を行うメソッド。
+	 * このスレッドは呼ばずに{@link #executeSimulator(File)}を呼び出してください。
+	 * */
 	@Override
 	protected Object doInBackground(){
 		//TODO executeSimulatorを介さなかった場合の例外処理
@@ -106,8 +114,8 @@ public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 		return null;
 	}
 
-	/*
-	 * このSimulatorがシミュレーション実行終了後に行う処理を規定する。
+	/**
+	 * シミュレーション実行終了後に行う処理を規定する。
 	 * */
 	@Override
 	protected void done() {
@@ -120,10 +128,10 @@ public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 
 	/**
 	 * シミュレーションの計算進捗率を1タスク分更新する。
-	 * この値の変化を読み取ってMonitorに反映されます。
+	 * この値の変化を読み取って{@link ProgressMonitor}に反映されます。
 	 * */
 	protected void updateProgress() {
-		synchronized(progresslock) {
+		synchronized(SimulationProgressLock.class) {
 			this.completedTaskNum++;
 			double currentProgressRate = (double)completedTaskNum/simulator.getAllConditionNumber();
 			int n = (int)(currentProgressRate*100);
@@ -143,7 +151,7 @@ public class SimulatorGUIInterfacer extends SwingWorker<Object,String>{
 	 * 終了していない場合はfalse、終了した場合はtrue
 	 * */
 	protected void updateProgress(boolean iscompleted) {
-		synchronized(progresslock) {
+		synchronized(SimulationProgressLock.class) {
 			double currentProgressRate = (iscompleted)? 1:0;
 			setProgress((int)(currentProgressRate*100));
 			System.out.println("progress:"+iscompleted+","+currentProgressRate);
