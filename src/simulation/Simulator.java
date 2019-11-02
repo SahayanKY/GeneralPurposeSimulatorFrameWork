@@ -10,7 +10,14 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.function.Supplier;
 
 import javax.swing.ProgressMonitor;
@@ -134,21 +141,111 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 		//シミュレーションに必要なパラメータをセットする
 		this.setParameter();
 
-		//final ExecutorService es_each = Executors.newFixedThreadPool(parallelNum);
-		//final ExecutorService es_all = E
+		final ExecutorService es_each = Executors.newFixedThreadPool(parallelNum);
 
-		double[] array;
-		for(int i=0;i<1000000;i++) {
-			array = new double[50];
-		}
+		//スレッド数だけCompletaleFutureを作り、非同期に実行させる。
+		//それらCompletableFutureのリストを受け取る
+		List<CompletableFuture<Void>> cflist = this.executeMultithread(es_each);
 
+		//全部のCompletableFutureを統合するCompletableFutureを作る。
+		//それは、キャンセルすれば、全てのCompletableFutureをキャンセル、Taskを停止させ、
+		//全てのCompletableFutureが完了すればシャットダウンする
+		CompletableFuture<Void> allcf = this.getIntegratedCompletableFuture(cflist, es_each);
+
+		//monitorにallcf(並列の全体図)を渡す
+		//monitorはallcfを介して停止命令を出す
+		//TODO monitor.setCompletableFuture(allcf);
+
+		allcf.join();
 
 		updateProgress(1);
-
 		monitor.close();
 
 		return null;
 	}
+
+	private CompletableFuture<Void> getIntegratedCompletableFuture(List<CompletableFuture<Void>> cflist, ExecutorService es) {
+		CompletableFuture<Void> allcf = CompletableFuture.allOf(
+					cflist.toArray(new CompletableFuture[cflist.size()])
+		);
+		allcf.whenComplete((ret,ex) -> {
+			if(ex == null) {
+				//異常終了なし
+			}else if(ex instanceof CancellationException){
+				//アプリ側からの停止命令
+				//それぞれのCompletableFutureに対してcancelをかけ、FutureTaskを停止させる
+				cflist.stream().forEach(cf -> {
+					cf.cancel(true);
+				});
+				System.out.println(ex+":アプリからの停止命令により終了しました");
+			}
+		});
+		return allcf;
+	}
+
+	private List<CompletableFuture<Void>> executeMultithread(ExecutorService es) {
+		List<CompletableFuture<Void>> cflist = new ArrayList<>();
+
+		for(int i=1;i<=parallelNum;i++) {
+			CompletableFuture<Void> cf = new CompletableFuture<>();
+
+			//仕事をもらえる限り仕事をし続けるTaskインスタンスの生成
+			FutureTask<Void> task = new FutureTask<Void>(() -> {
+				try {
+					Runnable runnable;
+					while((runnable = this.createNextConditionSolver()) != null) {
+						//受け取ったrunnableを同期的に(このスレッド上で)実行
+						runnable.run();
+						//TODO monitor.updateProgress();
+
+						if(Thread.currentThread().isInterrupted()) {
+							//中断を受けた場合は停止する
+							throw new InterruptedException("次の計算条件に移る前に中断されました. ThreadName:"+Thread.currentThread().getName());
+						}
+					}
+
+					//runnable == null
+					//Completed
+					return null;
+
+				}catch(InterruptedException e) {
+					System.out.println(e);
+					return null;
+				}
+			});
+
+			es.execute(() -> {
+				try {
+					task.run();
+					cf.complete(task.get());
+				}catch(ExecutionException ex) {
+					cf.completeExceptionally(ex.getCause());
+				}catch(Throwable ex) {
+					cf.completeExceptionally(ex);
+				}
+			});
+
+
+			//cf.cancel(true)で、CompletableFutureを停止するが、実行中の動作は停止されない
+			//そこで、cancelで異常終了し、下の処理が回るので、そこでTaskをcancelする
+			cf.whenComplete((ret,ex) -> {
+				if(ex instanceof CancellationException) {
+					//CompletableFutureがキャンセルによって完了している場合
+					if(!task.isDone()) {
+						//FutureTaskがまだ実行中で、割り込みをかける
+						task.cancel(true);
+					}
+				}
+
+			});
+
+			cflist.add(cf);
+
+		}
+
+		return cflist;
+	}
+
 
 	/**
 	 * (計算されていない、またはSubmitされていない)次の計算条件の元で計算を行うSolverインスタンスを返す。
@@ -182,6 +279,7 @@ public abstract class Simulator extends SwingWorker<Object,String>{
 			n = 100;
 		}
 		setProgress(n);
+
 	}
 
 

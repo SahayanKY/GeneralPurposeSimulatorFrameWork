@@ -131,7 +131,7 @@ public class ParabolicMovementSimulator extends Simulator{
 			//----------------------------------------------------------------
 			N_theta0 = Integer.valueOf(射角分割数.getValue());
 			double theta0[] = new double[N_theta0];
-			for(int i=1;i<=720;i++) {
+			for(int i=1;i<=N_theta0;i++) {
 				theta0[i-1] = 360.0/N_theta0 *i;
 			}
 
