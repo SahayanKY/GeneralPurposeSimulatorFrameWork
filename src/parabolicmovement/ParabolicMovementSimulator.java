@@ -11,19 +11,25 @@ import simulation.param.Parameter;
 import simulation.param.checker.DefaultParameterChecker;
 import simulation.param.checker.ParameterChecker;
 
+/**
+ * {@inheritDoc}
+ *
+ * 放物運動のSimulatorクラス
+ * */
 public class ParabolicMovementSimulator extends Simulator{
 
-	private StaticParameters staparams;
+	/**計算条件が変わっても変えない条件を保持するクラスインスタンス*/
+	private StaticParameters staticparams;
+	/**計算条件の組み合わせを保持するクラス*/
 	private DynamicParametersCombinations dynparamscomb;
-	private ConditionGiverLock conditionlock = new ConditionGiverLock();
+
 
 	/**
 	 * {@inheritDoc}
 	 * */
 	@Override
-	//TODO スレッドセーフにする
 	protected Runnable createNextConditionSolver() {
-		synchronized(conditionlock) {
+		synchronized(ConditionGiverLock.class) {
 			DynamicParameters dynparams;
 			if((dynparams = dynparamscomb.getNextDynamicParameters()) == null) {
 				return null;
@@ -34,11 +40,12 @@ public class ParabolicMovementSimulator extends Simulator{
 							private DynamicParameters dynparams;
 
 							@Override
+							/**単一条件についてのソルバーの起動とその計算結果出力を実行します*/
 							public void run() {
-								ParabolicMovementSolver solver = new ParabolicMovementSolver(staparams,dynparams);
+								ParabolicMovementSolver solver = new ParabolicMovementSolver(staticparams,dynparams);
 								Result result = solver.solve();
 								File saveFile = new File(caseResultDirectory.toString()+"\\"+getLogFileName(dynparams));
-								new CSVWriter().writeNext(result, saveFile);
+								new CSVWriter().write(result, saveFile);
 							}
 
 							public Runnable setDynParams(DynamicParameters dynparams){
@@ -61,22 +68,32 @@ public class ParabolicMovementSimulator extends Simulator{
 	}
 
 
+	/**
+	 * {@inheritDoc}
+	 * */
 	@Override
 	public String getThisName() {
 		return "放物運動シミュレーション";
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * */
 	@Override
 	public String getThisVersion() {
-		return "0.2-20191028";
+		return "0.3-20191102";
 	}
 
+	/**
+	 * 時間経過による各量の変化を出力するログファイルの名前を返します。
+	 * @return ファイル名(拡張子含む)
+	 * */
 	public String getLogFileName(DynamicParameters dynparam) {
 		return "log-射角"+dynparam.theta0+".csv";
 	}
 
 	/**
-	 * このシミュレーションが使用するParameterをParameterManagerに登録する。
+	 * {@inheritDoc}
 	 * */
 	@Override
 	public void createParameters(){
@@ -122,7 +139,7 @@ public class ParabolicMovementSimulator extends Simulator{
 			tn = getDoubleValue.apply(進行時間);
 			dt = getDoubleValue.apply(時間差分);
 
-			this.staparams = new StaticParameters(m, x0, y0, u0, tn, dt);
+			this.staticparams = new StaticParameters(m, x0, y0, u0, tn, dt);
 
 
 			//----------------------------------------------------------------
@@ -139,23 +156,6 @@ public class ParabolicMovementSimulator extends Simulator{
 			return new String[] {};
 		});
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }
