@@ -6,6 +6,7 @@ import java.util.function.Function;
 import icg.PhysicalQuantity;
 import simulation.Simulator;
 import simulation.io.CSVWriter;
+import simulation.lock.ConditionGiverLock;
 import simulation.param.Parameter;
 import simulation.param.checker.DefaultParameterChecker;
 import simulation.param.checker.ParameterChecker;
@@ -14,43 +15,39 @@ public class ParabolicMovementSimulator extends Simulator{
 
 	private StaticParameters staparams;
 	private DynamicParametersCombinations dynparamscomb;
-
-
-	public static void main(String args[]) {
-		ParabolicMovementSimulator pms = new ParabolicMovementSimulator();
-		pms.createParameters();
-		pms.openDataInputFrame(340,490);
-	}
-
+	private ConditionGiverLock conditionlock = new ConditionGiverLock();
 
 	/**
 	 * {@inheritDoc}
 	 * */
 	@Override
+	//TODO スレッドセーフにする
 	protected Runnable createNextConditionSolver() {
-		DynamicParameters dynparams;
-		if((dynparams = dynparamscomb.getNextDynamicParameters()) == null) {
-			return null;
-		} else {
-			Runnable runnable =
-					new Runnable() {
-						/**計算条件*/
-						private DynamicParameters dynparams;
+		synchronized(conditionlock) {
+			DynamicParameters dynparams;
+			if((dynparams = dynparamscomb.getNextDynamicParameters()) == null) {
+				return null;
+			} else {
+				Runnable runnable =
+						new Runnable() {
+							/**計算条件*/
+							private DynamicParameters dynparams;
 
-						@Override
-						public void run() {
-							ParabolicMovementSolver solver = new ParabolicMovementSolver(staparams,dynparams);
-							Result result = solver.solve();
-							File saveFile = new File(resultStoreDirectory.toString()+"\\"+getLogFileName(dynparams));
-							new CSVWriter().writeNext(result, saveFile);
-						}
+							@Override
+							public void run() {
+								ParabolicMovementSolver solver = new ParabolicMovementSolver(staparams,dynparams);
+								Result result = solver.solve();
+								File saveFile = new File(caseResultDirectory.toString()+"\\"+getLogFileName(dynparams));
+								new CSVWriter().writeNext(result, saveFile);
+							}
 
-						public Runnable setDynParams(DynamicParameters dynparams){
-							this.dynparams = dynparams;
-							return this;
-						}
-					}.setDynParams(dynparams);
-			return runnable;
+							public Runnable setDynParams(DynamicParameters dynparams){
+								this.dynparams = dynparams;
+								return this;
+							}
+						}.setDynParams(dynparams);
+				return runnable;
+			}
 		}
 	}
 
